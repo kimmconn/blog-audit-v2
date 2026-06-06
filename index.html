@@ -6,9 +6,9 @@
 <title>Blog Audit Dashboard</title>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#fff;--bg2:#f5f4f0;--bg3:#eeede9;--text:#1a1a18;--text2:#6b6b67;--text3:#9b9b97;--border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.2);--radius:8px;--radius-lg:12px;--red:#E24B4A;--red-bg:#FCEBEB;--red-text:#A32D2D;--amber:#BA7517;--amber-bg:#FAEEDA;--amber-text:#854F0B;--blue:#378ADD;--blue-bg:#E6F1FB;--blue-text:#185FA5;--green:#639922;--green-bg:#EAF3DE;--green-text:#3B6D11}
+  :root{--bg:#fff;--bg2:#f5f4f0;--bg3:#eeede9;--text:#1a1a18;--text2:#6b6b67;--text3:#9b9b97;--border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.2);--radius:8px;--radius-lg:12px;--red:#E24B4A;--red-bg:#FCEBEB;--red-text:#A32D2D;--amber:#BA7517;--amber-bg:#FAEEDA;--amber-text:#854F0B;--blue:#378ADD;--blue-bg:#E6F1FB;--blue-text:#185FA5;--green:#639922;--green-bg:#EAF3DE;--green-text:#3B6D11;--purple:#7C3AED;--purple-bg:#F3EEFF;--purple-text:#5B21B6}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);font-size:14px;line-height:1.5}
-  .app{max-width:1200px;margin:0 auto;padding:2rem 1.5rem}
+  .app{max-width:1280px;margin:0 auto;padding:2rem 1.5rem}
   h1{font-size:22px;font-weight:500;margin-bottom:4px}
   .subtitle{font-size:13px;color:var(--text2);margin-bottom:1.5rem}
   .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
@@ -32,11 +32,15 @@
   .btn-primary{background:var(--text);color:var(--bg);border-color:var(--text)}
   .btn-primary:hover{opacity:0.85}
   .btn-sm{font-size:11px;padding:4px 10px}
+  .btn-google{background:#4285F4;color:white;border-color:#4285F4;display:flex;align-items:center;gap:8px}
+  .btn-google:hover{background:#3367D6;border-color:#3367D6;color:white}
+  .btn-disconnect{background:var(--red-bg);color:var(--red-text);border-color:var(--red-text)}
   .progress-wrap{margin-top:10px}
   .progress-bar{background:var(--bg2);border-radius:4px;height:6px;overflow:hidden;margin-bottom:6px}
   .progress-fill{height:100%;border-radius:4px;background:var(--text);transition:width 0.3s}
   .status-msg{font-size:12px;color:var(--text2)}
   .floor-note{font-size:12px;color:var(--text2);background:var(--bg2);border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;border-left:3px solid var(--red)}
+  .gsc-note{font-size:11px;color:var(--text3);background:var(--bg2);border-radius:var(--radius);padding:6px 10px;margin-bottom:10px}
   .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
   #searchInput{min-width:200px}
   .table-wrap{overflow-x:auto}
@@ -45,7 +49,7 @@
   td{padding:9px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   tr:last-child td{border-bottom:none}
   tr:hover td{background:var(--bg2)}
-  .col-title{width:28%}.col-cat{width:10%}.col-age{width:9%}.col-type{width:9%}.col-issues{width:14%}.col-floor{width:7%}.col-score{width:15%}.col-action{width:8%}
+  .col-title{width:22%}.col-age{width:8%}.col-type{width:8%}.col-traffic{width:7%}.col-impr{width:7%}.col-pos{width:6%}.col-health{width:9%}.col-issues{width:10%}.col-flags{width:10%}.col-score{width:11%}.col-action{width:5%}
   .pill{display:inline-block;font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px}
   .u-critical{background:var(--red-bg);color:var(--red-text)}
   .u-high{background:var(--amber-bg);color:var(--amber-text)}
@@ -53,12 +57,20 @@
   .u-low{background:var(--green-bg);color:var(--green-text)}
   .type-pill{display:inline-block;font-size:10px;padding:2px 6px;border-radius:var(--radius);background:var(--bg2);color:var(--text2)}
   .floor-pill{display:inline-block;font-size:10px;padding:2px 6px;border-radius:var(--radius);background:var(--red-bg);color:var(--red-text)}
+  .flag{display:inline-block;font-size:10px;padding:2px 5px;border-radius:var(--radius);margin-right:2px;margin-bottom:2px;white-space:nowrap}
+  .flag-opportunity{background:var(--purple-bg);color:var(--purple-text)}
+  .flag-peaked{background:var(--amber-bg);color:var(--amber-text)}
+  .flag-offmap{background:var(--red-bg);color:var(--red-text)}
+  .flag-neverranked{background:var(--bg2);color:var(--text3)}
+  .flag-kwmismatch{background:#FEF3C7;color:#92400E}
   .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px}
   .dot-red{background:var(--red)}.dot-amber{background:var(--amber)}
   .score-bar-wrap{display:flex;align-items:center;gap:6px}
   .score-bar{height:4px;border-radius:2px;flex:1;background:var(--bg2);overflow:hidden}
   .score-fill{height:100%;border-radius:2px}
   .score-num{font-size:11px;font-weight:500;min-width:22px;text-align:right}
+  .health-bar{height:3px;border-radius:2px;background:var(--bg2);overflow:hidden;margin-top:3px}
+  .health-fill{height:100%;border-radius:2px}
   .link-btn{background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;text-decoration:underline;padding:0}
   .pagination{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:var(--text2)}
   .empty{text-align:center;padding:3rem;color:var(--text2)}
@@ -74,6 +86,8 @@
   .floor-row{display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap}
   .floor-row input[type="number"]{width:60px}
   .note{font-size:12px;color:var(--text2);background:var(--bg2);border-radius:var(--radius);padding:8px 12px;margin-bottom:16px}
+  .gsc-banner{display:flex;align-items:center;gap:12px;background:var(--blue-bg);border:0.5px solid var(--blue);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--blue-text);flex-wrap:wrap}
+  .gsc-connected{background:var(--green-bg);border-color:var(--green);color:var(--green-text)}
   a{color:inherit;text-decoration:none}
   a:hover{text-decoration:underline}
   @media(max-width:700px){.metrics{grid-template-columns:repeat(2,1fr)}.integrations{grid-template-columns:1fr}#urlInput{min-width:200px}}
@@ -87,13 +101,14 @@
     <div class="metric"><div class="metric-label">Total posts</div><div class="metric-value" id="mTotal">—</div><div class="metric-sub">cataloged</div></div>
     <div class="metric"><div class="metric-label">Critical urgency</div><div class="metric-value" id="mCritical" style="color:var(--red-text)">—</div><div class="metric-sub">need immediate update</div></div>
     <div class="metric"><div class="metric-label">Stale 1+ years</div><div class="metric-value" id="mStale">—</div><div class="metric-sub">not updated recently</div></div>
-    <div class="metric"><div class="metric-label">Hard floor triggers</div><div class="metric-value" id="mFloors" style="color:var(--red-text)">—</div><div class="metric-sub">broken links or closed venues</div></div>
+    <div class="metric"><div class="metric-label">Opportunities</div><div class="metric-value" id="mOpportunity" style="color:var(--purple-text)">—</div><div class="metric-sub">position 11-20 posts</div></div>
   </div>
   <div class="tabs">
     <button class="tab active" onclick="switchTab('catalog',this)">Post catalog</button>
     <button class="tab" onclick="switchTab('connect',this)">Data sources</button>
     <button class="tab" onclick="switchTab('settings',this)">Scoring weights</button>
   </div>
+
   <div id="tabCatalog">
     <div class="panel">
       <div class="panel-title">Crawl your blog <span class="tag" id="crawlStatus">not started</span></div>
@@ -107,23 +122,35 @@
         <div class="status-msg" id="statusMsg"></div>
       </div>
     </div>
+
+    <div id="gscBanner" style="display:none"></div>
+
     <div class="panel">
       <div class="floor-note"><strong>Hard urgency floors:</strong> posts with 3+ broken links or 2+ closed venues are automatically forced to <strong>critical</strong> regardless of other scores.</div>
+      <div class="gsc-note">⚠️ GSC data covers the last 16 months only. Posts older than 16 months may have peaked earlier — check Google Analytics manually for full traffic history on older posts.</div>
       <div class="filters">
         <input type="text" id="searchInput" placeholder="Search posts..." oninput="renderTable()" />
         <select id="fUrgency" onchange="renderTable()"><option value="">All urgency</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
         <select id="fType" onchange="renderTable()"><option value="">All types</option><option value="place-list">Place list</option><option value="guide">Guide</option><option value="tips">Tips</option><option value="story">Story</option><option value="festival">Festival</option></select>
         <select id="fAge" onchange="renderTable()"><option value="">Any age</option><option value="36">3+ years</option><option value="24">2+ years</option><option value="12">1+ year</option></select>
-        <select id="fFloor" onchange="renderTable()"><option value="">All posts</option><option value="1">Hard floor only</option></select>
-        <select id="fSort" onchange="renderTable()"><option value="score">Sort: urgency</option><option value="age">Sort: oldest</option><option value="title">Sort: A–Z</option></select>
+        <select id="fFlag" onchange="renderTable()"><option value="">All posts</option><option value="opportunity">Opportunities (pos 11-20)</option><option value="peaked">Peaked traffic</option><option value="offmap">Fallen off map</option><option value="floor">Hard floor only</option></select>
+        <select id="fSort" onchange="renderTable()"><option value="score">Sort: urgency</option><option value="age">Sort: oldest</option><option value="traffic">Sort: traffic ↓</option><option value="decline">Sort: biggest decline</option><option value="title">Sort: A–Z</option></select>
         <button class="btn btn-sm" onclick="exportCSV()">Export CSV</button>
       </div>
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th class="col-title">Post title</th><th class="col-cat">Category</th><th class="col-age">Last updated</th>
-            <th class="col-type">Type</th><th class="col-issues">Issues</th><th class="col-floor">Floor</th>
-            <th class="col-score">Urgency score</th><th class="col-action">Action</th>
+            <th class="col-title">Post title</th>
+            <th class="col-age">Last updated</th>
+            <th class="col-type">Type</th>
+            <th class="col-traffic">Clicks</th>
+            <th class="col-impr">Impressions</th>
+            <th class="col-pos">Position</th>
+            <th class="col-health">Traffic health</th>
+            <th class="col-issues">Issues</th>
+            <th class="col-flags">Flags</th>
+            <th class="col-score">Urgency</th>
+            <th class="col-action">↗</th>
           </tr></thead>
           <tbody id="tableBody"></tbody>
         </table>
@@ -137,23 +164,29 @@
       </div>
     </div>
   </div>
+
   <div id="tabConnect" style="display:none">
     <div class="panel">
       <div class="panel-title">Data source integrations</div>
       <div class="integrations">
-        <div class="int-card"><div class="int-name">WordPress REST API</div><div class="int-desc">Fetches all posts via the proxy. No auth needed for public sites.</div><span class="tag tag-ok">Connected</span></div>
-        <div class="int-card"><div class="int-name">Google Search Console</div><div class="int-desc">Clicks, impressions, CTR, and historical traffic trends per post.</div><button class="btn btn-sm">Coming soon</button></div>
-        <div class="int-card"><div class="int-name">Google Maps / Places</div><div class="int-desc">Checks if venues in place-list posts are still open or closed.</div><button class="btn btn-sm">Coming soon</button></div>
+        <div class="int-card"><div class="int-name">WordPress REST API</div><div class="int-desc">Fetches all posts via the serverless proxy. No auth needed for public sites.</div><span class="tag tag-ok">Connected</span></div>
+        <div class="int-card">
+          <div class="int-name">Google Search Console</div>
+          <div class="int-desc">Clicks, impressions, position, and traffic health per post. Powers the urgency scoring engine.</div>
+          <div id="gscStatus"><button class="btn btn-google btn-sm" onclick="connectGSC()"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Connect Google Search Console</button></div>
+        </div>
+        <div class="int-card"><div class="int-name">Google Maps / Places</div><div class="int-desc">Checks if venues in place-list posts are still open or permanently closed.</div><button class="btn btn-sm">Coming soon</button></div>
         <div class="int-card"><div class="int-name">Broken link scanner</div><div class="int-desc">Scans all outbound links and flags any returning 4xx/5xx errors.</div><button class="btn btn-sm">Coming soon</button></div>
-        <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume per post's target keyword.</div><button class="btn btn-sm">Coming soon</button></div>
-        <div class="int-card"><div class="int-name">Reddit / social scan</div><div class="int-desc">Recent mentions of venues or topics to gauge relevance.</div><button class="btn btn-sm">Coming soon</button></div>
+        <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume per post's target keyword via DataForSEO or Ahrefs.</div><button class="btn btn-sm">Coming soon</button></div>
+        <div class="int-card"><div class="int-name">AI content scan</div><div class="int-desc">Claude scans each post for outdated prices, closed venues, old dates, keyword drift, and more.</div><button class="btn btn-sm">Coming soon</button></div>
       </div>
     </div>
   </div>
+
   <div id="tabSettings" style="display:none">
     <div class="panel">
       <div class="panel-title">Urgency scoring weights</div>
-      <p class="note">Adjust how much each factor contributes to the urgency score (0–100).</p>
+      <p class="note">Adjust how much each signal contributes to the urgency score (0–100). Hard floors for broken links and venue issues are configured below.</p>
       <div id="weightsUI"></div>
       <div style="display:flex;gap:8px;margin-top:16px">
         <button class="btn" onclick="resetWeights()">Reset defaults</button>
@@ -162,39 +195,274 @@
     </div>
     <div class="panel">
       <div class="panel-title">Hard urgency floor rules</div>
-      <p class="note">These rules force a post to critical regardless of other factors.</p>
+      <p class="note">These rules force a post to critical regardless of other factors. The score boosts apply to any post with at least one issue.</p>
       <div class="floor-rules">
-        <div class="floor-row"><span style="min-width:220px">Broken links ≥</span><input type="number" id="fBrokenCrit" value="3" min="1" max="20"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
-        <div class="floor-row"><span style="min-width:220px">Closed/outdated venues ≥</span><input type="number" id="fVenueCrit" value="2" min="1" max="20"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
-        <div class="floor-row"><span style="min-width:220px">Any broken links</span><span style="color:var(--text2)">→ boost score by <input type="number" id="fBrokenBoost" value="20" min="0" max="50" style="width:55px;display:inline-block;margin:0 4px"/> pts</span></div>
-        <div class="floor-row"><span style="min-width:220px">Any closed venues</span><span style="color:var(--text2)">→ boost score by <input type="number" id="fVenueBoost" value="15" min="0" max="50" style="width:55px;display:inline-block;margin:0 4px"/> pts</span></div>
+        <div class="floor-row"><span style="min-width:240px">Broken links ≥</span><input type="number" id="fBrokenCrit" value="3" min="1" max="20"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
+        <div class="floor-row"><span style="min-width:240px">Closed/outdated venues ≥</span><input type="number" id="fVenueCrit" value="2" min="1" max="20"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
+        <div class="floor-row"><span style="min-width:240px">Any broken links → boost score by</span><input type="number" id="fBrokenBoost" value="20" min="0" max="50" style="width:55px"/> <span style="color:var(--text2)">pts</span></div>
+        <div class="floor-row"><span style="min-width:240px">Any closed venues → boost score by</span><input type="number" id="fVenueBoost" value="15" min="0" max="50" style="width:55px"/> <span style="color:var(--text2)">pts</span></div>
       </div>
       <div style="margin-top:16px"><button class="btn btn-primary" onclick="applyWeights()">Apply floor rules</button></div>
     </div>
+    <div class="panel">
+      <div class="panel-title">Scoring legend</div>
+      <div style="font-size:12px;color:var(--text2);display:flex;flex-direction:column;gap:8px">
+        <div><strong style="color:var(--text)">Post age (15 pts)</strong> — older posts score higher. 3+ years = max.</div>
+        <div><strong style="color:var(--text)">Traffic health (25 pts)</strong> — compares recent 8 months vs earlier 8 months within GSC window. Big decline = high urgency.</div>
+        <div><strong style="color:var(--text)">Fallen off map (10 pts)</strong> — post had impressions but now has very low clicks. Only applies to posts with some GSC history.</div>
+        <div><strong style="color:var(--text)">Position opportunity (15 pts)</strong> — posts ranking 11–20 are one good update from page 1.</div>
+        <div><strong style="color:var(--text)">Broken links (20 pts + floor)</strong> — each broken link adds to score. 3+ forces critical.</div>
+        <div><strong style="color:var(--text)">Venue issues (20 pts + floor)</strong> — each closed venue adds to score. 2+ forces critical.</div>
+        <div><strong style="color:var(--text)">CTR gap (5 pts)</strong> — high impressions but very low CTR suggests title/meta needs work.</div>
+        <div style="margin-top:4px"><strong style="color:var(--text)">Flags (visual only, don't affect score):</strong> Opportunity 🟣, Peaked traffic 🟡, Fallen off map 🔴, Never ranked ⚪, Keyword mismatch 🟡</div>
+      </div>
+    </div>
   </div>
 </div>
+
 <script>
 const PROXY_URL='/api/crawl';
-let posts=[],page=1;
+const GSC_URL='/api/gsc';
+const AUTH_URL='/api/auth';
+let posts=[],page=1,gscToken=null,gscData={};
 const PER_PAGE=25;
-let weights={age:25,trafficDecline:20,impressionCtgap:15,brokenLinks:15,venueIssues:15,keywordVolume:10};
-const wLabels={age:'Time since last update',trafficDecline:'Traffic decline over time',impressionCtgap:'High impressions vs low clicks',brokenLinks:'Broken links (per link found)',venueIssues:'Outdated venue info (per venue)',keywordVolume:'High keyword search volume'};
+let weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};
+const wLabels={age:'Post age',trafficHealth:'Traffic health (peak vs recent)',fallenOffMap:'Fallen off map (had traffic, lost it)',positionOpportunity:'Position 11–20 opportunity',brokenLinks:'Broken links',venueIssues:'Outdated/closed venues',ctrGap:'High impressions, low CTR'};
+
+window.addEventListener('load',()=>{
+  const params=new URLSearchParams(window.location.search);
+  const token=params.get('gsc_token'),error=params.get('gsc_error');
+  if(token){gscToken=token;localStorage.setItem('gsc_token',token);updateGSCUI(true);showGSCBanner(true);window.history.replaceState({},'',window.location.pathname);}
+  else if(error){alert('GSC error: '+error);window.history.replaceState({},'',window.location.pathname);}
+  else{const s=localStorage.getItem('gsc_token');if(s){gscToken=s;updateGSCUI(true);showGSCBanner(true);}}
+});
+
+function connectGSC(){window.location.href=AUTH_URL+'?action=login';}
+function disconnectGSC(){gscToken=null;localStorage.removeItem('gsc_token');gscData={};updateGSCUI(false);showGSCBanner(false);posts.forEach(p=>{p.traffic=0;p.impressions=0;p.ctr=0;p.position=0;p.trafficDeclinePct=0;p.peakClicks=0;p.recentClicks=0;const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
+function updateGSCUI(connected){const el=document.getElementById('gscStatus');if(connected){el.innerHTML=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="tag tag-ok">✓ Connected</span><button class="btn btn-sm" onclick="loadGSCData()">Refresh GSC data</button><button class="btn btn-sm btn-disconnect" onclick="disconnectGSC()">Disconnect</button></div>`;}else{el.innerHTML=`<button class="btn btn-google btn-sm" onclick="connectGSC()"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Connect Google Search Console</button>`;}}
+function showGSCBanner(connected){const b=document.getElementById('gscBanner');if(connected){b.className='gsc-banner gsc-connected';b.style.display='flex';b.innerHTML=`<span>✓ Google Search Console connected</span><button class="btn btn-sm" style="margin-left:auto" onclick="loadGSCData()">Load traffic data →</button>`;}else{b.style.display='none';}}
+
+async function loadGSCData(){
+  if(!gscToken||posts.length===0)return;
+  const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
+  const banner=document.getElementById('gscBanner');
+  banner.className='gsc-banner';
+  banner.innerHTML=`<span>⏳ Loading GSC data... this may take a moment for large sites</span>`;
+  try{
+    // Pull two date ranges for traffic health comparison
+    const now=new Date();
+    const endDate=now.toISOString().split('T')[0];
+    const midDate=new Date(now); midDate.setMonth(midDate.getMonth()-8);
+    const startDate=new Date(now); startDate.setMonth(startDate.getMonth()-16);
+
+    const [recentRes,olderRes]=await Promise.all([
+      fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:midDate.toISOString().split('T')[0],endDate})}),
+      fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:startDate.toISOString().split('T')[0],endDate:midDate.toISOString().split('T')[0]})})
+    ]);
+
+    if(!recentRes.ok){
+      const e=await recentRes.json().catch(()=>({}));
+      if(recentRes.status===401){gscToken=null;localStorage.removeItem('gsc_token');banner.innerHTML=`<span style="color:var(--red-text)">GSC token expired — please reconnect.</span>`;updateGSCUI(false);return;}
+      throw new Error(e.error||`HTTP ${recentRes.status}`);
+    }
+
+    const recentData=await recentRes.json();
+    const olderData=olderRes.ok?await olderRes.json():{rows:[]};
+
+    // Build lookup maps
+    const recentMap={},olderMap={};
+    (recentData.rows||[]).forEach(r=>{recentMap[r.url]=r;});
+    (olderData.rows||[]).forEach(r=>{olderMap[r.url]=r;});
+
+    let matched=0;
+    posts.forEach(p=>{
+      const normalizeUrl=u=>u.replace(/\/$/,'');
+      const nu=normalizeUrl(p.url);
+      const recent=recentMap[p.url]||recentMap[p.url+'/']||recentMap[nu]||null;
+      const older=olderMap[p.url]||olderMap[p.url+'/']||olderMap[nu]||null;
+
+      if(recent||older){
+        p.traffic=recent?Math.round(recent.clicks):0;
+        p.impressions=recent?Math.round(recent.impressions):0;
+        p.ctr=recent?recent.ctr:0;
+        p.position=recent?recent.position:0;
+        p.recentClicks=recent?recent.clicks:0;
+        p.olderClicks=older?older.clicks:0;
+        p.recentImpressions=recent?recent.impressions:0;
+        p.olderImpressions=older?older.impressions:0;
+        // Traffic health: decline % from older to recent
+        if(p.olderClicks>10){
+          p.trafficDeclinePct=Math.max(0,Math.round(((p.olderClicks-p.recentClicks)/p.olderClicks)*100));
+        } else {
+          p.trafficDeclinePct=0;
+        }
+        matched++;
+      }
+      const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;
+    });
+
+    posts.sort((a,b)=>b.score-a.score);
+    banner.className='gsc-banner gsc-connected';
+    banner.innerHTML=`<span>✓ GSC data loaded — ${matched} of ${posts.length} posts matched</span><button class="btn btn-sm" style="margin-left:auto" onclick="loadGSCData()">Refresh →</button>`;
+    updateMetrics();renderTable();
+  }catch(e){
+    banner.innerHTML=`<span style="color:var(--red-text)">Error: ${e.message}</span>`;
+  }
+}
+
 function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.value||3),vc:parseInt(document.getElementById('fVenueCrit')?.value||2),bb:parseInt(document.getElementById('fBrokenBoost')?.value||20),vb:parseInt(document.getElementById('fVenueBoost')?.value||15)}}
-function calcScore(p){const f=floors();let s=0;s+=Math.min((p.ageMonths/12)/3,1)*weights.age;s+=Math.min((p.trafficDeclinePct||0)/100,1)*weights.trafficDecline;s+=((p.impressions>1000&&p.ctr<0.03)?1:(p.impressions>500&&p.ctr<0.02)?0.7:0)*weights.impressionCtgap;s+=Math.min((p.brokenLinks||0)/3,1)*weights.brokenLinks;s+=Math.min((p.venueIssues||0)/2,1)*weights.venueIssues;s+=((p.keywordVolume||0)>5000?1:(p.keywordVolume||0)>1000?0.6:0.2)*weights.keywordVolume;s=Math.round(s);if(p.brokenLinks>0)s=Math.max(s,Math.min(s+f.bb,99));if(p.venueIssues>0)s=Math.max(s,Math.min(s+f.vb,99));let hardFloor=false;if(p.brokenLinks>=f.bc||p.venueIssues>=f.vc){s=Math.max(s,85);hardFloor=true;}s=Math.min(s,100);const urgency=s>=70?'critical':s>=45?'high':s>=25?'medium':'low';return{score:s,urgency,hardFloor}}
+
+function calcScore(p){
+  const f=floors();
+  let s=0;
+  const flags=[];
+
+  // 1. Post age (15 pts)
+  s+=Math.min((p.ageMonths/12)/3,1)*weights.age;
+
+  // 2. Traffic health — peak vs recent (25 pts)
+  // Only score if we have meaningful GSC data
+  const hasGSC=(p.recentClicks>0||p.olderClicks>0||p.impressions>0);
+  if(hasGSC&&p.trafficDeclinePct>0){
+    const declineFactor=Math.min(p.trafficDeclinePct/100,1);
+    s+=declineFactor*weights.trafficHealth;
+    if(p.trafficDeclinePct>=50) flags.push({type:'peaked',label:'📉 Traffic peaked'});
+  }
+
+  // 3. Fallen off map (10 pts)
+  // Had some impressions historically but now very low clicks
+  // Only applies if post is old enough and had some GSC presence
+  if(hasGSC&&p.ageMonths>=12){
+    const totalImpr=(p.recentImpressions||0)+(p.olderImpressions||0);
+    const totalClicks=(p.recentClicks||0)+(p.olderClicks||0);
+    if(totalImpr>500&&totalClicks<50){
+      // Fallen off map — was visible but getting no clicks
+      s+=weights.fallenOffMap;
+      flags.push({type:'offmap',label:'🔴 Fallen off map'});
+    } else if(totalImpr<50&&p.ageMonths>12){
+      // Never ranked — very low GSC presence for an old post
+      flags.push({type:'neverranked',label:'⚪ Never ranked'});
+      // Don't boost score — no potential signal
+    }
+  }
+
+  // 4. Position opportunity — 11-20 (15 pts)
+  if(p.position>10&&p.position<=20&&p.impressions>200){
+    s+=weights.positionOpportunity;
+    flags.push({type:'opportunity',label:'🟣 Page 2 opportunity'});
+  } else if(p.position>3&&p.position<=10&&p.impressions>500){
+    // Top 10 but not top 3 — smaller opportunity
+    s+=weights.positionOpportunity*0.4;
+  }
+
+  // 5. Broken links (20 pts + floor)
+  if(p.brokenLinks>0){
+    s+=Math.min(p.brokenLinks/3,1)*weights.brokenLinks;
+    s=Math.max(s,Math.min(s+f.bb,99));
+  }
+
+  // 6. Venue issues (20 pts + floor)
+  if(p.venueIssues>0){
+    s+=Math.min(p.venueIssues/2,1)*weights.venueIssues;
+    s=Math.max(s,Math.min(s+f.vb,99));
+  }
+
+  // 7. CTR gap (5 pts) — weak signal
+  if(p.impressions>1000&&p.ctr<0.02) s+=weights.ctrGap;
+  else if(p.impressions>500&&p.ctr<0.01) s+=weights.ctrGap*0.5;
+
+  // Hard floors
+  let hardFloor=false;
+  if(p.brokenLinks>=f.bc||p.venueIssues>=f.vc){s=Math.max(s,85);hardFloor=true;}
+
+  s=Math.min(Math.round(s),100);
+  const urgency=s>=70?'critical':s>=45?'high':s>=25?'medium':'low';
+  return{score:s,urgency,hardFloor,flags};
+}
+
 function monthsAgo(d){return d?Math.round((Date.now()-new Date(d))/(1000*60*60*24*30)):36}
 function fmtAge(m){if(m<1)return'This month';if(m<12)return m+'mo ago';const y=Math.floor(m/12),r=m%12;return y+'y'+(r>0?' '+r+'mo':'')+' ago'}
-function classify(t){t=t.toLowerCase();if(/cafe|restaurant|eat|food|bar|hotel|stay|places.*visit|things.*do|where.*go|best.*in|hidden gem/.test(t))return'place-list';if(/festival/.test(t))return'festival';if(/guide|itinerary|road trip|how to|what to|when to/.test(t))return'guide';if(/tips|lessons|advice|mistakes|pack|budget|cost|save money/.test(t))return'tips';return'story'}
+function classify(t){t=t.toLowerCase();if(/cafe|restaurant|eat|food|bar|hotel|stay|places.*visit|things.*do|where.*go|best.*in|hidden gem|itinerary|road trip|guide|tips|things to|where to|how to|what to|when to|budget|cost|packing|pack for/.test(t))return'guide';if(/festival/.test(t))return'festival';return'story'}
 function scoreColor(s){return s>=70?'#E24B4A':s>=45?'#BA7517':s>=25?'#378ADD':'#639922'}
+function healthColor(pct){return pct>=70?'#E24B4A':pct>=40?'#BA7517':pct>=20?'#378ADD':'#639922'}
+function fmtNum(n){if(!n)return'—';if(n>=10000)return Math.round(n/1000)+'k';if(n>=1000)return(n/1000).toFixed(1)+'k';return n}
+function fmtPos(p){if(!p||p===0)return'—';return p.toFixed(1)}
+
 function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings'].forEach(id=>{document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1)).style.display='none'});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings')renderWeights()}
 function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('')}
-function resetWeights(){weights={age:25,trafficDecline:20,impressionCtgap:15,brokenLinks:15,venueIssues:15,keywordVolume:10};renderWeights()}
-function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value)});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor});updateMetrics();renderTable()}
-function updateMetrics(){document.getElementById('mTotal').textContent=posts.length;document.getElementById('mCritical').textContent=posts.filter(p=>p.urgency==='critical').length;document.getElementById('mStale').textContent=posts.filter(p=>p.ageMonths>=12).length;document.getElementById('mFloors').textContent=posts.filter(p=>p.hardFloor).length}
-function getFiltered(){const s=document.getElementById('searchInput').value.toLowerCase(),u=document.getElementById('fUrgency').value,t=document.getElementById('fType').value,a=document.getElementById('fAge').value,fl=document.getElementById('fFloor').value,so=document.getElementById('fSort').value;let r=posts.filter(p=>{if(s&&!p.title.toLowerCase().includes(s))return false;if(u&&p.urgency!==u)return false;if(t&&p.type!==t)return false;if(a&&p.ageMonths<parseInt(a))return false;if(fl==='1'&&!p.hardFloor)return false;return true});r.sort((a,b)=>so==='score'?b.score-a.score:so==='age'?b.ageMonths-a.ageMonths:a.title.localeCompare(b.title));return r}
-function renderTable(){const filtered=getFiltered(),start=(page-1)*PER_PAGE,slice=filtered.slice(start,start+PER_PAGE),tbody=document.getElementById('tableBody'),empty=document.getElementById('emptyState'),pag=document.getElementById('pagRow');if(posts.length===0){empty.style.display='block';pag.style.display='none';tbody.innerHTML='';return}empty.style.display='none';const tp=Math.ceil(filtered.length/PER_PAGE);pag.style.display=filtered.length>PER_PAGE?'flex':'none';document.getElementById('pageInfo').textContent=`Page ${page} of ${tp}`;document.getElementById('totalCount').textContent=`${filtered.length} posts`;tbody.innerHTML=slice.map(p=>{const issues=[p.brokenLinks>0?`<span class="dot dot-red"></span>${p.brokenLinks} broken`:'',p.venueIssues>0?`<span class="dot dot-amber"></span>${p.venueIssues} closed`:''].filter(Boolean).join(' &nbsp;')||'<span style="color:var(--text3)">none</span>';const ageCol=p.ageMonths>=24?'var(--red-text)':p.ageMonths>=12?'var(--amber-text)':'var(--text2)';const sc=scoreColor(p.score);return`<tr><td class="col-title" title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,50)}${p.title.length>50?'…':''}</a></td><td class="col-cat" style="font-size:11px;color:var(--text2)">${p.category}</td><td class="col-age" style="font-size:11px;color:${ageCol}">${fmtAge(p.ageMonths)}</td><td class="col-type"><span class="type-pill">${p.type}</span></td><td class="col-issues" style="font-size:11px">${issues}</td><td class="col-floor">${p.hardFloor?'<span class="floor-pill">forced</span>':'<span style="color:var(--text3);font-size:11px">—</span>'}</td><td class="col-score"><div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${p.score}%;background:${sc}"></div></div><span class="score-num" style="color:${sc}">${p.score}</span></div><div style="margin-top:3px"><span class="pill u-${p.urgency}">${p.urgency}</span></div></td><td class="col-action"><a href="${p.url}" target="_blank" class="link-btn">view ↗</a></td></tr>`}).join('')}
+function resetWeights(){weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};renderWeights()}
+function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value)});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable()}
+function updateMetrics(){document.getElementById('mTotal').textContent=posts.length;document.getElementById('mCritical').textContent=posts.filter(p=>p.urgency==='critical').length;document.getElementById('mStale').textContent=posts.filter(p=>p.ageMonths>=12).length;document.getElementById('mOpportunity').textContent=posts.filter(p=>p.flags&&p.flags.some(f=>f.type==='opportunity')).length;}
+
+function getFiltered(){
+  const s=document.getElementById('searchInput').value.toLowerCase(),u=document.getElementById('fUrgency').value,t=document.getElementById('fType').value,a=document.getElementById('fAge').value,fl=document.getElementById('fFlag').value,so=document.getElementById('fSort').value;
+  let r=posts.filter(p=>{
+    if(s&&!p.title.toLowerCase().includes(s))return false;
+    if(u&&p.urgency!==u)return false;
+    if(t&&p.type!==t)return false;
+    if(a&&p.ageMonths<parseInt(a))return false;
+    if(fl==='floor'&&!p.hardFloor)return false;
+    if(fl==='opportunity'&&!(p.flags&&p.flags.some(f=>f.type==='opportunity')))return false;
+    if(fl==='peaked'&&!(p.flags&&p.flags.some(f=>f.type==='peaked')))return false;
+    if(fl==='offmap'&&!(p.flags&&p.flags.some(f=>f.type==='offmap')))return false;
+    return true;
+  });
+  r.sort((a,b)=>{
+    if(so==='score')return b.score-a.score;
+    if(so==='age')return b.ageMonths-a.ageMonths;
+    if(so==='traffic')return b.traffic-a.traffic;
+    if(so==='decline')return b.trafficDeclinePct-a.trafficDeclinePct;
+    return a.title.localeCompare(b.title);
+  });
+  return r;
+}
+
+function renderTable(){
+  const filtered=getFiltered(),start=(page-1)*PER_PAGE,slice=filtered.slice(start,start+PER_PAGE);
+  const tbody=document.getElementById('tableBody'),empty=document.getElementById('emptyState'),pag=document.getElementById('pagRow');
+  if(posts.length===0){empty.style.display='block';pag.style.display='none';tbody.innerHTML='';return}
+  empty.style.display='none';
+  const tp=Math.ceil(filtered.length/PER_PAGE);
+  pag.style.display=filtered.length>PER_PAGE?'flex':'none';
+  document.getElementById('pageInfo').textContent=`Page ${page} of ${tp}`;
+  document.getElementById('totalCount').textContent=`${filtered.length} posts`;
+  tbody.innerHTML=slice.map(p=>{
+    const issues=[p.brokenLinks>0?`<span class="dot dot-red"></span>${p.brokenLinks} broken`:'',p.venueIssues>0?`<span class="dot dot-amber"></span>${p.venueIssues} closed`:''].filter(Boolean).join(' ')||'<span style="color:var(--text3)">none</span>';
+    const flagsHtml=(p.flags&&p.flags.length>0)?p.flags.map(f=>`<span class="flag flag-${f.type}">${f.label}</span>`).join(''):'<span style="color:var(--text3);font-size:11px">—</span>';
+    const ageCol=p.ageMonths>=24?'var(--red-text)':p.ageMonths>=12?'var(--amber-text)':'var(--text2)';
+    const sc=scoreColor(p.score);
+    const hasTraffic=p.traffic>0||p.impressions>0;
+    const healthPct=p.trafficDeclinePct||0;
+    const healthHtml=hasTraffic?`<div style="font-size:10px;color:${healthColor(healthPct)}">${healthPct>0?healthPct+'% decline':'stable'}</div><div class="health-bar"><div class="health-fill" style="width:${healthPct}%;background:${healthColor(healthPct)}"></div></div>`:'<span style="color:var(--text3);font-size:11px">no data</span>';
+    return`<tr>
+      <td class="col-title" title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,42)}${p.title.length>42?'…':''}</a></td>
+      <td class="col-age" style="font-size:11px;color:${ageCol}">${fmtAge(p.ageMonths)}</td>
+      <td class="col-type"><span class="type-pill">${p.type}</span></td>
+      <td class="col-traffic" style="font-size:11px;color:${hasTraffic?'var(--text)':'var(--text3)'}">${fmtNum(p.traffic)}</td>
+      <td class="col-impr" style="font-size:11px;color:${hasTraffic?'var(--text)':'var(--text3)'}">${fmtNum(p.impressions)}</td>
+      <td class="col-pos" style="font-size:11px;color:${p.position>10&&p.position<=20?'var(--purple-text)':p.position>0?'var(--text)':'var(--text3)'}">${fmtPos(p.position)}</td>
+      <td class="col-health">${healthHtml}</td>
+      <td class="col-issues" style="font-size:11px">${issues}</td>
+      <td class="col-flags" style="white-space:normal;line-height:1.6">${flagsHtml}</td>
+      <td class="col-score">
+        <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${p.score}%;background:${sc}"></div></div><span class="score-num" style="color:${sc}">${p.score}</span></div>
+        <div style="margin-top:3px">${p.hardFloor?'<span class="floor-pill">forced</span>':'<span class="pill u-'+p.urgency+'">'+p.urgency+'</span>'}</div>
+      </td>
+      <td class="col-action"><a href="${p.url}" target="_blank" class="link-btn">↗</a></td>
+    </tr>`;
+  }).join('');
+}
+
 function prevPage(){if(page>1){page--;renderTable()}}
 function nextPage(){const f=getFiltered();if(page<Math.ceil(f.length/PER_PAGE)){page++;renderTable()}}
-function exportCSV(){const rows=[['Title','URL','Category','Last Modified','Age (months)','Post Type','Broken Links','Venue Issues','Hard Floor','Score','Urgency']];getFiltered().forEach(p=>rows.push([`"${p.title}"`,p.url,p.category,p.lastModified||'',p.ageMonths,p.type,p.brokenLinks,p.venueIssues,p.hardFloor?'YES':'',p.score,p.urgency]));const blob=new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='blog-audit.csv';a.click()}
+
+function exportCSV(){
+  const rows=[['Title','URL','Last Modified','Age (months)','Type','Clicks','Impressions','CTR','Position','Traffic Decline %','Broken Links','Venue Issues','Hard Floor','Flags','Score','Urgency']];
+  getFiltered().forEach(p=>rows.push([`"${p.title}"`,p.url,p.lastModified||'',p.ageMonths,p.type,p.traffic,p.impressions,p.ctr?(p.ctr*100).toFixed(1)+'%':'',p.position?p.position.toFixed(1):'',p.trafficDeclinePct||0,p.brokenLinks,p.venueIssues,p.hardFloor?'YES':'',(p.flags||[]).map(f=>f.label).join('; '),p.score,p.urgency]));
+  const blob=new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='blog-audit.csv';a.click();
+}
+
 async function startCrawl(){
   const url=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
   if(!url)return;
@@ -202,8 +470,7 @@ async function startCrawl(){
   document.getElementById('crawlStatus').textContent='crawling...';
   document.getElementById('crawlStatus').className='tag';
   document.getElementById('emptyState').style.display='none';
-  posts=[];
-  setProgress(0,1,'Connecting to WordPress...');
+  posts=[];setProgress(0,1,'Connecting to WordPress...');
   try{
     const r1=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=1&perPage=100`);
     if(!r1.ok){const e=await r1.json().catch(()=>({}));throw new Error(e.error||`HTTP ${r1.status}`);}
@@ -218,19 +485,55 @@ async function startCrawl(){
       setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);
     }
     posts.sort((a,b)=>b.score-a.score);
-    setProgress(posts.length,posts.length,`Done! ${posts.length} posts cataloged and scored.`);
+    setProgress(posts.length,posts.length,`Done! ${posts.length} posts cataloged.`);
     document.getElementById('crawlStatus').textContent=`${posts.length} posts crawled`;
     document.getElementById('crawlStatus').className='tag tag-ok';
     page=1;updateMetrics();renderTable();
+    if(gscToken)showGSCBanner(true);
   }catch(e){
     document.getElementById('statusMsg').textContent='Error: '+e.message;
     document.getElementById('crawlStatus').textContent='error';
     document.getElementById('crawlStatus').className='tag tag-err';
   }
 }
-function processBatch(batch){batch.forEach(p=>{const title=(p.title?.rendered||p.slug||'Untitled').replace(/<[^>]+>/g,'');const ageMonths=monthsAgo(p.modified||p.date);const post={id:p.id,title,url:p.link,category:'Travel',ageMonths,lastModified:p.modified||p.date,type:classify(title),traffic:0,impressions:0,ctr:0,trafficDeclinePct:0,brokenLinks:0,venueIssues:0,keywordVolume:0};const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;posts.push(post)})}
-function setProgress(done,total,msg){const pct=total>0?Math.round((done/total)*100):50;document.getElementById('progressFill').style.width=pct+'%';document.getElementById('statusMsg').textContent=msg}
-function loadDemo(){const data=[{t:"Best Cafes in Canggu Bali",age:36,bl:2,vi:3,kw:8200},{t:"Things to Do in Uluwatu",age:24,bl:0,vi:1,kw:5400},{t:"Sailing Croatia Complete Guide",age:30,bl:1,vi:0,kw:6100},{t:"Melbourne CBD Food Guide",age:18,bl:0,vi:2,kw:3800},{t:"Hidden Gems in Central Italy",age:12,bl:3,vi:1,kw:2200},{t:"California Road Trip Itinerary",age:6,bl:0,vi:0,kw:9100},{t:"Top Beaches in Bali",age:28,bl:1,vi:2,kw:7700},{t:"Best Music Festivals Europe",age:15,bl:0,vi:0,kw:5500},{t:"Nusa Lembongan Complete Guide",age:48,bl:2,vi:3,kw:4100},{t:"Best Restaurants in Seminyak",age:16,bl:1,vi:4,kw:2900},{t:"Solo Travel Tips for Women",age:36,bl:0,vi:0,kw:8800},{t:"Burning Man Survival Guide",age:24,bl:4,vi:0,kw:5100},{t:"Tulum Travel Guide",age:36,bl:2,vi:2,kw:9200},{t:"Best Bars in Bali",age:14,bl:0,vi:3,kw:3600},{t:"Digital Nomad Guide Bali",age:18,bl:0,vi:1,kw:7400},{t:"10 Quotes About Tulum",age:24,bl:0,vi:0,kw:800}];const cats=['Bali','Australia','Europe','SE Asia','Americas','Festivals','Tips'];posts=data.map((d,i)=>{const imp=2000+Math.floor(Math.random()*8000),tr=Math.floor(imp*(0.02+Math.random()*0.12));const p={id:i+1,title:d.t,url:`https://www.adventuresnsunsets.com/${d.t.toLowerCase().replace(/\s+/g,'-')}`,category:cats[i%cats.length],ageMonths:d.age,lastModified:new Date(Date.now()-d.age*30*24*60*60*1000).toISOString(),type:classify(d.t),traffic:tr,impressions:imp,ctr:tr/imp,trafficDeclinePct:d.age>12?Math.floor(Math.random()*60):0,brokenLinks:d.bl,venueIssues:d.vi,keywordVolume:d.kw};const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;return p});posts.sort((a,b)=>b.score-a.score);document.getElementById('crawlStatus').textContent='demo loaded';document.getElementById('crawlStatus').className='tag tag-ok';document.getElementById('progressWrap').style.display='none';page=1;updateMetrics();renderTable()}
+
+function processBatch(batch){batch.forEach(p=>{const title=(p.title?.rendered||p.slug||'Untitled').replace(/<[^>]+>/g,'');const ageMonths=monthsAgo(p.modified||p.date);const post={id:p.id,title,url:p.link,ageMonths,lastModified:p.modified||p.date,type:classify(title),traffic:0,impressions:0,ctr:0,position:0,recentClicks:0,olderClicks:0,recentImpressions:0,olderImpressions:0,trafficDeclinePct:0,brokenLinks:0,venueIssues:0,flags:[]};const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;posts.push(post);})}
+function setProgress(done,total,msg){const pct=total>0?Math.round((done/total)*100):50;document.getElementById('progressFill').style.width=pct+'%';document.getElementById('statusMsg').textContent=msg;}
+
+function loadDemo(){
+  const data=[
+    {t:"Best Cafes in Canggu Bali",age:36,bl:2,vi:3,rc:280,oc:3200,ri:18000,oi:45000,pos:14.2},
+    {t:"Things to Do in Uluwatu",age:24,bl:0,vi:1,rc:620,oc:850,ri:19000,oi:22000,pos:8.1},
+    {t:"Sailing Croatia Complete Guide",age:30,bl:1,vi:0,rc:5100,oc:5400,ri:36000,oi:38000,pos:3.2},
+    {t:"Melbourne CBD Food Guide",age:18,bl:0,vi:2,rc:950,oc:1200,ri:16000,oi:18000,pos:6.8},
+    {t:"Hidden Gems in Central Italy",age:12,bl:3,vi:1,rc:180,oc:420,ri:24000,oi:31000,pos:17.4},
+    {t:"California Road Trip Itinerary",age:6,bl:0,vi:0,rc:8200,oc:7100,ri:49000,oi:42000,pos:2.1},
+    {t:"Top Beaches in Bali",age:28,bl:1,vi:2,rc:1100,oc:4300,ri:22000,oi:41000,pos:12.6},
+    {t:"Best Music Festivals Europe",age:15,bl:0,vi:0,rc:490,oc:670,ri:21000,oi:28000,pos:9.3},
+    {t:"Nusa Lembongan Complete Guide",age:48,bl:2,vi:3,rc:120,oc:3600,ri:8000,oi:39000,pos:24.1},
+    {t:"Best Restaurants in Seminyak",age:16,bl:1,vi:4,rc:2100,oc:2800,ri:15000,oi:19000,pos:5.4},
+    {t:"Solo Travel Tips for Women",age:36,bl:0,vi:0,rc:800,oc:1500,ri:28000,oi:44000,pos:11.8},
+    {t:"Burning Man Survival Guide",age:24,bl:4,vi:0,rc:210,oc:430,ri:9000,oi:15000,pos:18.3},
+    {t:"Tulum Travel Guide",age:36,bl:2,vi:2,rc:2800,oc:5100,ri:38000,oi:61000,pos:7.2},
+    {t:"Best Bars in Bali",age:14,bl:0,vi:3,rc:720,oc:880,ri:10000,oi:12000,pos:6.1},
+    {t:"Digital Nomad Guide Bali",age:18,bl:0,vi:1,rc:1400,oc:1600,ri:28000,oi:33000,pos:4.9},
+    {t:"10 Quotes About Tulum",age:24,bl:0,vi:0,rc:80,oc:120,ri:3000,oi:4000,pos:22.0},
+    {t:"My Week in Ubud",age:30,bl:0,vi:0,rc:12,oc:18,ri:40,oi:60,pos:31.0},
+    {t:"Things That Surprised Me About Istanbul",age:8,bl:0,vi:0,rc:3800,oc:2100,ri:44000,oi:31000,pos:3.8},
+  ];
+  posts=data.map((d,i)=>{
+    const declinePct=d.oc>10?Math.max(0,Math.round(((d.oc-d.rc)/d.oc)*100)):0;
+    const p={id:i+1,title:d.t,url:`https://www.adventuresnsunsets.com/${d.t.toLowerCase().replace(/\s+/g,'-')}`,ageMonths:d.age,lastModified:new Date(Date.now()-d.age*30*24*60*60*1000).toISOString(),type:classify(d.t),traffic:d.rc,impressions:d.ri,ctr:d.ri>0?d.rc/d.ri:0,position:d.pos,recentClicks:d.rc,olderClicks:d.oc,recentImpressions:d.ri,olderImpressions:d.oi,trafficDeclinePct:declinePct,brokenLinks:d.bl,venueIssues:d.vi,flags:[]};
+    const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;
+    return p;
+  });
+  posts.sort((a,b)=>b.score-a.score);
+  document.getElementById('crawlStatus').textContent='demo loaded';
+  document.getElementById('crawlStatus').className='tag tag-ok';
+  document.getElementById('progressWrap').style.display='none';
+  page=1;updateMetrics();renderTable();
+}
+
 renderTable();
 </script>
 </body>
