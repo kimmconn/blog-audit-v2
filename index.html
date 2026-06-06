@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Blog Audit Dashboard</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#fff;--bg2:#f5f4f0;--bg3:#eeede9;--text:#1a1a18;--text2:#6b6b67;--text3:#9b9b97;--border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.2);--radius:8px;--radius-lg:12px;--red:#E24B4A;--red-bg:#FCEBEB;--red-text:#A32D2D;--amber:#BA7517;--amber-bg:#FAEEDA;--amber-text:#854F0B;--blue:#378ADD;--blue-bg:#E6F1FB;--blue-text:#185FA5;--green:#639922;--green-bg:#EAF3DE;--green-text:#3B6D11}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);font-size:14px;line-height:1.5}
+  .app{max-width:1200px;margin:0 auto;padding:2rem 1.5rem}
+  h1{font-size:22px;font-weight:500;margin-bottom:4px}
+  .subtitle{font-size:13px;color:var(--text2);margin-bottom:1.5rem}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+  .metric{background:var(--bg);border-radius:var(--radius);padding:14px 16px}
+  .metric-label{font-size:12px;color:var(--text2);margin-bottom:5px}
+  .metric-value{font-size:24px;font-weight:500}
+  .metric-sub{font-size:11px;color:var(--text3);margin-top:2px}
+  .tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+  .tab{font-size:13px;padding:8px 18px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-top:none;border-left:none;border-right:none}
+  .tab.active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
+  .panel{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.25rem}
+  .panel-title{font-size:14px;font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tag{font-size:11px;padding:2px 8px;border-radius:var(--radius);background:var(--bg2);color:var(--text2)}
+  .tag-ok{background:var(--green-bg);color:var(--green-text)}
+  .tag-err{background:var(--red-bg);color:var(--red-text)}
+  .crawl-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  input[type="text"],input[type="number"],select{font-size:13px;padding:7px 10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none}
+  #urlInput{min-width:300px;flex:1}
+  .btn{font-size:13px;padding:7px 16px;border:0.5px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--text);cursor:pointer;white-space:nowrap}
+  .btn:hover{background:var(--bg2)}
+  .btn-primary{background:var(--text);color:var(--bg);border-color:var(--text)}
+  .btn-primary:hover{opacity:0.85}
+  .btn-sm{font-size:11px;padding:4px 10px}
+  .progress-wrap{margin-top:10px}
+  .progress-bar{background:var(--bg2);border-radius:4px;height:6px;overflow:hidden;margin-bottom:6px}
+  .progress-fill{height:100%;border-radius:4px;background:var(--text);transition:width 0.3s}
+  .status-msg{font-size:12px;color:var(--text2)}
+  .floor-note{font-size:12px;color:var(--text2);background:var(--bg2);border-radius:var(--radius);padding:8px 12px;margin-bottom:12px;border-left:3px solid var(--red)}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  #searchInput{min-width:200px}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+  th{text-align:left;font-size:11px;font-weight:500;color:var(--text2);padding:6px 8px;border-bottom:0.5px solid var(--border);white-space:nowrap}
+  td{padding:9px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--bg2)}
+  .col-title{width:28%}.col-cat{width:10%}.col-age{width:9%}.col-type{width:9%}.col-issues{width:14%}.col-floor{width:7%}.col-score{width:15%}.col-action{width:8%}
+  .pill{display:inline-block;font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px}
+  .u-critical{background:var(--red-bg);color:var(--red-text)}
+  .u-high{background:var(--amber-bg);color:var(--amber-text)}
+  .u-medium{background:var(--blue-bg);color:var(--blue-text)}
+  .u-low{background:var(--green-bg);color:var(--green-text)}
+  .type-pill{display:inline-block;font-size:10px;padding:2px 6px;border-radius:var(--radius);background:var(--bg2);color:var(--text2)}
+  .floor-pill{display:inline-block;font-size:10px;padding:2px 6px;border-radius:var(--radius);background:var(--red-bg);color:var(--red-text)}
+  .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px}
+  .dot-red{background:var(--red)}.dot-amber{background:var(--amber)}
+  .score-bar-wrap{display:flex;align-items:center;gap:6px}
+  .score-bar{height:4px;border-radius:2px;flex:1;background:var(--bg2);overflow:hidden}
+  .score-fill{height:100%;border-radius:2px}
+  .score-num{font-size:11px;font-weight:500;min-width:22px;text-align:right}
+  .link-btn{background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;text-decoration:underline;padding:0}
+  .pagination{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:var(--text2)}
+  .empty{text-align:center;padding:3rem;color:var(--text2)}
+  .integrations{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .int-card{border:0.5px solid var(--border);border-radius:var(--radius);padding:12px}
+  .int-name{font-size:13px;font-weight:500;margin-bottom:3px}
+  .int-desc{font-size:11px;color:var(--text2);margin-bottom:8px;line-height:1.4}
+  .weight-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .weight-label{font-size:13px;min-width:220px}
+  .weight-row input[type="range"]{flex:1}
+  .weight-val{font-size:13px;font-weight:500;min-width:24px}
+  .floor-rules{display:flex;flex-direction:column;gap:10px}
+  .floor-row{display:flex;align-items:center;gap:10px;font-size:13px;flex-wrap:wrap}
+  .floor-row input[type="number"]{width:60px}
+  .note{font-size:12px;color:var(--text2);background:var(--bg2);border-radius:var(--radius);padding:8px 12px;margin-bottom:16px}
+  a{color:inherit;text-decoration:none}
+  a:hover{text-decoration:underline}
+  @media(max-width:700px){.metrics{grid-template-columns:repeat(2,1fr)}.integrations{grid-template-columns:1fr}#urlInput{min-width:200px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Blog audit dashboard</h1>
+  <p class="subtitle">Catalog, score, and prioritize your posts for updates</p>
+  <div class="metrics">
+    <div class="metric"><div class="metric-label">Total posts</div><div class="metric-value" id="mTotal">—</div><div class="metric-sub">cataloged</div></div>
+    <div class="metric"><div class="metric-label">Critical urgency</div><div class="metric-value" id="mCritical" style="color:var(--red-text)">—</div><div class="metric-sub">need immediate update</div></div>
+    <div class="metric"><div class="metric-label">Stale 1+ years</div><div class="metric-value" id="mStale">—</div><div class="metric-sub">not updated recently</div></div>
+    <div class="metric"><div class="metric-label">Hard floor triggers</div><div class="metric-value" id="mFloors" style="color:var(--red-text)">—</div><div class="metric-sub">broken links or closed venues</div></div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('catalog',this)">Post catalog</button>
+    <button class="tab" onclick="switchTab('connect',this)">Data sources</button>
+    <button class="tab" onclick="switchTab('settings',this)">Scoring weights</button>
+  </div>
+  <div id="tabCatalog">
+    <div class="panel">
+      <div class="panel-title">Crawl your blog <span class="tag" id="crawlStatus">not started</span></div>
+      <div class="crawl-row">
+        <input type="text" id="urlInput" placeholder="https://yourblog.com" value="https://www.adventuresnsunsets.com" />
+        <button class="btn btn-primary" onclick="startCrawl()">Crawl posts</button>
+        <button class="btn" onclick="loadDemo()">Load demo data</button>
+      </div>
+      <div class="progress-wrap" id="progressWrap" style="display:none">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="status-msg" id="statusMsg"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="floor-note"><strong>Hard urgency floors:</strong> posts with 3+ broken links or 2+ closed venues are automatically forced to <strong>critical</strong> regardless of other scores.</div>
+      <div class="filters">
+        <input type="text" id="searchInput" placeholder="Search posts..." oninput="renderTable()" />
+        <select id="fUrgency" onchange="renderTable()"><option value="">All urgency</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
+        <select id="fType" onchange="renderTable()"><option value="">All types</option><option value="place-list">Place list</option><option value="guide">Guide</option><option value="tips">Tips</option><option value="story">Story</option><option value="festival">Festival</option></select>
+        <select id="fAge" onchange="renderTable()"><option value="">Any age</option><option value="36">3+ years</option><option value="24">2+ years</option><option value="12">1+ year</option></select>
+        <select id="fFloor" onchange="renderTable()"><option value="">All posts</option><option value="1">Hard floor only</option></select>
+        <select id="fSort" onchange="renderTable()"><option value="score">Sort: urgency</option><option value="age">Sort: oldest</option><option value="title">Sort: A–Z</option></select>
+        <button class="btn btn-sm" onclick="exportCSV()">Export CSV</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th class="col-title">Post title</th><th class="col-cat">Category</th><th class="col-age">Last updated</th>
+            <th class="col-type">Type</th><th class="col-issues">Issues</th><th class="col-floor">Floor</th>
+            <th class="col-score">Urgency score</th><th class="col-action">Action</th>
+          </tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty"><div style="font-size:32px;margin-bottom:8px">📋</div><div>Crawl your blog or load demo data to get started.</div></div>
+      <div class="pagination" id="pagRow" style="display:none">
+        <button class="btn btn-sm" onclick="prevPage()">← Prev</button>
+        <span id="pageInfo"></span>
+        <button class="btn btn-sm" onclick="nextPage()">Next →</button>
+        <span style="margin-left:auto" id="totalCount"></span>
+      </div>
+    </div>
+  </div>
+  <div id="tabConnect" style="display:none">
+    <div class="panel">
+      <div class="panel-title">Data source integrations</div>
+      <div class="integrations">
+        <div class="int-card"><div class="int-name">WordPress REST API</div><div class="int-desc">Fetches all posts via the proxy. No auth needed for public sites.</div><span class="tag tag-ok">Connected</span></div>
+        <div class="int-card"><div class="int-name">Google Search Console</div><div class="int-desc">Clicks, impressions, CTR, and historical traffic trends per post.</div><button class="btn btn-sm">Coming soon</button></div>
+        <div class="int-card"><div class="int-name">Google Maps / Places</div><div class="int-desc">Checks if venues in place-list posts are still open or closed.</div><button class="btn btn-sm">Coming soon</button></div>
+        <div class="int-card"><div class="int-name">Broken link scanner</div><div class="int-desc">Scans all outbound links and flags any returning 4xx/5xx errors.</div><button class="btn btn-sm">Coming soon</button></div>
+        <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume per post's target keyword.</div><button class="btn btn-sm">Coming soon</button></div>
+        <div class="int-card"><div class="int-name">Reddit / social scan</div><div class="int-desc">Recent mentions of venues or topics to gauge relevance.</div><button class="btn btn-sm">Coming soon</button></div>
+      </div>
+    </div>
+  </div>
+  <div id="tabSettings" style="display:none">
+    <div class="panel">
+      <div class="panel-title">Urgency scoring weights</div>
+      <p class="note">Adjust how much each factor contributes to the urgency score (0–100).</p>
+      <div id="weightsUI"></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="btn" onclick="resetWeights()">Reset defaults</button>
+        <button class="btn btn-primary" onclick="applyWeights()">Recalculate scores</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Hard urgency floor rules</div>
+      <p class="note">These rules force a post to critical regardless of other factors.</p>
+      <div class="floor-rules">
+        <div class="floor-row"><span style="min-width:220px">Broken links ≥</span><input type="number" id="fBrokenCrit" value="3" min="1" max="20"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
+        <div class="floor-row"><span style="min-width:220px">Closed/outdated venues ≥</span><input type="number" id="fVenueCrit" value="2" min="1" max="20"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
+        <div class="floor-row"><span style="min-width:220px">Any broken links</span><span style="color:var(--text2)">→ boost score by <input type="number" id="fBrokenBoost" value="20" min="0" max="50" style="width:55px;display:inline-block;margin:0 4px"/> pts</span></div>
+        <div class="floor-row"><span style="min-width:220px">Any closed venues</span><span style="color:var(--text2)">→ boost score by <input type="number" id="fVenueBoost" value="15" min="0" max="50" style="width:55px;display:inline-block;margin:0 4px"/> pts</span></div>
+      </div>
+      <div style="margin-top:16px"><button class="btn btn-primary" onclick="applyWeights()">Apply floor rules</button></div>
+    </div>
+  </div>
+</div>
+<script>
+const PROXY_URL='/api/crawl';
+let posts=[],page=1;
+const PER_PAGE=25;
+let weights={age:25,trafficDecline:20,impressionCtgap:15,brokenLinks:15,venueIssues:15,keywordVolume:10};
+const wLabels={age:'Time since last update',trafficDecline:'Traffic decline over time',impressionCtgap:'High impressions vs low clicks',brokenLinks:'Broken links (per link found)',venueIssues:'Outdated venue info (per venue)',keywordVolume:'High keyword search volume'};
+function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.value||3),vc:parseInt(document.getElementById('fVenueCrit')?.value||2),bb:parseInt(document.getElementById('fBrokenBoost')?.value||20),vb:parseInt(document.getElementById('fVenueBoost')?.value||15)}}
+function calcScore(p){const f=floors();let s=0;s+=Math.min((p.ageMonths/12)/3,1)*weights.age;s+=Math.min((p.trafficDeclinePct||0)/100,1)*weights.trafficDecline;s+=((p.impressions>1000&&p.ctr<0.03)?1:(p.impressions>500&&p.ctr<0.02)?0.7:0)*weights.impressionCtgap;s+=Math.min((p.brokenLinks||0)/3,1)*weights.brokenLinks;s+=Math.min((p.venueIssues||0)/2,1)*weights.venueIssues;s+=((p.keywordVolume||0)>5000?1:(p.keywordVolume||0)>1000?0.6:0.2)*weights.keywordVolume;s=Math.round(s);if(p.brokenLinks>0)s=Math.max(s,Math.min(s+f.bb,99));if(p.venueIssues>0)s=Math.max(s,Math.min(s+f.vb,99));let hardFloor=false;if(p.brokenLinks>=f.bc||p.venueIssues>=f.vc){s=Math.max(s,85);hardFloor=true;}s=Math.min(s,100);const urgency=s>=70?'critical':s>=45?'high':s>=25?'medium':'low';return{score:s,urgency,hardFloor}}
+function monthsAgo(d){return d?Math.round((Date.now()-new Date(d))/(1000*60*60*24*30)):36}
+function fmtAge(m){if(m<1)return'This month';if(m<12)return m+'mo ago';const y=Math.floor(m/12),r=m%12;return y+'y'+(r>0?' '+r+'mo':'')+' ago'}
+function classify(t){t=t.toLowerCase();if(/cafe|restaurant|eat|food|bar|hotel|stay|places.*visit|things.*do|where.*go|best.*in|hidden gem/.test(t))return'place-list';if(/festival/.test(t))return'festival';if(/guide|itinerary|road trip|how to|what to|when to/.test(t))return'guide';if(/tips|lessons|advice|mistakes|pack|budget|cost|save money/.test(t))return'tips';return'story'}
+function scoreColor(s){return s>=70?'#E24B4A':s>=45?'#BA7517':s>=25?'#378ADD':'#639922'}
+function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings'].forEach(id=>{document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1)).style.display='none'});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings')renderWeights()}
+function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('')}
+function resetWeights(){weights={age:25,trafficDecline:20,impressionCtgap:15,brokenLinks:15,venueIssues:15,keywordVolume:10};renderWeights()}
+function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value)});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor});updateMetrics();renderTable()}
+function updateMetrics(){document.getElementById('mTotal').textContent=posts.length;document.getElementById('mCritical').textContent=posts.filter(p=>p.urgency==='critical').length;document.getElementById('mStale').textContent=posts.filter(p=>p.ageMonths>=12).length;document.getElementById('mFloors').textContent=posts.filter(p=>p.hardFloor).length}
+function getFiltered(){const s=document.getElementById('searchInput').value.toLowerCase(),u=document.getElementById('fUrgency').value,t=document.getElementById('fType').value,a=document.getElementById('fAge').value,fl=document.getElementById('fFloor').value,so=document.getElementById('fSort').value;let r=posts.filter(p=>{if(s&&!p.title.toLowerCase().includes(s))return false;if(u&&p.urgency!==u)return false;if(t&&p.type!==t)return false;if(a&&p.ageMonths<parseInt(a))return false;if(fl==='1'&&!p.hardFloor)return false;return true});r.sort((a,b)=>so==='score'?b.score-a.score:so==='age'?b.ageMonths-a.ageMonths:a.title.localeCompare(b.title));return r}
+function renderTable(){const filtered=getFiltered(),start=(page-1)*PER_PAGE,slice=filtered.slice(start,start+PER_PAGE),tbody=document.getElementById('tableBody'),empty=document.getElementById('emptyState'),pag=document.getElementById('pagRow');if(posts.length===0){empty.style.display='block';pag.style.display='none';tbody.innerHTML='';return}empty.style.display='none';const tp=Math.ceil(filtered.length/PER_PAGE);pag.style.display=filtered.length>PER_PAGE?'flex':'none';document.getElementById('pageInfo').textContent=`Page ${page} of ${tp}`;document.getElementById('totalCount').textContent=`${filtered.length} posts`;tbody.innerHTML=slice.map(p=>{const issues=[p.brokenLinks>0?`<span class="dot dot-red"></span>${p.brokenLinks} broken`:'',p.venueIssues>0?`<span class="dot dot-amber"></span>${p.venueIssues} closed`:''].filter(Boolean).join(' &nbsp;')||'<span style="color:var(--text3)">none</span>';const ageCol=p.ageMonths>=24?'var(--red-text)':p.ageMonths>=12?'var(--amber-text)':'var(--text2)';const sc=scoreColor(p.score);return`<tr><td class="col-title" title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,50)}${p.title.length>50?'…':''}</a></td><td class="col-cat" style="font-size:11px;color:var(--text2)">${p.category}</td><td class="col-age" style="font-size:11px;color:${ageCol}">${fmtAge(p.ageMonths)}</td><td class="col-type"><span class="type-pill">${p.type}</span></td><td class="col-issues" style="font-size:11px">${issues}</td><td class="col-floor">${p.hardFloor?'<span class="floor-pill">forced</span>':'<span style="color:var(--text3);font-size:11px">—</span>'}</td><td class="col-score"><div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${p.score}%;background:${sc}"></div></div><span class="score-num" style="color:${sc}">${p.score}</span></div><div style="margin-top:3px"><span class="pill u-${p.urgency}">${p.urgency}</span></div></td><td class="col-action"><a href="${p.url}" target="_blank" class="link-btn">view ↗</a></td></tr>`}).join('')}
+function prevPage(){if(page>1){page--;renderTable()}}
+function nextPage(){const f=getFiltered();if(page<Math.ceil(f.length/PER_PAGE)){page++;renderTable()}}
+function exportCSV(){const rows=[['Title','URL','Category','Last Modified','Age (months)','Post Type','Broken Links','Venue Issues','Hard Floor','Score','Urgency']];getFiltered().forEach(p=>rows.push([`"${p.title}"`,p.url,p.category,p.lastModified||'',p.ageMonths,p.type,p.brokenLinks,p.venueIssues,p.hardFloor?'YES':'',p.score,p.urgency]));const blob=new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='blog-audit.csv';a.click()}
+async function startCrawl(){
+  const url=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
+  if(!url)return;
+  document.getElementById('progressWrap').style.display='block';
+  document.getElementById('crawlStatus').textContent='crawling...';
+  document.getElementById('crawlStatus').className='tag';
+  document.getElementById('emptyState').style.display='none';
+  posts=[];
+  setProgress(0,1,'Connecting to WordPress...');
+  try{
+    const r1=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=1&perPage=100`);
+    if(!r1.ok){const e=await r1.json().catch(()=>({}));throw new Error(e.error||`HTTP ${r1.status}`);}
+    const total=parseInt(r1.headers.get('X-WP-Total')||'0');
+    const totalPages=parseInt(r1.headers.get('X-WP-TotalPages')||'1');
+    processBatch(await r1.json());
+    setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);
+    for(let p=2;p<=Math.min(totalPages,10);p++){
+      const r=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=${p}&perPage=100`);
+      if(!r.ok)break;
+      processBatch(await r.json());
+      setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);
+    }
+    posts.sort((a,b)=>b.score-a.score);
+    setProgress(posts.length,posts.length,`Done! ${posts.length} posts cataloged and scored.`);
+    document.getElementById('crawlStatus').textContent=`${posts.length} posts crawled`;
+    document.getElementById('crawlStatus').className='tag tag-ok';
+    page=1;updateMetrics();renderTable();
+  }catch(e){
+    document.getElementById('statusMsg').textContent='Error: '+e.message;
+    document.getElementById('crawlStatus').textContent='error';
+    document.getElementById('crawlStatus').className='tag tag-err';
+  }
+}
+function processBatch(batch){batch.forEach(p=>{const title=(p.title?.rendered||p.slug||'Untitled').replace(/<[^>]+>/g,'');const ageMonths=monthsAgo(p.modified||p.date);const post={id:p.id,title,url:p.link,category:'Travel',ageMonths,lastModified:p.modified||p.date,type:classify(title),traffic:0,impressions:0,ctr:0,trafficDeclinePct:0,brokenLinks:0,venueIssues:0,keywordVolume:0};const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;posts.push(post)})}
+function setProgress(done,total,msg){const pct=total>0?Math.round((done/total)*100):50;document.getElementById('progressFill').style.width=pct+'%';document.getElementById('statusMsg').textContent=msg}
+function loadDemo(){const data=[{t:"Best Cafes in Canggu Bali",age:36,bl:2,vi:3,kw:8200},{t:"Things to Do in Uluwatu",age:24,bl:0,vi:1,kw:5400},{t:"Sailing Croatia Complete Guide",age:30,bl:1,vi:0,kw:6100},{t:"Melbourne CBD Food Guide",age:18,bl:0,vi:2,kw:3800},{t:"Hidden Gems in Central Italy",age:12,bl:3,vi:1,kw:2200},{t:"California Road Trip Itinerary",age:6,bl:0,vi:0,kw:9100},{t:"Top Beaches in Bali",age:28,bl:1,vi:2,kw:7700},{t:"Best Music Festivals Europe",age:15,bl:0,vi:0,kw:5500},{t:"Nusa Lembongan Complete Guide",age:48,bl:2,vi:3,kw:4100},{t:"Best Restaurants in Seminyak",age:16,bl:1,vi:4,kw:2900},{t:"Solo Travel Tips for Women",age:36,bl:0,vi:0,kw:8800},{t:"Burning Man Survival Guide",age:24,bl:4,vi:0,kw:5100},{t:"Tulum Travel Guide",age:36,bl:2,vi:2,kw:9200},{t:"Best Bars in Bali",age:14,bl:0,vi:3,kw:3600},{t:"Digital Nomad Guide Bali",age:18,bl:0,vi:1,kw:7400},{t:"10 Quotes About Tulum",age:24,bl:0,vi:0,kw:800}];const cats=['Bali','Australia','Europe','SE Asia','Americas','Festivals','Tips'];posts=data.map((d,i)=>{const imp=2000+Math.floor(Math.random()*8000),tr=Math.floor(imp*(0.02+Math.random()*0.12));const p={id:i+1,title:d.t,url:`https://www.adventuresnsunsets.com/${d.t.toLowerCase().replace(/\s+/g,'-')}`,category:cats[i%cats.length],ageMonths:d.age,lastModified:new Date(Date.now()-d.age*30*24*60*60*1000).toISOString(),type:classify(d.t),traffic:tr,impressions:imp,ctr:tr/imp,trafficDeclinePct:d.age>12?Math.floor(Math.random()*60):0,brokenLinks:d.bl,venueIssues:d.vi,keywordVolume:d.kw};const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;return p});posts.sort((a,b)=>b.score-a.score);document.getElementById('crawlStatus').textContent='demo loaded';document.getElementById('crawlStatus').className='tag tag-ok';document.getElementById('progressWrap').style.display='none';page=1;updateMetrics();renderTable()}
+renderTable();
+</script>
+</body>
+</html>
