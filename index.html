@@ -49,7 +49,7 @@
   td{padding:9px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   tr:last-child td{border-bottom:none}
   tr:hover td{background:var(--bg2)}
-  .col-title{width:22%}.col-age{width:8%}.col-type{width:8%}.col-traffic{width:7%}.col-impr{width:7%}.col-pos{width:6%}.col-health{width:9%}.col-issues{width:10%}.col-flags{width:10%}.col-score{width:11%}.col-action{width:5%}
+  .col-title{width:20%}.col-age{width:7%}.col-type{width:7%}.col-traffic{width:7%}.col-impr{width:7%}.col-pos{width:6%}.col-health{width:9%}.col-issues{width:9%}.col-flags{width:11%}.col-score{width:10%}.col-action{width:7%}
   .pill{display:inline-block;font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px}
   .u-critical{background:var(--red-bg);color:var(--red-text)}
   .u-high{background:var(--amber-bg);color:var(--amber-text)}
@@ -62,7 +62,6 @@
   .flag-peaked{background:var(--amber-bg);color:var(--amber-text)}
   .flag-offmap{background:var(--red-bg);color:var(--red-text)}
   .flag-neverranked{background:var(--bg2);color:var(--text3)}
-  .flag-kwmismatch{background:#FEF3C7;color:#92400E}
   .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px}
   .dot-red{background:var(--red)}.dot-amber{background:var(--amber)}
   .score-bar-wrap{display:flex;align-items:center;gap:6px}
@@ -72,6 +71,8 @@
   .health-bar{height:3px;border-radius:2px;background:var(--bg2);overflow:hidden;margin-top:3px}
   .health-fill{height:100%;border-radius:2px}
   .link-btn{background:none;border:none;color:var(--blue);font-size:11px;cursor:pointer;text-decoration:underline;padding:0}
+  .report-btn{background:none;border:0.5px solid var(--border2);color:var(--text2);font-size:10px;cursor:pointer;padding:3px 7px;border-radius:var(--radius);white-space:nowrap}
+  .report-btn:hover{background:var(--text);color:var(--bg);border-color:var(--text)}
   .pagination{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:var(--text2)}
   .empty{text-align:center;padding:3rem;color:var(--text2)}
   .integrations{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -90,6 +91,31 @@
   .gsc-connected{background:var(--green-bg);border-color:var(--green);color:var(--green-text)}
   .scan-banner{display:flex;align-items:center;gap:12px;background:var(--amber-bg);border:0.5px solid var(--amber);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--amber-text);flex-wrap:wrap}
   .scan-complete{background:var(--green-bg);border-color:var(--green);color:var(--green-text)}
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem}
+  .modal{background:var(--bg);border-radius:var(--radius-lg);width:100%;max-width:780px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+  .modal-header{padding:1.25rem 1.5rem;border-bottom:0.5px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:sticky;top:0;background:var(--bg);z-index:1}
+  .modal-title{font-size:15px;font-weight:500;line-height:1.3}
+  .modal-subtitle{font-size:12px;color:var(--text2);margin-top:2px}
+  .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2);padding:0;line-height:1;flex-shrink:0}
+  .modal-close:hover{color:var(--text)}
+  .modal-body{padding:1.25rem 1.5rem}
+  .report-section{margin-bottom:1.5rem}
+  .report-section-title{font-size:13px;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .report-summary{font-size:13px;color:var(--text2);line-height:1.6;background:var(--bg2);border-radius:var(--radius);padding:12px}
+  .report-item{border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;font-size:12px}
+  .report-item-type{display:inline-block;font-size:10px;padding:1px 6px;border-radius:var(--radius);background:var(--amber-bg);color:var(--amber-text);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+  .report-item-quote{font-style:italic;color:var(--text2);border-left:2px solid var(--border2);padding-left:8px;margin-bottom:6px;font-size:11px}
+  .report-item-issue{color:var(--red-text);margin-bottom:4px}
+  .report-item-suggestion{color:var(--green-text)}
+  .report-seo-item{border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;font-size:12px}
+  .report-gap-item{display:flex;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border);font-size:12px}
+  .report-gap-item:last-child{border-bottom:none}
+  .quick-wins{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .quick-win{font-size:12px;padding:8px 12px;background:var(--green-bg);color:var(--green-text);border-radius:var(--radius);display:flex;gap:8px;align-items:flex-start}
+  .report-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text2);margin-bottom:1rem;padding:8px 12px;background:var(--bg2);border-radius:var(--radius)}
+  .report-loading{text-align:center;padding:3rem;color:var(--text2)}
+  .report-error{text-align:center;padding:2rem;color:var(--red-text);background:var(--red-bg);border-radius:var(--radius)}
   a{color:inherit;text-decoration:none}
   a:hover{text-decoration:underline}
   @media(max-width:700px){.metrics{grid-template-columns:repeat(2,1fr)}.integrations{grid-template-columns:1fr}#urlInput{min-width:200px}}
@@ -124,19 +150,17 @@
         <div class="status-msg" id="statusMsg"></div>
       </div>
     </div>
-
     <div id="gscBanner" style="display:none"></div>
     <div id="linkScanBanner" style="display:none"></div>
-
     <div class="panel">
-      <div class="floor-note"><strong>Hard urgency floors:</strong> posts with 3+ broken links or 2+ closed venues are automatically forced to <strong>critical</strong> regardless of other scores.</div>
-      <div class="gsc-note">⚠️ GSC data covers the last 16 months only. Posts older than 16 months may have peaked earlier — check Google Analytics manually for full traffic history on older posts.</div>
+      <div class="floor-note"><strong>Hard urgency floors:</strong> posts with enough potential issues or closed venues are automatically forced to <strong>critical</strong>.</div>
+      <div class="gsc-note">⚠️ GSC data covers the last 16 months only. Posts older than 16 months may have peaked earlier — check Google Analytics manually for full history.</div>
       <div class="filters">
         <input type="text" id="searchInput" placeholder="Search posts..." oninput="renderTable()" />
         <select id="fUrgency" onchange="renderTable()"><option value="">All urgency</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
-        <select id="fType" onchange="renderTable()"><option value="">All types</option><option value="place-list">Place list</option><option value="guide">Guide</option><option value="tips">Tips</option><option value="story">Story</option><option value="festival">Festival</option></select>
+        <select id="fType" onchange="renderTable()"><option value="">All types</option><option value="guide">Guide</option><option value="story">Story</option><option value="festival">Festival</option></select>
         <select id="fAge" onchange="renderTable()"><option value="">Any age</option><option value="36">3+ years</option><option value="24">2+ years</option><option value="12">1+ year</option></select>
-        <select id="fFlag" onchange="renderTable()"><option value="">All posts</option><option value="opportunity">Opportunities (pos 11-20)</option><option value="peaked">Peaked traffic</option><option value="offmap">Fallen off map</option><option value="floor">Hard floor only</option></select>
+        <select id="fFlag" onchange="renderTable()"><option value="">All posts</option><option value="opportunity">Opportunities (pos 11-20)</option><option value="peaked">Peaked traffic</option><option value="offmap">Fallen off map</option><option value="hotimpr">🔥 High impressions gap</option><option value="floor">Hard floor only</option></select>
         <select id="fSort" onchange="renderTable()"><option value="score">Sort: urgency</option><option value="age">Sort: oldest</option><option value="traffic">Sort: traffic ↓</option><option value="decline">Sort: biggest decline</option><option value="title">Sort: A–Z</option></select>
         <button class="btn btn-sm" onclick="exportCSV()">Export CSV</button>
       </div>
@@ -144,16 +168,16 @@
         <table>
           <thead><tr>
             <th class="col-title">Post title</th>
-            <th class="col-age">Last updated</th>
+            <th class="col-age">Updated</th>
             <th class="col-type">Type</th>
             <th class="col-traffic">Clicks</th>
             <th class="col-impr">Impressions</th>
-            <th class="col-pos">Position</th>
+            <th class="col-pos">Pos.</th>
             <th class="col-health">Traffic health</th>
             <th class="col-issues">Issues</th>
             <th class="col-flags">Flags</th>
             <th class="col-score">Urgency</th>
-            <th class="col-action">↗</th>
+            <th class="col-action">Actions</th>
           </tr></thead>
           <tbody id="tableBody"></tbody>
         </table>
@@ -172,16 +196,16 @@
     <div class="panel">
       <div class="panel-title">Data source integrations</div>
       <div class="integrations">
-        <div class="int-card"><div class="int-name">WordPress REST API</div><div class="int-desc">Fetches all posts via the serverless proxy. No auth needed for public sites.</div><span class="tag tag-ok">Connected</span></div>
+        <div class="int-card"><div class="int-name">WordPress REST API</div><div class="int-desc">Fetches all posts via the serverless proxy.</div><span class="tag tag-ok">Connected</span></div>
         <div class="int-card">
           <div class="int-name">Google Search Console</div>
-          <div class="int-desc">Clicks, impressions, position, and traffic health per post. Powers the urgency scoring engine.</div>
+          <div class="int-desc">Clicks, impressions, position, and traffic health per post.</div>
           <div id="gscStatus"><button class="btn btn-google btn-sm" onclick="connectGSC()"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Connect Google Search Console</button></div>
         </div>
-        <div class="int-card"><div class="int-name">Google Maps / Places</div><div class="int-desc">Checks if venues in place-list posts are still open or permanently closed.</div><button class="btn btn-sm">Coming soon</button></div>
-        <div class="int-card"><div class="int-name">Broken link scanner</div><div class="int-desc">Scans all outbound links in every post and flags any returning 4xx/5xx errors. Runs in background — updates scores as it goes.</div><div id="linkScanStatus"><button class="btn btn-sm btn-primary" onclick="startLinkScan()">Scan all posts for broken links</button></div></div>
-        <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume per post's target keyword via DataForSEO or Ahrefs.</div><button class="btn btn-sm">Coming soon</button></div>
-        <div class="int-card"><div class="int-name">AI content scan</div><div class="int-desc">Claude scans each post for outdated prices, closed venues, old dates, keyword drift, and more.</div><button class="btn btn-sm">Coming soon</button></div>
+        <div class="int-card"><div class="int-name">Google Maps / Places</div><div class="int-desc">Checks if venues are still open or permanently closed.</div><button class="btn btn-sm">Coming soon</button></div>
+        <div class="int-card"><div class="int-name">Link issue scanner</div><div class="int-desc">Scans all outbound links and flags potential 4xx/5xx issues. Runs in background.</div><div id="linkScanStatus"><button class="btn btn-sm btn-primary" onclick="startLinkScan()">Scan all posts for link issues</button></div></div>
+        <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume per post's target keyword.</div><button class="btn btn-sm">Coming soon</button></div>
+        <div class="int-card"><div class="int-name">AI content scan</div><div class="int-desc">Claude scans each post for outdated prices, closed venues, old dates, currency changes, keyword drift, and more.</div><span class="tag tag-ok">Ready — use "Report" button</span></div>
       </div>
     </div>
   </div>
@@ -189,7 +213,7 @@
   <div id="tabSettings" style="display:none">
     <div class="panel">
       <div class="panel-title">Urgency scoring weights</div>
-      <p class="note">Adjust how much each signal contributes to the urgency score (0–100). Hard floors for broken links and venue issues are configured below.</p>
+      <p class="note">Adjust how much each signal contributes to the urgency score (0–100).</p>
       <div id="weightsUI"></div>
       <div style="display:flex;gap:8px;margin-top:16px">
         <button class="btn" onclick="resetWeights()">Reset defaults</button>
@@ -198,27 +222,55 @@
     </div>
     <div class="panel">
       <div class="panel-title">Hard urgency floor rules</div>
-      <p class="note">These rules force a post to critical regardless of other factors. The score boosts apply to any post with at least one issue.</p>
+      <p class="note">Posts meeting these thresholds are forced to critical regardless of other scores.</p>
       <div class="floor-rules">
-        <div class="floor-row"><span style="min-width:240px">Broken links ≥</span><input type="number" id="fBrokenCrit" value="3" min="1" max="20"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
-        <div class="floor-row"><span style="min-width:240px">Closed/outdated venues ≥</span><input type="number" id="fVenueCrit" value="2" min="1" max="20"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
-        <div class="floor-row"><span style="min-width:240px">Any broken links → boost score by</span><input type="number" id="fBrokenBoost" value="20" min="0" max="50" style="width:55px"/> <span style="color:var(--text2)">pts</span></div>
-        <div class="floor-row"><span style="min-width:240px">Any closed venues → boost score by</span><input type="number" id="fVenueBoost" value="15" min="0" max="50" style="width:55px"/> <span style="color:var(--text2)">pts</span></div>
+        <div class="floor-row"><span style="min-width:260px">Potential link issues ≥</span><input type="number" id="fBrokenCrit" value="8" min="1" max="50"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
+        <div class="floor-row"><span style="min-width:260px">Closed/outdated venues ≥</span><input type="number" id="fVenueCrit" value="2" min="1" max="20"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
+        <div class="floor-row"><span style="min-width:260px">Any link issues → boost score by</span><input type="number" id="fBrokenBoost" value="20" min="0" max="50" style="width:55px"/> <span style="color:var(--text2)">pts</span></div>
+        <div class="floor-row"><span style="min-width:260px">Any closed venues → boost score by</span><input type="number" id="fVenueBoost" value="15" min="0" max="50" style="width:55px"/> <span style="color:var(--text2)">pts</span></div>
       </div>
       <div style="margin-top:16px"><button class="btn btn-primary" onclick="applyWeights()">Apply floor rules</button></div>
     </div>
     <div class="panel">
+      <div class="panel-title">Traffic signal thresholds</div>
+      <p class="note">Customize when traffic signals are triggered.</p>
+      <div class="floor-rules">
+        <div class="floor-row"><span style="min-width:260px">Traffic decline % to flag as "peaked"</span><input type="number" id="tPeakedPct" value="50" min="10" max="95"/> <span style="color:var(--text2)">%</span></div>
+        <div class="floor-row"><span style="min-width:260px">"Fallen off map" — max clicks</span><input type="number" id="tOffmapClicks" value="50" min="5" max="500"/></div>
+        <div class="floor-row"><span style="min-width:260px">"Fallen off map" — min impressions</span><input type="number" id="tOffmapImpr" value="500" min="100" max="10000"/></div>
+        <div class="floor-row"><span style="min-width:260px">🔥 High impressions gap — min impressions</span><input type="number" id="tHotImpr" value="5000" min="500" max="100000"/></div>
+        <div class="floor-row"><span style="min-width:260px">🔥 High impressions gap — max CTR %</span><input type="number" id="tHotCtr" value="2" min="0.5" max="10"/> <span style="color:var(--text2)">%</span></div>
+      </div>
+      <div style="margin-top:16px"><button class="btn btn-primary" onclick="applyWeights()">Apply thresholds</button></div>
+    </div>
+    <div class="panel">
       <div class="panel-title">Scoring legend</div>
       <div style="font-size:12px;color:var(--text2);display:flex;flex-direction:column;gap:8px">
-        <div><strong style="color:var(--text)">Post age (15 pts)</strong> — older posts score higher. 3+ years = max.</div>
-        <div><strong style="color:var(--text)">Traffic health (25 pts)</strong> — compares recent 8 months vs earlier 8 months within GSC window. Big decline = high urgency.</div>
-        <div><strong style="color:var(--text)">Fallen off map (10 pts)</strong> — post had impressions but now has very low clicks. Only applies to posts with some GSC history.</div>
-        <div><strong style="color:var(--text)">Position opportunity (15 pts)</strong> — posts ranking 11–20 are one good update from page 1.</div>
-        <div><strong style="color:var(--text)">Broken links (20 pts + floor)</strong> — each broken link adds to score. 3+ forces critical.</div>
-        <div><strong style="color:var(--text)">Venue issues (20 pts + floor)</strong> — each closed venue adds to score. 2+ forces critical.</div>
-        <div><strong style="color:var(--text)">CTR gap (5 pts)</strong> — high impressions but very low CTR suggests title/meta needs work.</div>
-        <div style="margin-top:4px"><strong style="color:var(--text)">Flags (visual only, don't affect score):</strong> Opportunity 🟣, Peaked traffic 🟡, Fallen off map 🔴, Never ranked ⚪, Keyword mismatch 🟡</div>
+        <div><strong style="color:var(--text)">Post age (15 pts)</strong> — 3+ years = max score contribution.</div>
+        <div><strong style="color:var(--text)">Traffic health (25 pts)</strong> — recent 8 months vs prior 8 months. Big decline = high urgency.</div>
+        <div><strong style="color:var(--text)">Fallen off map (10 pts)</strong> — had GSC presence but very low clicks now.</div>
+        <div><strong style="color:var(--text)">Position 11–20 (15 pts)</strong> — one good update away from page 1.</div>
+        <div><strong style="color:var(--text)">Link issues (20 pts + floor)</strong> — potential broken links. Configurable floor above.</div>
+        <div><strong style="color:var(--text)">Venue issues (20 pts + floor)</strong> — closed/outdated venues. Configurable floor above.</div>
+        <div><strong style="color:var(--text)">CTR gap (5 pts)</strong> — high impressions but very low CTR.</div>
+        <div><strong style="color:var(--text)">🔥 High impressions gap</strong> — visual flag only. Huge potential traffic being missed.</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT MODAL -->
+<div id="reportModal" class="modal-overlay" style="display:none" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalTitle">Update Report</div>
+        <div class="modal-subtitle" id="modalSubtitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <div class="report-loading">⏳ Analyzing post with Claude AI...<br><span style="font-size:11px;margin-top:8px;display:block">This takes about 15-20 seconds</span></div>
     </div>
   </div>
 </div>
@@ -227,10 +279,20 @@
 const PROXY_URL='/api/crawl';
 const GSC_URL='/api/gsc';
 const AUTH_URL='/api/auth';
+const LINKS_URL='/api/check-links';
+const REPORT_URL='/api/report';
 let posts=[],page=1,gscToken=null,gscData={};
 const PER_PAGE=25;
 let weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};
-const wLabels={age:'Post age',trafficHealth:'Traffic health (peak vs recent)',fallenOffMap:'Fallen off map (had traffic, lost it)',positionOpportunity:'Position 11–20 opportunity',brokenLinks:'Broken links',venueIssues:'Outdated/closed venues',ctrGap:'High impressions, low CTR'};
+const wLabels={age:'Post age',trafficHealth:'Traffic health (peak vs recent)',fallenOffMap:'Fallen off map (had traffic, lost it)',positionOpportunity:'Position 11–20 opportunity',brokenLinks:'Link issues',venueIssues:'Outdated/closed venues',ctrGap:'High impressions, low CTR'};
+
+function getThresholds(){return{
+  peakedPct:parseInt(document.getElementById('tPeakedPct')?.value||50),
+  offmapClicks:parseInt(document.getElementById('tOffmapClicks')?.value||50),
+  offmapImpr:parseInt(document.getElementById('tOffmapImpr')?.value||500),
+  hotImpr:parseInt(document.getElementById('tHotImpr')?.value||5000),
+  hotCtr:parseFloat(document.getElementById('tHotCtr')?.value||2)/100,
+};}
 
 window.addEventListener('load',()=>{
   const params=new URLSearchParams(window.location.search);
@@ -241,65 +303,7 @@ window.addEventListener('load',()=>{
 });
 
 function connectGSC(){window.location.href=AUTH_URL+'?action=login';}
-function disconnectGSC(){gscToken=null;localStorage.removeItem('gsc_token');gscData={};updateGSCUI(false);showGSCBanner(false);posts.forEach(p=>{p.traffic=0;p.impressions=0;p.ctr=0;p.position=0;p.trafficDeclinePct=0;p.peakClicks=0;p.recentClicks=0;const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
-
-// ===== BROKEN LINK SCANNER =====
-const LINKS_URL = '/api/check-links';
-let scanRunning = false;
-
-async function startLinkScan() {
-  if (posts.length === 0) { alert('Please crawl your blog first!'); return; }
-  if (scanRunning) return;
-  const siteUrl = document.getElementById('urlInput').value.trim().replace(/\/$/, '');
-  scanRunning = true;
-  const banner = document.getElementById('linkScanBanner');
-  banner.className = 'scan-banner';
-  banner.style.display = 'flex';
-  const statusEl = document.getElementById('linkScanStatus');
-  statusEl.innerHTML = '<span class="tag">Scanning...</span>';
-  let scanned = 0, totalBroken = 0;
-  const postsToScan = [...posts];
-  const CONCURRENT = 5;
-  for (let i = 0; i < postsToScan.length; i += CONCURRENT) {
-    const batch = postsToScan.slice(i, i + CONCURRENT);
-    banner.innerHTML = `<span>🔍 Scanning for broken links — ${scanned} of ${postsToScan.length} posts checked, ${totalBroken} broken links found so far...</span>`;
-    await Promise.allSettled(batch.map(async (post) => {
-      try {
-        const res = await fetch(LINKS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ postUrl: post.url, postId: post.id, siteUrl }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.brokenCount > 0) {
-            post.brokenLinks = data.brokenCount;
-            post.brokenLinkUrls = data.brokenLinks;
-            const r = calcScore(post);
-            post.score = r.score; post.urgency = r.urgency; post.hardFloor = r.hardFloor; post.flags = r.flags;
-            totalBroken += data.brokenCount;
-          } else {
-            post.brokenLinks = 0;
-            post.brokenLinkUrls = [];
-          }
-          post.linksScanned = true;
-        }
-      } catch(e) {}
-      scanned++;
-    }));
-    posts.sort((a,b) => b.score - a.score);
-    updateMetrics();
-    renderTable();
-  }
-  scanRunning = false;
-  banner.className = 'scan-banner scan-complete';
-  banner.innerHTML = `<span>✓ Link scan complete — ${scanned} posts scanned, ${totalBroken} broken links found</span><button class="btn btn-sm" style="margin-left:auto" onclick="startLinkScan()">Rescan →</button>`;
-  statusEl.innerHTML = `<span class="tag tag-ok">✓ ${totalBroken} broken links found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startLinkScan()">Rescan</button>`;
-  posts.sort((a,b) => b.score - a.score);
-  updateMetrics();
-  renderTable();
-}
-
+function disconnectGSC(){gscToken=null;localStorage.removeItem('gsc_token');gscData={};updateGSCUI(false);showGSCBanner(false);posts.forEach(p=>{p.traffic=0;p.impressions=0;p.ctr=0;p.position=0;p.trafficDeclinePct=0;p.recentClicks=0;p.olderClicks=0;p.recentImpressions=0;p.olderImpressions=0;const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
 function updateGSCUI(connected){const el=document.getElementById('gscStatus');if(connected){el.innerHTML=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="tag tag-ok">✓ Connected</span><button class="btn btn-sm" onclick="loadGSCData()">Refresh GSC data</button><button class="btn btn-sm btn-disconnect" onclick="disconnectGSC()">Disconnect</button></div>`;}else{el.innerHTML=`<button class="btn btn-google btn-sm" onclick="connectGSC()"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Connect Google Search Console</button>`;}}
 function showGSCBanner(connected){const b=document.getElementById('gscBanner');if(connected){b.className='gsc-banner gsc-connected';b.style.display='flex';b.innerHTML=`<span>✓ Google Search Console connected</span><button class="btn btn-sm" style="margin-left:auto" onclick="loadGSCData()">Load traffic data →</button>`;}else{b.style.display='none';}}
 
@@ -308,153 +312,218 @@ async function loadGSCData(){
   const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
   const banner=document.getElementById('gscBanner');
   banner.className='gsc-banner';
-  banner.innerHTML=`<span>⏳ Loading GSC data... this may take a moment for large sites</span>`;
+  banner.innerHTML=`<span>⏳ Loading GSC data...</span>`;
   try{
-    // Pull two date ranges for traffic health comparison
-    const now=new Date();
-    const endDate=now.toISOString().split('T')[0];
-    const midDate=new Date(now); midDate.setMonth(midDate.getMonth()-8);
-    const startDate=new Date(now); startDate.setMonth(startDate.getMonth()-16);
-
+    const now=new Date(),endDate=now.toISOString().split('T')[0];
+    const midDate=new Date(now);midDate.setMonth(midDate.getMonth()-8);
+    const startDate=new Date(now);startDate.setMonth(startDate.getMonth()-16);
     const [recentRes,olderRes]=await Promise.all([
       fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:midDate.toISOString().split('T')[0],endDate})}),
       fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:startDate.toISOString().split('T')[0],endDate:midDate.toISOString().split('T')[0]})})
     ]);
-
-    if(!recentRes.ok){
-      const e=await recentRes.json().catch(()=>({}));
-      if(recentRes.status===401){gscToken=null;localStorage.removeItem('gsc_token');banner.innerHTML=`<span style="color:var(--red-text)">GSC token expired — please reconnect.</span>`;updateGSCUI(false);return;}
-      throw new Error(e.error||`HTTP ${recentRes.status}`);
-    }
-
-    const recentData=await recentRes.json();
-    const olderData=olderRes.ok?await olderRes.json():{rows:[]};
-
-    // Build lookup maps
+    if(!recentRes.ok){const e=await recentRes.json().catch(()=>({}));if(recentRes.status===401){gscToken=null;localStorage.removeItem('gsc_token');banner.innerHTML=`<span style="color:var(--red-text)">GSC token expired — please reconnect.</span>`;updateGSCUI(false);return;}throw new Error(e.error||`HTTP ${recentRes.status}`);}
+    const recentData=await recentRes.json(),olderData=olderRes.ok?await olderRes.json():{rows:[]};
     const recentMap={},olderMap={};
     (recentData.rows||[]).forEach(r=>{recentMap[r.url]=r;});
     (olderData.rows||[]).forEach(r=>{olderMap[r.url]=r;});
-
     let matched=0;
     posts.forEach(p=>{
-      const normalizeUrl=u=>u.replace(/\/$/,'');
-      const nu=normalizeUrl(p.url);
+      const nu=p.url.replace(/\/$/,'');
       const recent=recentMap[p.url]||recentMap[p.url+'/']||recentMap[nu]||null;
       const older=olderMap[p.url]||olderMap[p.url+'/']||olderMap[nu]||null;
-
       if(recent||older){
-        p.traffic=recent?Math.round(recent.clicks):0;
-        p.impressions=recent?Math.round(recent.impressions):0;
-        p.ctr=recent?recent.ctr:0;
-        p.position=recent?recent.position:0;
-        p.recentClicks=recent?recent.clicks:0;
-        p.olderClicks=older?older.clicks:0;
-        p.recentImpressions=recent?recent.impressions:0;
-        p.olderImpressions=older?older.impressions:0;
-        // Traffic health: decline % from older to recent
-        if(p.olderClicks>10){
-          p.trafficDeclinePct=Math.max(0,Math.round(((p.olderClicks-p.recentClicks)/p.olderClicks)*100));
-        } else {
-          p.trafficDeclinePct=0;
-        }
+        p.traffic=recent?Math.round(recent.clicks):0;p.impressions=recent?Math.round(recent.impressions):0;
+        p.ctr=recent?recent.ctr:0;p.position=recent?recent.position:0;
+        p.recentClicks=recent?recent.clicks:0;p.olderClicks=older?older.clicks:0;
+        p.recentImpressions=recent?recent.impressions:0;p.olderImpressions=older?older.impressions:0;
+        p.trafficDeclinePct=p.olderClicks>10?Math.max(0,Math.round(((p.olderClicks-p.recentClicks)/p.olderClicks)*100)):0;
         matched++;
       }
       const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;
     });
-
     posts.sort((a,b)=>b.score-a.score);
     banner.className='gsc-banner gsc-connected';
     banner.innerHTML=`<span>✓ GSC data loaded — ${matched} of ${posts.length} posts matched</span><button class="btn btn-sm" style="margin-left:auto" onclick="loadGSCData()">Refresh →</button>`;
     updateMetrics();renderTable();
-  }catch(e){
-    banner.innerHTML=`<span style="color:var(--red-text)">Error: ${e.message}</span>`;
-  }
+  }catch(e){banner.innerHTML=`<span style="color:var(--red-text)">Error: ${e.message}</span>`;}
 }
 
-function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.value||3),vc:parseInt(document.getElementById('fVenueCrit')?.value||2),bb:parseInt(document.getElementById('fBrokenBoost')?.value||20),vb:parseInt(document.getElementById('fVenueBoost')?.value||15)}}
+function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.value||8),vc:parseInt(document.getElementById('fVenueCrit')?.value||2),bb:parseInt(document.getElementById('fBrokenBoost')?.value||20),vb:parseInt(document.getElementById('fVenueBoost')?.value||15)};}
 
 function calcScore(p){
-  const f=floors();
-  let s=0;
-  const flags=[];
-
-  // 1. Post age (15 pts)
+  const f=floors(),t=getThresholds();
+  let s=0;const flags=[];
   s+=Math.min((p.ageMonths/12)/3,1)*weights.age;
-
-  // 2. Traffic health — peak vs recent (25 pts)
-  // Only score if we have meaningful GSC data
   const hasGSC=(p.recentClicks>0||p.olderClicks>0||p.impressions>0);
   if(hasGSC&&p.trafficDeclinePct>0){
-    const declineFactor=Math.min(p.trafficDeclinePct/100,1);
-    s+=declineFactor*weights.trafficHealth;
-    if(p.trafficDeclinePct>=50) flags.push({type:'peaked',label:'📉 Traffic peaked'});
+    s+=Math.min(p.trafficDeclinePct/100,1)*weights.trafficHealth;
+    if(p.trafficDeclinePct>=t.peakedPct)flags.push({type:'peaked',label:'📉 Traffic peaked'});
   }
-
-  // 3. Fallen off map (10 pts)
-  // Had some impressions historically but now very low clicks
-  // Only applies if post is old enough and had some GSC presence
   if(hasGSC&&p.ageMonths>=12){
-    const totalImpr=(p.recentImpressions||0)+(p.olderImpressions||0);
-    const totalClicks=(p.recentClicks||0)+(p.olderClicks||0);
-    if(totalImpr>500&&totalClicks<50){
-      // Fallen off map — was visible but getting no clicks
-      s+=weights.fallenOffMap;
-      flags.push({type:'offmap',label:'🔴 Fallen off map'});
-    } else if(totalImpr<50&&p.ageMonths>12){
-      // Never ranked — very low GSC presence for an old post
-      flags.push({type:'neverranked',label:'⚪ Never ranked'});
-      // Don't boost score — no potential signal
-    }
+    const ti=(p.recentImpressions||0)+(p.olderImpressions||0),tc=(p.recentClicks||0)+(p.olderClicks||0);
+    if(ti>t.offmapImpr&&tc<t.offmapClicks){s+=weights.fallenOffMap;flags.push({type:'offmap',label:'🔴 Fallen off map'});}
+    else if(ti<50&&p.ageMonths>12)flags.push({type:'neverranked',label:'⚪ Never ranked'});
   }
-
-  // 4. Position opportunity — 11-20 (15 pts)
-  if(p.position>10&&p.position<=20&&p.impressions>200){
-    s+=weights.positionOpportunity;
-    flags.push({type:'opportunity',label:'🟣 Page 2 opportunity'});
-  } else if(p.position>3&&p.position<=10&&p.impressions>500){
-    // Top 10 but not top 3 — smaller opportunity
-    s+=weights.positionOpportunity*0.4;
-  }
-
-  // 5. Broken links (20 pts + floor)
-  if(p.brokenLinks>0){
-    s+=Math.min(p.brokenLinks/3,1)*weights.brokenLinks;
-    s=Math.max(s,Math.min(s+f.bb,99));
-  }
-
-  // 6. Venue issues (20 pts + floor)
-  if(p.venueIssues>0){
-    s+=Math.min(p.venueIssues/2,1)*weights.venueIssues;
-    s=Math.max(s,Math.min(s+f.vb,99));
-  }
-
-  // 7. CTR gap (5 pts) — weak signal
-  if(p.impressions>1000&&p.ctr<0.02) s+=weights.ctrGap;
-  else if(p.impressions>500&&p.ctr<0.01) s+=weights.ctrGap*0.5;
-
-  // Hard floors
+  if(p.position>10&&p.position<=20&&p.impressions>200){s+=weights.positionOpportunity;flags.push({type:'opportunity',label:'🟣 Page 2 opp.'});}
+  else if(p.position>3&&p.position<=10&&p.impressions>500)s+=weights.positionOpportunity*0.4;
+  // 🔥 High impressions gap flag
+  if(p.impressions>=t.hotImpr&&p.ctr<t.hotCtr)flags.push({type:'hotimpr',label:'🔥 Impression gap'});
+  if(p.brokenLinks>0){s+=Math.min(p.brokenLinks/3,1)*weights.brokenLinks;s=Math.max(s,Math.min(s+f.bb,99));}
+  if(p.venueIssues>0){s+=Math.min(p.venueIssues/2,1)*weights.venueIssues;s=Math.max(s,Math.min(s+f.vb,99));}
+  if(p.impressions>1000&&p.ctr<0.02)s+=weights.ctrGap;
+  else if(p.impressions>500&&p.ctr<0.01)s+=weights.ctrGap*0.5;
   let hardFloor=false;
   if(p.brokenLinks>=f.bc||p.venueIssues>=f.vc){s=Math.max(s,85);hardFloor=true;}
-
   s=Math.min(Math.round(s),100);
   const urgency=s>=70?'critical':s>=45?'high':s>=25?'medium':'low';
   return{score:s,urgency,hardFloor,flags};
 }
 
+// ===== REPORT MODAL =====
+async function generateReport(postIdx, forceRefresh=false){
+  const post=posts[postIdx];
+  if(!post)return;
+  const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
+  document.getElementById('modalTitle').textContent=post.title;
+  document.getElementById('modalSubtitle').textContent=`${post.url}`;
+  document.getElementById('modalBody').innerHTML=`<div class="report-loading">⏳ ${forceRefresh?'Regenerating':'Analyzing'} with Claude AI...<br><span style="font-size:11px;margin-top:8px;display:block">This takes about 15–20 seconds</span></div>`;
+  document.getElementById('reportModal').style.display='flex';
+  try{
+    const res=await fetch(REPORT_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        postId:post.id,postUrl:post.url,postTitle:post.title,siteUrl,
+        gscData:{recentClicks:post.recentClicks,olderClicks:post.olderClicks,recentImpressions:post.recentImpressions,olderImpressions:post.olderImpressions,trafficDeclinePct:post.trafficDeclinePct,position:post.position},
+        brokenLinks:post.brokenLinkUrls||[],
+        forceRefresh,
+      })
+    });
+    const data=await res.json();
+    if(data.error){document.getElementById('modalBody').innerHTML=`<div class="report-error">❌ ${data.error}</div>`;return;}
+    renderReportModal(data,postIdx);
+  }catch(e){
+    document.getElementById('modalBody').innerHTML=`<div class="report-error">❌ ${e.message}</div>`;
+  }
+}
+
+function renderReportModal(data,postIdx){
+  const r=data.report;
+  const cached=data.fromCache?`<span class="tag" style="font-size:10px">cached ${new Date(data.generatedAt).toLocaleDateString()}</span>`:'<span class="tag tag-ok" style="font-size:10px">fresh</span>';
+  let html=`
+    <div class="report-meta">
+      <span>Published: ${data.publishDate||'—'}</span>
+      <span>Modified: ${data.modifiedDate||'—'}</span>
+      <span>Link issues: ${data.brokenLinksCount||0}</span>
+      <span>Est. update time: ${r.estimatedUpdateTime||'—'}</span>
+      ${cached}
+      <button class="btn btn-sm" style="margin-left:auto" onclick="generateReport(${postIdx},true)">↺ Regenerate</button>
+    </div>`;
+
+  if(r.summary)html+=`<div class="report-section"><div class="report-section-title">📋 Summary</div><div class="report-summary">${r.summary}</div></div>`;
+
+  if(r.quickWins?.length){
+    html+=`<div class="report-section"><div class="report-section-title">⚡ Quick wins</div><ul class="quick-wins">`;
+    r.quickWins.forEach(w=>{html+=`<li class="quick-win"><span>✓</span><span>${w}</span></li>`;});
+    html+=`</ul></div>`;
+  }
+
+  if(r.outdatedContent?.length){
+    html+=`<div class="report-section"><div class="report-section-title">⚠️ Outdated content (${r.outdatedContent.length} issues found)</div>`;
+    r.outdatedContent.forEach(item=>{
+      html+=`<div class="report-item">
+        <div class="report-item-type">${item.type||'issue'}</div>
+        ${item.quote?`<div class="report-item-quote">"${item.quote}"</div>`:''}
+        <div class="report-item-issue">⚠ ${item.issue||''}</div>
+        <div class="report-item-suggestion">→ ${item.suggestion||''}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  if(r.seoOpportunities?.length){
+    html+=`<div class="report-section"><div class="report-section-title">📈 SEO opportunities (${r.seoOpportunities.length})</div>`;
+    r.seoOpportunities.forEach(item=>{
+      html+=`<div class="report-seo-item">
+        <div style="margin-bottom:4px"><span class="report-item-type" style="background:var(--blue-bg);color:var(--blue-text)">${item.type||'seo'}</span></div>
+        <div style="color:var(--text);margin-bottom:3px;font-size:12px">${item.issue||''}</div>
+        <div style="color:var(--text2);font-size:11px">→ ${item.suggestion||''}</div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  if(r.contentGaps?.length){
+    html+=`<div class="report-section"><div class="report-section-title">🔍 Content gaps (${r.contentGaps.length})</div><div>`;
+    r.contentGaps.forEach(item=>{
+      html+=`<div class="report-gap-item"><div style="font-weight:500;min-width:160px">${item.topic||''}</div><div style="color:var(--text2)">${item.reason||''}</div></div>`;
+    });
+    html+=`</div></div>`;
+  }
+
+  html+=`<div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border);display:flex;gap:8px">
+    <a href="${data.postUrl}" target="_blank" class="btn btn-primary btn-sm">Open post ↗</a>
+    <button class="btn btn-sm" onclick="closeModal()">Close</button>
+  </div>`;
+
+  document.getElementById('modalBody').innerHTML=html;
+}
+
+function closeModal(){document.getElementById('reportModal').style.display='none';}
+function closeModalOutside(e){if(e.target===document.getElementById('reportModal'))closeModal();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+// ===== BROKEN LINK SCANNER =====
+let scanRunning=false;
+async function startLinkScan(){
+  if(posts.length===0){alert('Please crawl your blog first!');return;}
+  if(scanRunning)return;
+  const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
+  scanRunning=true;
+  const banner=document.getElementById('linkScanBanner');
+  banner.className='scan-banner';banner.style.display='flex';
+  const statusEl=document.getElementById('linkScanStatus');
+  statusEl.innerHTML='<span class="tag">Scanning...</span>';
+  let scanned=0,totalBroken=0;
+  const postsToScan=[...posts],CONCURRENT=5;
+  for(let i=0;i<postsToScan.length;i+=CONCURRENT){
+    const batch=postsToScan.slice(i,i+CONCURRENT);
+    banner.innerHTML=`<span>🔍 Scanning for link issues — ${scanned} of ${postsToScan.length} posts checked, ${totalBroken} potential issues found...</span>`;
+    await Promise.allSettled(batch.map(async(post)=>{
+      try{
+        const res=await fetch(LINKS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({postUrl:post.url,postId:post.id,siteUrl})});
+        if(res.ok){
+          const data=await res.json();
+          post.brokenLinks=data.brokenCount||0;
+          post.brokenLinkUrls=data.brokenLinks||[];
+          if(data.brokenCount>0){const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;totalBroken+=data.brokenCount;}
+          post.linksScanned=true;
+        }
+      }catch(e){}
+      scanned++;
+    }));
+    posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
+  }
+  scanRunning=false;
+  banner.className='scan-banner scan-complete';
+  banner.innerHTML=`<span>✓ Link scan complete — ${scanned} posts scanned, ${totalBroken} potential issues found</span><button class="btn btn-sm" style="margin-left:auto" onclick="startLinkScan()">Rescan →</button>`;
+  statusEl.innerHTML=`<span class="tag tag-ok">✓ ${totalBroken} potential issues found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startLinkScan()">Rescan</button>`;
+  posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
+}
+
+function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.value||8),vc:parseInt(document.getElementById('fVenueCrit')?.value||2),bb:parseInt(document.getElementById('fBrokenBoost')?.value||20),vb:parseInt(document.getElementById('fVenueBoost')?.value||15)};}
 function monthsAgo(d){return d?Math.round((Date.now()-new Date(d))/(1000*60*60*24*30)):36}
 function fmtAge(m){if(m<1)return'This month';if(m<12)return m+'mo ago';const y=Math.floor(m/12),r=m%12;return y+'y'+(r>0?' '+r+'mo':'')+' ago'}
-function classify(t){t=t.toLowerCase();if(/cafe|restaurant|eat|food|bar|hotel|stay|places.*visit|things.*do|where.*go|best.*in|hidden gem|itinerary|road trip|guide|tips|things to|where to|how to|what to|when to|budget|cost|packing|pack for/.test(t))return'guide';if(/festival/.test(t))return'festival';return'story'}
+function classify(t){t=t.toLowerCase();if(/festival/.test(t))return'festival';if(/cafe|restaurant|eat|food|bar|hotel|stay|places|things.*do|where.*go|best.*in|hidden gem|itinerary|road trip|guide|tips|how to|what to|when to|budget|cost|packing/.test(t))return'guide';return'story'}
 function scoreColor(s){return s>=70?'#E24B4A':s>=45?'#BA7517':s>=25?'#378ADD':'#639922'}
 function healthColor(pct){return pct>=70?'#E24B4A':pct>=40?'#BA7517':pct>=20?'#378ADD':'#639922'}
 function fmtNum(n){if(!n)return'—';if(n>=10000)return Math.round(n/1000)+'k';if(n>=1000)return(n/1000).toFixed(1)+'k';return n}
 function fmtPos(p){if(!p||p===0)return'—';return p.toFixed(1)}
-
-function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings'].forEach(id=>{document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1)).style.display='none'});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings')renderWeights()}
-function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('')}
-function resetWeights(){weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};renderWeights()}
-function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value)});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable()}
+function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings'].forEach(id=>{document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1)).style.display='none'});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings')renderWeights();}
+function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('');}
+function resetWeights(){weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};renderWeights();}
+function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value);});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
 function updateMetrics(){document.getElementById('mTotal').textContent=posts.length;document.getElementById('mCritical').textContent=posts.filter(p=>p.urgency==='critical').length;document.getElementById('mStale').textContent=posts.filter(p=>p.ageMonths>=12).length;document.getElementById('mOpportunity').textContent=posts.filter(p=>p.flags&&p.flags.some(f=>f.type==='opportunity')).length;}
-
 function getFiltered(){
   const s=document.getElementById('searchInput').value.toLowerCase(),u=document.getElementById('fUrgency').value,t=document.getElementById('fType').value,a=document.getElementById('fAge').value,fl=document.getElementById('fFlag').value,so=document.getElementById('fSort').value;
   let r=posts.filter(p=>{
@@ -466,41 +535,40 @@ function getFiltered(){
     if(fl==='opportunity'&&!(p.flags&&p.flags.some(f=>f.type==='opportunity')))return false;
     if(fl==='peaked'&&!(p.flags&&p.flags.some(f=>f.type==='peaked')))return false;
     if(fl==='offmap'&&!(p.flags&&p.flags.some(f=>f.type==='offmap')))return false;
+    if(fl==='hotimpr'&&!(p.flags&&p.flags.some(f=>f.type==='hotimpr')))return false;
     return true;
   });
-  r.sort((a,b)=>{
-    if(so==='score')return b.score-a.score;
-    if(so==='age')return b.ageMonths-a.ageMonths;
-    if(so==='traffic')return b.traffic-a.traffic;
-    if(so==='decline')return b.trafficDeclinePct-a.trafficDeclinePct;
-    return a.title.localeCompare(b.title);
-  });
+  r.sort((a,b)=>so==='score'?b.score-a.score:so==='age'?b.ageMonths-a.ageMonths:so==='traffic'?b.traffic-a.traffic:so==='decline'?b.trafficDeclinePct-a.trafficDeclinePct:a.title.localeCompare(b.title));
   return r;
 }
-
 function renderTable(){
   const filtered=getFiltered(),start=(page-1)*PER_PAGE,slice=filtered.slice(start,start+PER_PAGE);
   const tbody=document.getElementById('tableBody'),empty=document.getElementById('emptyState'),pag=document.getElementById('pagRow');
-  if(posts.length===0){empty.style.display='block';pag.style.display='none';tbody.innerHTML='';return}
+  if(posts.length===0){empty.style.display='block';pag.style.display='none';tbody.innerHTML='';return;}
   empty.style.display='none';
   const tp=Math.ceil(filtered.length/PER_PAGE);
   pag.style.display=filtered.length>PER_PAGE?'flex':'none';
   document.getElementById('pageInfo').textContent=`Page ${page} of ${tp}`;
   document.getElementById('totalCount').textContent=`${filtered.length} posts`;
-  tbody.innerHTML=slice.map(p=>{
-    const issues=[p.brokenLinks>0?`<span class="dot dot-red"></span>${p.brokenLinks} broken`:'',p.venueIssues>0?`<span class="dot dot-amber"></span>${p.venueIssues} closed`:''].filter(Boolean).join(' ')||'<span style="color:var(--text3)">none</span>';
+  tbody.innerHTML=slice.map((p,i)=>{
+    const postIdx=posts.indexOf(p);
+    const issues=p.brokenLinks>0?`<span class="dot dot-red"></span>${p.brokenLinks} issues`:(p.linksScanned?'<span style="color:var(--green-text);font-size:10px">✓ clean</span>':'<span style="color:var(--text3)">not scanned</span>');
     const flagsHtml=(p.flags&&p.flags.length>0)?p.flags.map(f=>`<span class="flag flag-${f.type}">${f.label}</span>`).join(''):'<span style="color:var(--text3);font-size:11px">—</span>';
     const ageCol=p.ageMonths>=24?'var(--red-text)':p.ageMonths>=12?'var(--amber-text)':'var(--text2)';
     const sc=scoreColor(p.score);
     const hasTraffic=p.traffic>0||p.impressions>0;
     const healthPct=p.trafficDeclinePct||0;
     const healthHtml=hasTraffic?`<div style="font-size:10px;color:${healthColor(healthPct)}">${healthPct>0?healthPct+'% decline':'stable'}</div><div class="health-bar"><div class="health-fill" style="width:${healthPct}%;background:${healthColor(healthPct)}"></div></div>`:'<span style="color:var(--text3);font-size:11px">no data</span>';
+    // 🔥 flag next to impressions if high gap
+    const t=getThresholds();
+    const imprHot=p.impressions>=t.hotImpr&&p.ctr<t.hotCtr;
+    const imprDisplay=`${fmtNum(p.impressions)}${imprHot?' 🔥':''}`;
     return`<tr>
-      <td class="col-title" title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,42)}${p.title.length>42?'…':''}</a></td>
+      <td class="col-title" title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,40)}${p.title.length>40?'…':''}</a></td>
       <td class="col-age" style="font-size:11px;color:${ageCol}">${fmtAge(p.ageMonths)}</td>
       <td class="col-type"><span class="type-pill">${p.type}</span></td>
       <td class="col-traffic" style="font-size:11px;color:${hasTraffic?'var(--text)':'var(--text3)'}">${fmtNum(p.traffic)}</td>
-      <td class="col-impr" style="font-size:11px;color:${hasTraffic?'var(--text)':'var(--text3)'}">${fmtNum(p.impressions)}</td>
+      <td class="col-impr" style="font-size:11px;color:${hasTraffic?'var(--text)':'var(--text3)'}">${imprDisplay}</td>
       <td class="col-pos" style="font-size:11px;color:${p.position>10&&p.position<=20?'var(--purple-text)':p.position>0?'var(--text)':'var(--text3)'}">${fmtPos(p.position)}</td>
       <td class="col-health">${healthHtml}</td>
       <td class="col-issues" style="font-size:11px">${issues}</td>
@@ -509,21 +577,20 @@ function renderTable(){
         <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${p.score}%;background:${sc}"></div></div><span class="score-num" style="color:${sc}">${p.score}</span></div>
         <div style="margin-top:3px">${p.hardFloor?'<span class="floor-pill">forced</span>':'<span class="pill u-'+p.urgency+'">'+p.urgency+'</span>'}</div>
       </td>
-      <td class="col-action"><a href="${p.url}" target="_blank" class="link-btn">↗</a></td>
+      <td class="col-action" style="white-space:normal">
+        <button class="report-btn" onclick="generateReport(${postIdx})">✨ Report</button>
+      </td>
     </tr>`;
   }).join('');
 }
-
-function prevPage(){if(page>1){page--;renderTable()}}
-function nextPage(){const f=getFiltered();if(page<Math.ceil(f.length/PER_PAGE)){page++;renderTable()}}
-
+function prevPage(){if(page>1){page--;renderTable();}}
+function nextPage(){const f=getFiltered();if(page<Math.ceil(f.length/PER_PAGE)){page++;renderTable();}}
 function exportCSV(){
-  const rows=[['Title','URL','Last Modified','Age (months)','Type','Clicks','Impressions','CTR','Position','Traffic Decline %','Broken Links','Venue Issues','Hard Floor','Flags','Score','Urgency']];
+  const rows=[['Title','URL','Last Modified','Age (months)','Type','Clicks','Impressions','CTR','Position','Traffic Decline %','Link Issues','Venue Issues','Hard Floor','Flags','Score','Urgency']];
   getFiltered().forEach(p=>rows.push([`"${p.title}"`,p.url,p.lastModified||'',p.ageMonths,p.type,p.traffic,p.impressions,p.ctr?(p.ctr*100).toFixed(1)+'%':'',p.position?p.position.toFixed(1):'',p.trafficDeclinePct||0,p.brokenLinks,p.venueIssues,p.hardFloor?'YES':'',(p.flags||[]).map(f=>f.label).join('; '),p.score,p.urgency]));
   const blob=new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='blog-audit.csv';a.click();
 }
-
 async function startCrawl(){
   const url=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
   if(!url)return;
@@ -535,15 +602,11 @@ async function startCrawl(){
   try{
     const r1=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=1&perPage=100`);
     if(!r1.ok){const e=await r1.json().catch(()=>({}));throw new Error(e.error||`HTTP ${r1.status}`);}
-    const total=parseInt(r1.headers.get('X-WP-Total')||'0');
-    const totalPages=parseInt(r1.headers.get('X-WP-TotalPages')||'1');
-    processBatch(await r1.json());
-    setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);
+    const total=parseInt(r1.headers.get('X-WP-Total')||'0'),totalPages=parseInt(r1.headers.get('X-WP-TotalPages')||'1');
+    processBatch(await r1.json());setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);
     for(let p=2;p<=Math.min(totalPages,10);p++){
       const r=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=${p}&perPage=100`);
-      if(!r.ok)break;
-      processBatch(await r.json());
-      setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);
+      if(!r.ok)break;processBatch(await r.json());setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);
     }
     posts.sort((a,b)=>b.score-a.score);
     setProgress(posts.length,posts.length,`Done! ${posts.length} posts cataloged.`);
@@ -557,34 +620,13 @@ async function startCrawl(){
     document.getElementById('crawlStatus').className='tag tag-err';
   }
 }
-
-function processBatch(batch){batch.forEach(p=>{const title=(p.title?.rendered||p.slug||'Untitled').replace(/<[^>]+>/g,'');const ageMonths=monthsAgo(p.modified||p.date);const post={id:p.id,title,url:p.link,ageMonths,lastModified:p.modified||p.date,type:classify(title),traffic:0,impressions:0,ctr:0,position:0,recentClicks:0,olderClicks:0,recentImpressions:0,olderImpressions:0,trafficDeclinePct:0,brokenLinks:0,venueIssues:0,flags:[]};const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;posts.push(post);})}
+function processBatch(batch){batch.forEach(p=>{const title=(p.title?.rendered||p.slug||'Untitled').replace(/<[^>]+>/g,'');const ageMonths=monthsAgo(p.modified||p.date);const post={id:p.id,title,url:p.link,ageMonths,lastModified:p.modified||p.date,type:classify(title),traffic:0,impressions:0,ctr:0,position:0,recentClicks:0,olderClicks:0,recentImpressions:0,olderImpressions:0,trafficDeclinePct:0,brokenLinks:0,venueIssues:0,brokenLinkUrls:[],linksScanned:false,flags:[]};const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;posts.push(post);});}
 function setProgress(done,total,msg){const pct=total>0?Math.round((done/total)*100):50;document.getElementById('progressFill').style.width=pct+'%';document.getElementById('statusMsg').textContent=msg;}
-
 function loadDemo(){
-  const data=[
-    {t:"Best Cafes in Canggu Bali",age:36,bl:2,vi:3,rc:280,oc:3200,ri:18000,oi:45000,pos:14.2},
-    {t:"Things to Do in Uluwatu",age:24,bl:0,vi:1,rc:620,oc:850,ri:19000,oi:22000,pos:8.1},
-    {t:"Sailing Croatia Complete Guide",age:30,bl:1,vi:0,rc:5100,oc:5400,ri:36000,oi:38000,pos:3.2},
-    {t:"Melbourne CBD Food Guide",age:18,bl:0,vi:2,rc:950,oc:1200,ri:16000,oi:18000,pos:6.8},
-    {t:"Hidden Gems in Central Italy",age:12,bl:3,vi:1,rc:180,oc:420,ri:24000,oi:31000,pos:17.4},
-    {t:"California Road Trip Itinerary",age:6,bl:0,vi:0,rc:8200,oc:7100,ri:49000,oi:42000,pos:2.1},
-    {t:"Top Beaches in Bali",age:28,bl:1,vi:2,rc:1100,oc:4300,ri:22000,oi:41000,pos:12.6},
-    {t:"Best Music Festivals Europe",age:15,bl:0,vi:0,rc:490,oc:670,ri:21000,oi:28000,pos:9.3},
-    {t:"Nusa Lembongan Complete Guide",age:48,bl:2,vi:3,rc:120,oc:3600,ri:8000,oi:39000,pos:24.1},
-    {t:"Best Restaurants in Seminyak",age:16,bl:1,vi:4,rc:2100,oc:2800,ri:15000,oi:19000,pos:5.4},
-    {t:"Solo Travel Tips for Women",age:36,bl:0,vi:0,rc:800,oc:1500,ri:28000,oi:44000,pos:11.8},
-    {t:"Burning Man Survival Guide",age:24,bl:4,vi:0,rc:210,oc:430,ri:9000,oi:15000,pos:18.3},
-    {t:"Tulum Travel Guide",age:36,bl:2,vi:2,rc:2800,oc:5100,ri:38000,oi:61000,pos:7.2},
-    {t:"Best Bars in Bali",age:14,bl:0,vi:3,rc:720,oc:880,ri:10000,oi:12000,pos:6.1},
-    {t:"Digital Nomad Guide Bali",age:18,bl:0,vi:1,rc:1400,oc:1600,ri:28000,oi:33000,pos:4.9},
-    {t:"10 Quotes About Tulum",age:24,bl:0,vi:0,rc:80,oc:120,ri:3000,oi:4000,pos:22.0},
-    {t:"My Week in Ubud",age:30,bl:0,vi:0,rc:12,oc:18,ri:40,oi:60,pos:31.0},
-    {t:"Things That Surprised Me About Istanbul",age:8,bl:0,vi:0,rc:3800,oc:2100,ri:44000,oi:31000,pos:3.8},
-  ];
+  const data=[{t:"Best Cafes in Canggu Bali",age:36,bl:2,vi:3,rc:280,oc:3200,ri:18000,oi:45000,pos:14.2},{t:"Sailing Croatia Complete Guide",age:30,bl:1,vi:0,rc:5100,oc:5400,ri:36000,oi:38000,pos:3.2},{t:"Hidden Gems in Central Italy",age:12,bl:9,vi:1,rc:180,oc:420,ri:24000,oi:31000,pos:17.4},{t:"Top Beaches in Bali",age:28,bl:1,vi:2,rc:1100,oc:4300,ri:22000,oi:41000,pos:12.6},{t:"Nusa Lembongan Complete Guide",age:48,bl:2,vi:3,rc:120,oc:3600,ri:8000,oi:39000,pos:24.1},{t:"Best Restaurants in Seminyak",age:16,bl:1,vi:4,rc:2100,oc:2800,ri:15000,oi:19000,pos:5.4},{t:"Burning Man Survival Guide",age:24,bl:10,vi:0,rc:210,oc:430,ri:9000,oi:15000,pos:18.3},{t:"Tulum Travel Guide",age:36,bl:2,vi:2,rc:2800,oc:5100,ri:38000,oi:61000,pos:7.2},{t:"50 Epic Places Melbourne",age:36,bl:35,vi:0,rc:8,oc:3600,ri:11000,oi:39000,pos:17.9},{t:"Digital Nomad Guide Bali",age:18,bl:0,vi:1,rc:1400,oc:1600,ri:28000,oi:33000,pos:4.9},{t:"Things That Surprised Me Istanbul",age:8,bl:0,vi:0,rc:3800,oc:2100,ri:44000,oi:31000,pos:3.8},{t:"My Week in Ubud",age:30,bl:0,vi:0,rc:12,oc:18,ri:40,oi:60,pos:31.0}];
   posts=data.map((d,i)=>{
     const declinePct=d.oc>10?Math.max(0,Math.round(((d.oc-d.rc)/d.oc)*100)):0;
-    const p={id:i+1,title:d.t,url:`https://www.adventuresnsunsets.com/${d.t.toLowerCase().replace(/\s+/g,'-')}`,ageMonths:d.age,lastModified:new Date(Date.now()-d.age*30*24*60*60*1000).toISOString(),type:classify(d.t),traffic:d.rc,impressions:d.ri,ctr:d.ri>0?d.rc/d.ri:0,position:d.pos,recentClicks:d.rc,olderClicks:d.oc,recentImpressions:d.ri,olderImpressions:d.oi,trafficDeclinePct:declinePct,brokenLinks:d.bl,venueIssues:d.vi,flags:[]};
+    const p={id:i+1,title:d.t,url:`https://www.adventuresnsunsets.com/${d.t.toLowerCase().replace(/\s+/g,'-')}`,ageMonths:d.age,lastModified:new Date(Date.now()-d.age*30*24*60*60*1000).toISOString(),type:classify(d.t),traffic:d.rc,impressions:d.ri,ctr:d.ri>0?d.rc/d.ri:0,position:d.pos,recentClicks:d.rc,olderClicks:d.oc,recentImpressions:d.ri,olderImpressions:d.oi,trafficDeclinePct:declinePct,brokenLinks:d.bl,venueIssues:d.vi,brokenLinkUrls:[],linksScanned:d.bl>0,flags:[]};
     const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;
     return p;
   });
@@ -594,7 +636,6 @@ function loadDemo(){
   document.getElementById('progressWrap').style.display='none';
   page=1;updateMetrics();renderTable();
 }
-
 renderTable();
 </script>
 </body>
