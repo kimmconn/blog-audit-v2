@@ -19,10 +19,9 @@ async function kvSet(key, value, ttlSeconds = 2592000) {
   const token = process.env.KV_REST_API_TOKEN;
   if (!url || !token) return;
   try {
-    await fetch(`${url}/set/${encodeURIComponent(key)}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ value: JSON.stringify(value), ex: ttlSeconds }),
+    await fetch(`${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}/ex/${ttlSeconds}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(3000),
     });
   } catch {}
