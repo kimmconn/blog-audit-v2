@@ -1,5 +1,3 @@
-import { kv } from '@vercel/kv';
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -7,29 +5,14 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { postId, postUrl, postTitle, siteUrl, gscData, brokenLinks, forceRefresh } = req.body;
+  const { postId, postUrl, postTitle, siteUrl, gscData, brokenLinks } = req.body;
   if (!postId || !siteUrl) return res.status(400).json({ error: 'Missing postId or siteUrl' });
 
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'Anthropic API key not configured' });
 
-  const cacheKey = `report:${siteUrl}:${postId}`;
-  const CACHE_TTL = 60 * 60 * 24 * 30; // 30 days
-
-  // Check cache first (unless force refresh)
-  if (!forceRefresh) {
-    try {
-      const cached = await kv.get(cacheKey);
-      if (cached) {
-        return res.status(200).json({ ...cached, fromCache: true });
-      }
-    } catch (e) {
-      // KV not available, proceed without cache
-    }
-  }
-
   try {
-    // Fetch post content
+    // Fetch post content from WordPress
     const wpRes = await fetch(
       `${siteUrl}/wp-json/wp/v2/posts/${postId}?_fields=content,title,date,modified`,
       { headers: { 'User-Agent': 'BlogAuditTool/1.0' }, signal: AbortSignal.timeout(15000) }
@@ -48,10 +31,12 @@ export default async function handler(req, res) {
     const publishDate = wpData?.date?.split('T')[0] || 'unknown';
     const modifiedDate = wpData?.modified?.split('T')[0] || 'unknown';
 
-    const gscContext = gscData ? `GSC Data: ${gscData.recentClicks||0} clicks (recent), ${gscData.olderClicks||0} clicks (older period), ${gscData.trafficDeclinePct||0}% decline, position ${gscData.position?.toFixed(1)||'unknown'}, ${gscData.recentImpressions||0} impressions` : 'No GSC data available';
+    const gscContext = gscData
+      ? `GSC: ${gscData.recentClicks||0} clicks (recent 8mo), ${gscData.olderClicks||0} clicks (prior 8mo), ${gscData.trafficDeclinePct||0}% decline, position ${gscData.position?.toFixed(1)||'?'}, ${gscData.recentImpressions||0} impressions`
+      : 'No GSC data available';
 
     const linksContext = brokenLinks?.length > 0
-      ? `${brokenLinks.length} potential broken links detected:\n${brokenLinks.slice(0,10).map(l=>`- ${l.url} (${l.status||'timeout'})`).join('\n')}${brokenLinks.length>10?`\n...and ${brokenLinks.length-10} more`:''}`
+      ? `${brokenLinks.length} potential broken links:\n${brokenLinks.slice(0,8).map(l=>`- ${l.url} (${l.status||'timeout'})`).join('\n')}`
       : 'No broken links detected';
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -64,7 +49,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 2500,
-        system: `You are an expert travel blog content auditor specializing in keeping travel content accurate, current, and SEO-optimized. You have deep knowledge of world events, currency changes, business closures, travel requirement changes, and cultural shifts that affect travel content accuracy. Be specific — quote actual text from the post when flagging issues. Return ONLY valid JSON, no markdown fences, no preamble.`,
+        system: `You are an expert travel blog content auditor. You have deep knowledge of world events, currency changes, business closures, and travel requirement changes. Be specific — quote actual text from the post when flagging issues. Return ONLY valid JSON, no markdown fences, no extra text.`,
         messages: [{
           role: 'user',
           content: `Audit this travel blog post for update opportunities.
@@ -78,54 +63,52 @@ ${linksContext}
 POST CONTENT:
 ${content}
 
-Check specifically for:
-- Outdated prices or cost references (meals, accommodation, tours, entry fees)
-- References to "new", "recently opened", "just opened", "brand new" venues or attractions
-- Old statistics or data points with specific years/numbers
-- Award references ("best of 2019", "#1 rated in 2020")
-- Currency references (especially old currencies like Croatian Kuna, pre-Euro countries)
-- COVID/pandemic references that are now outdated
+Check for ALL of these:
+- Prices (meals, hotels, tours, entry fees)
+- "New", "recently opened", "just opened", "brand new" claims
+- Statistics with specific years/numbers
+- Award references ("best of 2019")
+- Old currencies (e.g. Croatian Kuna — Croatia switched to Euro Jan 2023)
+- COVID/pandemic references now outdated
 - Outdated visa or entry requirements
-- Old transport info (routes, companies, prices)
+- Old transport routes, prices, companies
 - Outdated seasonal info with specific past years
-- Dead or changed social media handles
-- App recommendations that may no longer exist
+- Dead social media handles or apps
 - Old exchange rates presented as current
-- "Recently" or "just" claims that are now years old given publish date
-- Safety warnings that may be outdated
+- "Recently" or "just" claims that are now old given publish date
 - Business hours presented as definitive
-- Specific hotel/accommodation prices
 - Affiliate or booking links that may have changed
+- Safety warnings that may be outdated
 
-Return this exact JSON:
+Return ONLY this JSON structure, nothing else:
 {
-  "summary": "2-3 sentence overview of update needs and overall post health",
-  "urgencyReason": "single most important reason to update this post now",
+  "summary": "2-3 sentence overview",
+  "urgencyReason": "main reason to update now",
   "estimatedUpdateTime": "15 mins|30 mins|1 hour|2+ hours",
+  "venueIssues": 0,
+  "outdatedContentCount": 0,
   "outdatedContent": [
     {
       "type": "price|date|venue|currency|visa|transport|covid|award|stat|seasonal|social|app|safety|hours|affiliate",
       "quote": "exact short quote from post",
-      "issue": "why this is likely outdated",
-      "suggestion": "specific fix or how to verify"
+      "issue": "why outdated",
+      "suggestion": "how to fix"
     }
   ],
   "seoOpportunities": [
     {
-      "type": "title|meta|keyword|heading|internal_link|freshness|schema",
-      "issue": "specific SEO issue found",
-      "suggestion": "specific actionable fix"
+      "type": "title|meta|keyword|heading|internal_link|freshness",
+      "issue": "specific SEO issue",
+      "suggestion": "specific fix"
     }
   ],
   "contentGaps": [
     {
-      "topic": "missing topic or section",
-      "reason": "why adding this would help rankings or reader experience"
+      "topic": "missing topic",
+      "reason": "why it would help"
     }
   ],
-  "quickWins": [
-    "specific quick fix that takes under 5 minutes"
-  ]
+  "quickWins": ["quick fix 1", "quick fix 2", "quick fix 3"]
 }`
         }]
       }),
@@ -143,28 +126,19 @@ Return this exact JSON:
     let report;
     try {
       report = JSON.parse(rawText.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim());
-    } catch {
-      return res.status(200).json({ error: 'Could not parse Claude response', raw: rawText.slice(0,500) });
+    } catch(e) {
+      return res.status(200).json({ error: 'Could not parse Claude response', raw: rawText.slice(0,300) });
     }
 
-    const result = {
+    return res.status(200).json({
       postId, postUrl, postTitle, publishDate, modifiedDate,
       brokenLinksCount: brokenLinks?.length || 0,
       generatedAt: new Date().toISOString(),
       report,
       fromCache: false,
-    };
+    });
 
-    // Save to cache
-    try {
-      await kv.set(cacheKey, result, { ex: CACHE_TTL });
-    } catch (e) {
-      // KV not available, return without caching
-    }
-
-    return res.status(200).json(result);
-
-  } catch (e) {
+  } catch(e) {
     if (e.name === 'TimeoutError') return res.status(200).json({ error: 'Request timed out — try again' });
     return res.status(200).json({ error: e.message });
   }
