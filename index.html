@@ -156,7 +156,7 @@
     <div id="linkScanBanner" style="display:none"></div>
     <div id="aiScanBanner" style="display:none"></div>
     <div class="panel">
-      <div class="floor-note"><strong>Hard urgency floors:</strong> posts with enough potential issues or closed venues are automatically forced to <strong>critical</strong>.</div>
+      <div class="floor-note"><strong>Hard urgency floors:</strong> posts meeting the thresholds below are marked <strong>forced</strong> — scores reflect actual signals, not artificial minimums.</div>
       <div class="gsc-note">⚠️ GSC data covers the last 16 months only. Posts older than 16 months may have peaked earlier — check Google Analytics manually for full history.</div>
       <div class="filters">
         <input type="text" id="searchInput" placeholder="Search posts..." oninput="renderTable()" />
@@ -226,9 +226,9 @@
     </div>
     <div class="panel">
       <div class="panel-title">Hard urgency floor rules</div>
-      <p class="note">Posts meeting these thresholds are forced to critical regardless of other scores.</p>
+      <p class="note">Posts meeting these thresholds are marked "forced" in the urgency column. Scores are still calculated naturally from all signals.</p>
       <div class="floor-rules">
-        <div class="floor-row"><span style="min-width:260px">Potential link issues ≥</span><input type="number" id="fBrokenCrit" value="8" min="1" max="50"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
+        <div class="floor-row"><span style="min-width:260px">Potential link issues ≥</span><input type="number" id="fBrokenCrit" value="10" min="1" max="50"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
         <div class="floor-row"><span style="min-width:260px">Closed/outdated venues ≥</span><input type="number" id="fVenueCrit" value="2" min="1" max="20"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
         <div class="floor-row"><span style="min-width:260px">Any link issues → boost score by</span><input type="number" id="fBrokenBoost" value="20" min="0" max="50" style="width:55px"/> <span style="color:var(--text2)">pts</span></div>
         <div class="floor-row"><span style="min-width:260px">Any closed venues → boost score by</span><input type="number" id="fVenueBoost" value="15" min="0" max="50" style="width:55px"/> <span style="color:var(--text2)">pts</span></div>
@@ -354,7 +354,7 @@ async function loadGSCData(){
   }catch(e){banner.innerHTML=`<span style="color:var(--red-text)">Error: ${e.message}</span>`;}
 }
 
-function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.value||8),vc:parseInt(document.getElementById('fVenueCrit')?.value||2),bb:parseInt(document.getElementById('fBrokenBoost')?.value||20),vb:parseInt(document.getElementById('fVenueBoost')?.value||15)};}
+function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.value||10),vc:parseInt(document.getElementById('fVenueCrit')?.value||2),bb:parseInt(document.getElementById('fBrokenBoost')?.value||20),vb:parseInt(document.getElementById('fVenueBoost')?.value||15)};}
 
 function calcScore(p){
   const f=floors(),t=getThresholds();
@@ -384,7 +384,7 @@ function calcScore(p){
   if(p.aiScanned&&p.venueIssues>0&&!p.venueConfirmed){
     flags.push({type:'potential',label:`⚠️ ${p.venueIssues} potential venue`});
   }
-  if(p.brokenLinks>0){s+=Math.min(p.brokenLinks/3,1)*weights.brokenLinks;s=Math.max(s,Math.min(s+f.bb,99));}
+  if(p.brokenLinks>0){const linkFactor=Math.min(Math.log(p.brokenLinks+1)/Math.log(10),1);s+=linkFactor*weights.brokenLinks;s=Math.max(s,Math.min(s+f.bb,99));}
   // AI scan bonus: outdated content adds to score
   if(p.outdatedCount>0) s+=Math.min(p.outdatedCount/5,1)*weights.venueIssues*0.5;
   if(p.hasOldCurrency) s+=5;
@@ -392,8 +392,9 @@ function calcScore(p){
   if(p.venueIssues>0){s+=Math.min(p.venueIssues/2,1)*weights.venueIssues;s=Math.max(s,Math.min(s+f.vb,99));}
   if(p.impressions>1000&&p.ctr<0.02)s+=weights.ctrGap;
   else if(p.impressions>500&&p.ctr<0.01)s+=weights.ctrGap*0.5;
+  // Hard floor — just marks the post visually, doesn't artificially inflate score
   let hardFloor=false;
-  if(p.brokenLinks>=f.bc||p.venueIssues>=f.vc){s=Math.max(s,85);hardFloor=true;}
+  if(p.brokenLinks>=f.bc||p.venueIssues>=f.vc){hardFloor=true;}
   s=Math.min(Math.round(s),100);
   const urgency=s>=70?'critical':s>=45?'high':s>=25?'medium':'low';
   return{score:s,urgency,hardFloor,flags};
@@ -531,7 +532,7 @@ async function startLinkScan(){
   posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
 }
 
-function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.value||8),vc:parseInt(document.getElementById('fVenueCrit')?.value||2),bb:parseInt(document.getElementById('fBrokenBoost')?.value||20),vb:parseInt(document.getElementById('fVenueBoost')?.value||15)};}
+function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.value||10),vc:parseInt(document.getElementById('fVenueCrit')?.value||2),bb:parseInt(document.getElementById('fBrokenBoost')?.value||20),vb:parseInt(document.getElementById('fVenueBoost')?.value||15)};}
 function monthsAgo(d){return d?Math.round((Date.now()-new Date(d))/(1000*60*60*24*30)):36}
 function fmtAge(m){if(m<1)return'This month';if(m<12)return m+'mo ago';const y=Math.floor(m/12),r=m%12;return y+'y'+(r>0?' '+r+'mo':'')+' ago'}
 function classify(t){t=t.toLowerCase();if(/festival/.test(t))return'festival';if(/cafe|restaurant|eat|food|bar|hotel|stay|places|things.*do|where.*go|best.*in|hidden gem|itinerary|road trip|guide|tips|how to|what to|when to|budget|cost|packing/.test(t))return'guide';return'story'}
