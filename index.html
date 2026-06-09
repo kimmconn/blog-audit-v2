@@ -152,6 +152,7 @@
     </div>
     <div id="gscBanner" style="display:none"></div>
     <div id="linkScanBanner" style="display:none"></div>
+    <div id="aiScanBanner" style="display:none"></div>
     <div class="panel">
       <div class="floor-note"><strong>Hard urgency floors:</strong> posts with enough potential issues or closed venues are automatically forced to <strong>critical</strong>.</div>
       <div class="gsc-note">⚠️ GSC data covers the last 16 months only. Posts older than 16 months may have peaked earlier — check Google Analytics manually for full history.</div>
@@ -205,7 +206,7 @@
         <div class="int-card"><div class="int-name">Google Maps / Places</div><div class="int-desc">Checks if venues are still open or permanently closed.</div><button class="btn btn-sm">Coming soon</button></div>
         <div class="int-card"><div class="int-name">Link issue scanner</div><div class="int-desc">Scans all outbound links and flags potential 4xx/5xx issues. Runs in background.</div><div id="linkScanStatus"><button class="btn btn-sm btn-primary" onclick="startLinkScan()">Scan all posts for link issues</button></div></div>
         <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume per post's target keyword.</div><button class="btn btn-sm">Coming soon</button></div>
-        <div class="int-card"><div class="int-name">AI content scan</div><div class="int-desc">Claude scans each post for outdated prices, closed venues, old dates, currency changes, keyword drift, and more.</div><span class="tag tag-ok">Ready — use "Report" button</span></div>
+        <div class="int-card"><div class="int-name">AI content scan</div><div class="int-desc">Claude scans every post for outdated prices, closed venues, old currency, COVID refs, and more. Updates urgency scores automatically.</div><div id="aiScanStatus"><button class="btn btn-sm btn-primary" onclick="startAIScan()">Scan all posts with AI</button><div style="font-size:11px;color:var(--text2);margin-top:6px">Uses Claude Haiku — ~$0.50-1.00 for 500 posts</div></div></div>
       </div>
     </div>
   </div>
@@ -281,6 +282,7 @@ const GSC_URL='/api/gsc';
 const AUTH_URL='/api/auth';
 const LINKS_URL='/api/check-links';
 const REPORT_URL='/api/report';
+const BATCH_SCAN_URL='/api/batch-scan';
 let posts=[],page=1,gscToken=null,gscData={};
 const PER_PAGE=25;
 let weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};
@@ -369,6 +371,10 @@ function calcScore(p){
   // 🔥 High impressions gap flag
   if(p.impressions>=t.hotImpr&&p.ctr<t.hotCtr)flags.push({type:'hotimpr',label:'🔥 Impression gap'});
   if(p.brokenLinks>0){s+=Math.min(p.brokenLinks/3,1)*weights.brokenLinks;s=Math.max(s,Math.min(s+f.bb,99));}
+  // AI scan bonus: outdated content adds to score
+  if(p.outdatedCount>0) s+=Math.min(p.outdatedCount/5,1)*weights.venueIssues*0.5;
+  if(p.hasOldCurrency) s+=5;
+  if(p.hasCovid) s+=3;
   if(p.venueIssues>0){s+=Math.min(p.venueIssues/2,1)*weights.venueIssues;s=Math.max(s,Math.min(s+f.vb,99));}
   if(p.impressions>1000&&p.ctr<0.02)s+=weights.ctrGap;
   else if(p.impressions>500&&p.ctr<0.01)s+=weights.ctrGap*0.5;
@@ -552,7 +558,9 @@ function renderTable(){
   document.getElementById('totalCount').textContent=`${filtered.length} posts`;
   tbody.innerHTML=slice.map((p,i)=>{
     const postIdx=posts.indexOf(p);
-    const issues=p.brokenLinks>0?`<span class="dot dot-red"></span>${p.brokenLinks} issues`:(p.linksScanned?'<span style="color:var(--green-text);font-size:10px">✓ clean</span>':'<span style="color:var(--text3)">not scanned</span>');
+    const linkIssues=p.brokenLinks>0?`<span class="dot dot-red"></span>${p.brokenLinks} links`:(p.linksScanned?'<span style="color:var(--green-text);font-size:10px">✓ links ok</span>':'');
+    const aiIssues=p.aiScanned?(p.venueIssues>0||p.outdatedCount>0?`<span class="dot dot-amber"></span>${p.venueIssues+p.outdatedCount} AI`:'<span style="color:var(--green-text);font-size:10px">✓ AI ok</span>'):'';
+    const issues=[linkIssues,aiIssues].filter(Boolean).join(' ')||'<span style="color:var(--text3)">not scanned</span>';
     const flagsHtml=(p.flags&&p.flags.length>0)?p.flags.map(f=>`<span class="flag flag-${f.type}">${f.label}</span>`).join(''):'<span style="color:var(--text3);font-size:11px">—</span>';
     const ageCol=p.ageMonths>=24?'var(--red-text)':p.ageMonths>=12?'var(--amber-text)':'var(--text2)';
     const sc=scoreColor(p.score);
@@ -636,6 +644,66 @@ function loadDemo(){
   document.getElementById('progressWrap').style.display='none';
   page=1;updateMetrics();renderTable();
 }
+// ===== BATCH AI SCANNER =====
+async function startAIScan() {
+  if (posts.length === 0) { alert('Please crawl your blog first!'); return; }
+  const siteUrl = document.getElementById('urlInput').value.trim().replace(/\/$/, '');
+  const banner = document.getElementById('aiScanBanner');
+  const statusEl = document.getElementById('aiScanStatus');
+  banner.className = 'scan-banner';
+  banner.style.display = 'flex';
+  statusEl.innerHTML = '<span class="tag">AI scanning...</span>';
+
+  let scanned = 0, totalVenue = 0, totalOutdated = 0;
+  const postsToScan = [...posts];
+  const CONCURRENT = 3; // smaller batches — Claude calls take longer
+
+  for (let i = 0; i < postsToScan.length; i += CONCURRENT) {
+    const batch = postsToScan.slice(i, i + CONCURRENT);
+    banner.innerHTML = `<span>🤖 AI scanning posts — ${scanned} of ${postsToScan.length} done, ${totalVenue} venue issues + ${totalOutdated} outdated items found...</span>`;
+
+    await Promise.allSettled(batch.map(async (post) => {
+      try {
+        const res = await fetch(BATCH_SCAN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ postId: post.id, postUrl: post.url, postTitle: post.title, siteUrl }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.error) {
+            post.venueIssues = data.venueIssues || 0;
+            post.outdatedCount = data.outdatedCount || 0;
+            post.hasOldCurrency = data.hasOldCurrency || false;
+            post.hasCovid = data.hasCovid || false;
+            post.hasOldPrices = data.hasOldPrices || false;
+            post.aiScanned = true;
+            if (data.venueIssues > 0 || data.outdatedCount > 0) {
+              const r = calcScore(post);
+              post.score = r.score; post.urgency = r.urgency; post.hardFloor = r.hardFloor; post.flags = r.flags;
+              totalVenue += data.venueIssues;
+              totalOutdated += data.outdatedCount;
+            }
+          }
+        }
+      } catch(e) {}
+      scanned++;
+    }));
+
+    // Update every batch
+    posts.sort((a,b) => b.score - a.score);
+    updateMetrics();
+    renderTable();
+  }
+
+  banner.className = 'scan-banner scan-complete';
+  banner.innerHTML = `<span>✓ AI scan complete — ${scanned} posts scanned, ${totalVenue} venue issues + ${totalOutdated} outdated items found</span><button class="btn btn-sm" style="margin-left:auto" onclick="startAIScan()">Rescan →</button>`;
+  statusEl.innerHTML = `<span class="tag tag-ok">✓ ${totalVenue} venue + ${totalOutdated} outdated items found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startAIScan()">Rescan</button>`;
+  posts.sort((a,b) => b.score - a.score);
+  updateMetrics();
+  renderTable();
+}
+
 renderTable();
 </script>
 </body>
