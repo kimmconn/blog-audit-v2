@@ -2,11 +2,13 @@ import { Redis } from '@upstash/redis';
 
 let redis;
 function getRedis() {
-  if (!redis && process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-    redis = new Redis({
-      url: process.env.KV_REST_API_URL,
-      token: process.env.KV_REST_API_TOKEN,
-    });
+  if (!redis) {
+    // Try both possible env var names
+    const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (url && token) {
+      redis = new Redis({ url, token });
+    }
   }
   return redis;
 }
@@ -27,11 +29,14 @@ export default async function handler(req, res) {
   const cacheKey = `scan:${siteUrl}:${postId}`;
   const kv = getRedis();
 
-  // Check cache first
+  // Check cache first (skip if forceRefresh)
   if (!forceRefresh && kv) {
     try {
       const cached = await kv.get(cacheKey);
-      if (cached) return res.status(200).json({ ...cached, fromCache: true });
+      if (cached && (cached.venueIssues > 0 || cached.outdatedCount > 0 || cached.scannedAt)) {
+        // Only use cache if it has real data OR was explicitly saved
+        return res.status(200).json({ ...cached, fromCache: true });
+      }
     } catch(e) {}
   }
 
@@ -113,7 +118,10 @@ Return ONLY this JSON:
     if (kv) {
       try {
         await kv.set(cacheKey, output, { ex: 2592000 });
-      } catch(e) {}
+      } catch(e) {
+        // Log error in response for debugging
+        output.cacheError = e.message;
+      }
     }
 
     return res.status(200).json(output);
