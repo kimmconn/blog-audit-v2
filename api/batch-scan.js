@@ -1,48 +1,15 @@
-// Batch AI Scanner with Upstash caching
-// Uses Claude Haiku for speed/cost efficiency
+import { Redis } from '@upstash/redis';
 
-async function kvGet(key) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  try {
-    const res = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(3000),
+let redis;
+function getRedis() {
+  if (!redis && process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+    redis = new Redis({
+      url: process.env.KV_REST_API_URL,
+      token: process.env.KV_REST_API_TOKEN,
     });
-    const data = await res.json();
-    return data.result ? JSON.parse(data.result) : null;
-  } catch { return null; }
+  }
+  return redis;
 }
-
-async function kvSet(key, value, ttlSeconds = 2592000) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return;
-  try {
-    // Correct Upstash REST format: /setex/key/ttl/value
-    await fetch(`${url}/setex/${encodeURIComponent(key)}/${ttlSeconds}/${encodeURIComponent(JSON.stringify(value))}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(3000),
-    });
-  } catch {}
-}
-
-async function kvSet(key, value, ttlSeconds = 2592000) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return;
-  try {
-    // Upstash REST: SET key value EX ttl
-    await fetch(`${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}/ex/${ttlSeconds}`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(3000),
-    });
-  } catch {}
-}
-
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -58,11 +25,14 @@ export default async function handler(req, res) {
   if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'Anthropic API key not configured' });
 
   const cacheKey = `scan:${siteUrl}:${postId}`;
+  const kv = getRedis();
 
   // Check cache first
-  if (!forceRefresh) {
-    const cached = await kvGet(cacheKey);
-    if (cached) return res.status(200).json({ ...cached, fromCache: true });
+  if (!forceRefresh && kv) {
+    try {
+      const cached = await kv.get(cacheKey);
+      if (cached) return res.status(200).json({ ...cached, fromCache: true });
+    } catch(e) {}
   }
 
   try {
@@ -97,9 +67,9 @@ Title: "${postTitle}"
 Content: ${content}
 
 Count and extract:
-1. venueIssues: number of specific named venues (hotels, cafes, restaurants, bars, attractions) that may have closed, moved, or changed — use your knowledge
-2. outdatedCount: other outdated items (old prices, old currency like Croatian Kuna, COVID refs, "recently opened" claims that are now old, old stats)
-3. venueNames: array of specific venue names mentioned (max 10, for later Google verification)
+1. venueIssues: number of specific named venues (hotels, cafes, restaurants, bars, attractions) that may have closed, moved, or changed
+2. outdatedCount: other outdated items (old prices, old currency like Croatian Kuna, COVID refs, "recently opened" claims, old stats)
+3. venueNames: array of specific venue names mentioned (max 10)
 
 Return ONLY this JSON:
 {
@@ -139,8 +109,12 @@ Return ONLY this JSON:
       fromCache: false,
     };
 
-    // Save to cache
-    await kvSet(cacheKey, output);
+    // Save to cache with 30 day TTL
+    if (kv) {
+      try {
+        await kv.set(cacheKey, output, { ex: 2592000 });
+      } catch(e) {}
+    }
 
     return res.status(200).json(output);
 
