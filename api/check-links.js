@@ -19,6 +19,20 @@ async function kvSet(key, value, ttlSeconds = 2592000) {
   const token = process.env.KV_REST_API_TOKEN;
   if (!url || !token) return;
   try {
+    // Correct Upstash REST format: /setex/key/ttl/value
+    await fetch(`${url}/setex/${encodeURIComponent(key)}/${ttlSeconds}/${encodeURIComponent(JSON.stringify(value))}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {}
+}
+
+async function kvSet(key, value, ttlSeconds = 2592000) {
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return;
+  try {
     await fetch(`${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}/ex/${ttlSeconds}`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
