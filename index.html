@@ -60,6 +60,8 @@
   .flag{display:inline-block;font-size:10px;padding:2px 5px;border-radius:var(--radius);margin-right:2px;margin-bottom:2px;white-space:nowrap}
   .flag-opportunity{background:var(--purple-bg);color:var(--purple-text)}
   .flag-peaked{background:var(--amber-bg);color:var(--amber-text)}
+  .flag-notindexed{background:#F3EEFF;color:#5B21B6}
+  .flag-potential{background:#FFF7ED;color:#C2410C}
   .flag-offmap{background:var(--red-bg);color:var(--red-text)}
   .flag-neverranked{background:var(--bg2);color:var(--text3)}
   .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px}
@@ -161,7 +163,8 @@
         <select id="fUrgency" onchange="renderTable()"><option value="">All urgency</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
         <select id="fType" onchange="renderTable()"><option value="">All types</option><option value="guide">Guide</option><option value="story">Story</option><option value="festival">Festival</option></select>
         <select id="fAge" onchange="renderTable()"><option value="">Any age</option><option value="36">3+ years</option><option value="24">2+ years</option><option value="12">1+ year</option></select>
-        <select id="fFlag" onchange="renderTable()"><option value="">All posts</option><option value="opportunity">Opportunities (pos 11-20)</option><option value="peaked">Peaked traffic</option><option value="offmap">Fallen off map</option><option value="hotimpr">🔥 High impressions gap</option><option value="floor">Hard floor only</option></select>
+        <select id="fFlag" onchange="renderTable()"><option value="">All posts</option><option value="opportunity">Opportunities (pos 11-20)</option><option value="peaked">Peaked traffic</option><option value="offmap">Fallen off map</option><option value="hotimpr">🔥 High impressions gap</option>
+        <option value="notindexed">🔍 Not in GSC</option><option value="floor">Hard floor only</option></select>
         <select id="fSort" onchange="renderTable()"><option value="score">Sort: urgency</option><option value="age">Sort: oldest</option><option value="traffic">Sort: traffic ↓</option><option value="decline">Sort: biggest decline</option><option value="title">Sort: A–Z</option></select>
         <button class="btn btn-sm" onclick="exportCSV()">Export CSV</button>
       </div>
@@ -333,6 +336,7 @@ async function loadGSCData(){
       const nu=p.url.replace(/\/$/,'');
       const recent=recentMap[p.url]||recentMap[p.url+'/']||recentMap[nu]||null;
       const older=olderMap[p.url]||olderMap[p.url+'/']||olderMap[nu]||null;
+      p.gscChecked = true; // mark that we checked GSC for this post
       if(recent||older){
         p.traffic=recent?Math.round(recent.clicks):0;p.impressions=recent?Math.round(recent.impressions):0;
         p.ctr=recent?recent.ctr:0;p.position=recent?recent.position:0;
@@ -370,6 +374,16 @@ function calcScore(p){
   else if(p.position>3&&p.position<=10&&p.impressions>500)s+=weights.positionOpportunity*0.4;
   // 🔥 High impressions gap flag
   if(p.impressions>=t.hotImpr&&p.ctr<t.hotCtr)flags.push({type:'hotimpr',label:'🔥 Impression gap'});
+  // 🔍 Not indexed — in WordPress but zero GSC presence, post is old enough to be indexed
+  const hasAnyGSC=(p.recentImpressions>0||p.olderImpressions>0||p.recentClicks>0||p.olderClicks>0);
+  if(p.gscChecked&&!hasAnyGSC&&p.ageMonths>=3){
+    flags.push({type:'notindexed',label:'🔍 Not in GSC'});
+    if(p.ageMonths>=6) s+=8; // boost score — should be indexed by now
+  }
+  // Potential venue issues from batch AI scan
+  if(p.aiScanned&&p.venueIssues>0&&!p.venueConfirmed){
+    flags.push({type:'potential',label:`⚠️ ${p.venueIssues} potential venue`});
+  }
   if(p.brokenLinks>0){s+=Math.min(p.brokenLinks/3,1)*weights.brokenLinks;s=Math.max(s,Math.min(s+f.bb,99));}
   // AI scan bonus: outdated content adds to score
   if(p.outdatedCount>0) s+=Math.min(p.outdatedCount/5,1)*weights.venueIssues*0.5;
@@ -529,7 +543,12 @@ function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.class
 function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('');}
 function resetWeights(){weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};renderWeights();}
 function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value);});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
-function updateMetrics(){document.getElementById('mTotal').textContent=posts.length;document.getElementById('mCritical').textContent=posts.filter(p=>p.urgency==='critical').length;document.getElementById('mStale').textContent=posts.filter(p=>p.ageMonths>=12).length;document.getElementById('mOpportunity').textContent=posts.filter(p=>p.flags&&p.flags.some(f=>f.type==='opportunity')).length;}
+function updateMetrics(){document.getElementById('mTotal').textContent=posts.length;document.getElementById('mCritical').textContent=posts.filter(p=>p.urgency==='critical').length;document.getElementById('mStale').textContent=posts.filter(p=>p.ageMonths>=12).length;document.getElementById('mOpportunity').textContent=posts.filter(p=>p.flags&&p.flags.some(f=>f.type==='opportunity')).length;
+  const notIndexed=posts.filter(p=>p.flags&&p.flags.some(f=>f.type==='notindexed')).length;
+  if(notIndexed>0){
+    const el=document.getElementById('mStale');
+    el.nextElementSibling.textContent=`not updated recently • ${notIndexed} not in GSC`;
+  }}
 function getFiltered(){
   const s=document.getElementById('searchInput').value.toLowerCase(),u=document.getElementById('fUrgency').value,t=document.getElementById('fType').value,a=document.getElementById('fAge').value,fl=document.getElementById('fFlag').value,so=document.getElementById('fSort').value;
   let r=posts.filter(p=>{
@@ -542,6 +561,7 @@ function getFiltered(){
     if(fl==='peaked'&&!(p.flags&&p.flags.some(f=>f.type==='peaked')))return false;
     if(fl==='offmap'&&!(p.flags&&p.flags.some(f=>f.type==='offmap')))return false;
     if(fl==='hotimpr'&&!(p.flags&&p.flags.some(f=>f.type==='hotimpr')))return false;
+    if(fl==='notindexed'&&!(p.flags&&p.flags.some(f=>f.type==='notindexed')))return false;
     return true;
   });
   r.sort((a,b)=>so==='score'?b.score-a.score:so==='age'?b.ageMonths-a.ageMonths:so==='traffic'?b.traffic-a.traffic:so==='decline'?b.trafficDeclinePct-a.trafficDeclinePct:a.title.localeCompare(b.title));
@@ -561,7 +581,12 @@ function renderTable(){
     const linkIssues=p.brokenLinks>0?`<span class="dot dot-red"></span>${p.brokenLinks} links`:(p.linksScanned?'<span style="color:var(--green-text);font-size:10px">✓ links ok</span>':'');
     const aiIssues=p.aiScanned?(p.venueIssues>0||p.outdatedCount>0?`<span class="dot dot-amber"></span>${p.venueIssues+p.outdatedCount} AI`:'<span style="color:var(--green-text);font-size:10px">✓ AI ok</span>'):'';
     const issues=[linkIssues,aiIssues].filter(Boolean).join(' ')||'<span style="color:var(--text3)">not scanned</span>';
-    const flagsHtml=(p.flags&&p.flags.length>0)?p.flags.map(f=>`<span class="flag flag-${f.type}">${f.label}</span>`).join(''):'<span style="color:var(--text3);font-size:11px">—</span>';
+    const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
+    const gscInspectUrl=`https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(siteUrl)}&id=${encodeURIComponent(p.url)}`;
+    const flagsHtml=(p.flags&&p.flags.length>0)?p.flags.map(f=>{
+      if(f.type==='notindexed') return `<a href="${gscInspectUrl}" target="_blank" title="Check in GSC URL inspection"><span class="flag flag-${f.type}">${f.label} ↗</span></a>`;
+      return `<span class="flag flag-${f.type}">${f.label}</span>`;
+    }).join(''):'<span style="color:var(--text3);font-size:11px">—</span>';
     const ageCol=p.ageMonths>=24?'var(--red-text)':p.ageMonths>=12?'var(--amber-text)':'var(--text2)';
     const sc=scoreColor(p.score);
     const hasTraffic=p.traffic>0||p.impressions>0;
@@ -628,7 +653,7 @@ async function startCrawl(){
     document.getElementById('crawlStatus').className='tag tag-err';
   }
 }
-function processBatch(batch){batch.forEach(p=>{const title=(p.title?.rendered||p.slug||'Untitled').replace(/<[^>]+>/g,'');const ageMonths=monthsAgo(p.modified||p.date);const post={id:p.id,title,url:p.link,ageMonths,lastModified:p.modified||p.date,type:classify(title),traffic:0,impressions:0,ctr:0,position:0,recentClicks:0,olderClicks:0,recentImpressions:0,olderImpressions:0,trafficDeclinePct:0,brokenLinks:0,venueIssues:0,brokenLinkUrls:[],linksScanned:false,flags:[]};const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;posts.push(post);});}
+function processBatch(batch){batch.forEach(p=>{const title=(p.title?.rendered||p.slug||'Untitled').replace(/<[^>]+>/g,'');const ageMonths=monthsAgo(p.modified||p.date);const post={id:p.id,title,url:p.link,ageMonths,lastModified:p.modified||p.date,type:classify(title),traffic:0,impressions:0,ctr:0,position:0,recentClicks:0,olderClicks:0,recentImpressions:0,olderImpressions:0,trafficDeclinePct:0,brokenLinks:0,venueIssues:0,outdatedCount:0,brokenLinkUrls:[],linksScanned:false,aiScanned:false,venueConfirmed:false,gscChecked:false,flags:[]};const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;posts.push(post);});}
 function setProgress(done,total,msg){const pct=total>0?Math.round((done/total)*100):50;document.getElementById('progressFill').style.width=pct+'%';document.getElementById('statusMsg').textContent=msg;}
 function loadDemo(){
   const data=[{t:"Best Cafes in Canggu Bali",age:36,bl:2,vi:3,rc:280,oc:3200,ri:18000,oi:45000,pos:14.2},{t:"Sailing Croatia Complete Guide",age:30,bl:1,vi:0,rc:5100,oc:5400,ri:36000,oi:38000,pos:3.2},{t:"Hidden Gems in Central Italy",age:12,bl:9,vi:1,rc:180,oc:420,ri:24000,oi:31000,pos:17.4},{t:"Top Beaches in Bali",age:28,bl:1,vi:2,rc:1100,oc:4300,ri:22000,oi:41000,pos:12.6},{t:"Nusa Lembongan Complete Guide",age:48,bl:2,vi:3,rc:120,oc:3600,ri:8000,oi:39000,pos:24.1},{t:"Best Restaurants in Seminyak",age:16,bl:1,vi:4,rc:2100,oc:2800,ri:15000,oi:19000,pos:5.4},{t:"Burning Man Survival Guide",age:24,bl:10,vi:0,rc:210,oc:430,ri:9000,oi:15000,pos:18.3},{t:"Tulum Travel Guide",age:36,bl:2,vi:2,rc:2800,oc:5100,ri:38000,oi:61000,pos:7.2},{t:"50 Epic Places Melbourne",age:36,bl:35,vi:0,rc:8,oc:3600,ri:11000,oi:39000,pos:17.9},{t:"Digital Nomad Guide Bali",age:18,bl:0,vi:1,rc:1400,oc:1600,ri:28000,oi:33000,pos:4.9},{t:"Things That Surprised Me Istanbul",age:8,bl:0,vi:0,rc:3800,oc:2100,ri:44000,oi:31000,pos:3.8},{t:"My Week in Ubud",age:30,bl:0,vi:0,rc:12,oc:18,ri:40,oi:60,pos:31.0}];
