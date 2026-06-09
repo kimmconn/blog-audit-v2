@@ -85,7 +85,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
         max_tokens: 2500,
-        system: `You are an expert travel blog content auditor. You have deep knowledge of world events, currency changes, business closures, and travel requirement changes. Be specific — quote actual text from the post when flagging issues. Return ONLY valid JSON, no markdown fences, no extra text.`,
+        system: `You are an expert travel blog content auditor. Today's date is ${new Date().toLocaleDateString("en-US", {year:"numeric",month:"long",day:"numeric"})}. Always use the current year when making suggestions — never suggest adding "2024" content when it is already 2025 or 2026. You have deep knowledge of world events, currency changes, business closures, and travel requirement changes. Be specific — quote actual text from the post when flagging issues. Return ONLY valid JSON, no markdown fences, no extra text.`,
         messages: [{
           role: 'user',
           content: `Audit this travel blog post for update opportunities.
