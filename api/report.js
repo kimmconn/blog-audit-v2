@@ -1,3 +1,32 @@
+async function kvGet(key) {
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return null;
+  try {
+    const res = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(3000),
+    });
+    const data = await res.json();
+    return data.result ? JSON.parse(data.result) : null;
+  } catch { return null; }
+}
+
+async function kvSet(key, value, ttlSeconds = 2592000) {
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return;
+  try {
+    await fetch(`${url}/set/${encodeURIComponent(key)}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: JSON.stringify(value), ex: ttlSeconds }),
+      signal: AbortSignal.timeout(3000),
+    });
+  } catch {}
+}
+
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -10,6 +39,13 @@ export default async function handler(req, res) {
 
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'Anthropic API key not configured' });
+
+  // Check cache first
+  const cacheKey = `report:${siteUrl}:${postId}`;
+  if (!req.body.forceRefresh) {
+    const cached = await kvGet(cacheKey);
+    if (cached) return res.status(200).json({ ...cached, fromCache: true });
+  }
 
   try {
     // Fetch post content from WordPress
@@ -130,13 +166,15 @@ Return ONLY this JSON structure, nothing else:
       return res.status(200).json({ error: 'Could not parse Claude response', raw: rawText.slice(0,300) });
     }
 
-    return res.status(200).json({
+    const result = {
       postId, postUrl, postTitle, publishDate, modifiedDate,
       brokenLinksCount: brokenLinks?.length || 0,
       generatedAt: new Date().toISOString(),
       report,
       fromCache: false,
-    });
+    };
+    await kvSet(cacheKey, result);
+    return res.status(200).json(result);
 
   } catch(e) {
     if (e.name === 'TimeoutError') return res.status(200).json({ error: 'Request timed out — try again' });
