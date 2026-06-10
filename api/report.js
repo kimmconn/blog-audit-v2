@@ -1,44 +1,49 @@
-async function kvGet(key) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  try {
-    const res = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(3000),
-    });
-    const data = await res.json();
-    return data.result ? JSON.parse(data.result) : null;
-  } catch { return null; }
+import { Redis } from '@upstash/redis';
+
+let redis;
+function getRedis() {
+  if (!redis) {
+    const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (url && token) redis = new Redis({ url, token });
+  }
+  return redis;
 }
 
-async function kvSet(key, value, ttlSeconds = 2592000) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return;
+// Search Google for a venue and check if it appears permanently closed
+async function checkVenueStatus(venueName, location) {
   try {
-    // Correct Upstash REST format: /setex/key/ttl/value
-    await fetch(`${url}/setex/${encodeURIComponent(key)}/${ttlSeconds}/${encodeURIComponent(JSON.stringify(value))}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(3000),
+    const query = encodeURIComponent(`${venueName} ${location} permanently closed`);
+    const res = await fetch(`https://www.google.com/search?q=${query}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BlogAuditBot/1.0)' },
+      signal: AbortSignal.timeout(8000),
+      redirect: 'follow',
     });
-  } catch {}
-}
+    const html = await res.text();
+    const lower = html.toLowerCase();
 
-async function kvSet(key, value, ttlSeconds = 2592000) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return;
-  try {
-    await fetch(`${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}/ex/${ttlSeconds}`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(3000),
-    });
-  } catch {}
-}
+    // Check for closure signals in Google results
+    const closureSignals = [
+      'permanently closed',
+      'permanently closed',
+      'closed permanently',
+      'this place is closed',
+      'business is closed',
+      'no longer open',
+      'has closed',
+      'has permanently closed',
+    ];
 
+    const found = closureSignals.some(s => lower.includes(s));
+    return {
+      venue: venueName,
+      status: found ? 'possibly_closed' : 'appears_open',
+      flag: found,
+    };
+  } catch(e) {
+    return { venue: venueName, status: 'unknown', flag: false };
+  }
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -47,21 +52,25 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { postId, postUrl, postTitle, siteUrl, gscData, brokenLinks } = req.body;
+  const { postId, postUrl, postTitle, siteUrl, gscData, brokenLinks, forceRefresh } = req.body;
   if (!postId || !siteUrl) return res.status(400).json({ error: 'Missing postId or siteUrl' });
 
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'Anthropic API key not configured' });
 
-  // Check cache first
   const cacheKey = `report:${siteUrl}:${postId}`;
-  if (!req.body.forceRefresh) {
-    const cached = await kvGet(cacheKey);
-    if (cached) return res.status(200).json({ ...cached, fromCache: true });
+  const kv = getRedis();
+
+  // Check cache first
+  if (!forceRefresh && kv) {
+    try {
+      const cached = await kv.get(cacheKey);
+      if (cached && cached.generatedAt) return res.status(200).json({ ...cached, fromCache: true });
+    } catch(e) {}
   }
 
   try {
-    // Fetch post content from WordPress
+    // Fetch post content
     const wpRes = await fetch(
       `${siteUrl}/wp-json/wp/v2/posts/${postId}?_fields=content,title,date,modified`,
       { headers: { 'User-Agent': 'BlogAuditTool/1.0' }, signal: AbortSignal.timeout(15000) }
@@ -88,6 +97,59 @@ export default async function handler(req, res) {
       ? `${brokenLinks.length} potential broken links:\n${brokenLinks.slice(0,8).map(l=>`- ${l.url} (${l.status||'timeout'})`).join('\n')}`
       : 'No broken links detected';
 
+    // Step 1: Quick Claude scan to extract venue names for verification
+    const venueExtractRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        system: 'Extract venue names and location from travel blog content. Return ONLY valid JSON.',
+        messages: [{
+          role: 'user',
+          content: `Extract up to 8 specific named venues (hotels, restaurants, cafes, bars, attractions) from this post, and the main destination/city.
+
+Title: "${postTitle}"
+Content: ${content.slice(0, 2000)}
+
+Return ONLY: {"venues": ["venue name 1", "venue name 2"], "location": "city, country"}`
+        }]
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+
+    let venueNames = [];
+    let location = '';
+    if (venueExtractRes.ok) {
+      const venueData = await venueExtractRes.json();
+      try {
+        const parsed = JSON.parse(venueData.content?.[0]?.text || '{}');
+        venueNames = parsed.venues || [];
+        location = parsed.location || '';
+      } catch(e) {}
+    }
+
+    // Step 2: Check each venue on Google (max 5 to avoid timeout)
+    const venueResults = [];
+    if (venueNames.length > 0) {
+      const venuesToCheck = venueNames.slice(0, 5);
+      const checks = await Promise.allSettled(
+        venuesToCheck.map(v => checkVenueStatus(v, location))
+      );
+      checks.forEach(r => {
+        if (r.status === 'fulfilled') venueResults.push(r.value);
+      });
+    }
+
+    const venueContext = venueResults.length > 0
+      ? `Venue status checks:\n${venueResults.map(v => `- ${v.venue}: ${v.status === 'possibly_closed' ? '⚠️ POSSIBLY CLOSED (found closure signals on Google)' : 'appears open'}`).join('\n')}`
+      : '';
+
+    // Step 3: Full Claude report
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -98,7 +160,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
         max_tokens: 2500,
-        system: `You are an expert travel blog content auditor. Today's date is ${new Date().toLocaleDateString("en-US", {year:"numeric",month:"long",day:"numeric"})}. Always use the current year when making suggestions — never suggest adding "2024" content when it is already 2025 or 2026. You have deep knowledge of world events, currency changes, business closures, and travel requirement changes. Be specific — quote actual text from the post when flagging issues. Return ONLY valid JSON, no markdown fences, no extra text.`,
+        system: `You are an expert travel blog content auditor. Today's date is ${new Date().toLocaleDateString("en-US", {year:"numeric",month:"long",day:"numeric"})}. Always use the current year when making suggestions. Be specific — quote actual text from the post when flagging issues. Return ONLY valid JSON, no markdown fences.`,
         messages: [{
           role: 'user',
           content: `Audit this travel blog post for update opportunities.
@@ -108,6 +170,7 @@ URL: ${postUrl}
 Published: ${publishDate} | Last modified: ${modifiedDate}
 ${gscContext}
 ${linksContext}
+${venueContext}
 
 POST CONTENT:
 ${content}
@@ -124,12 +187,12 @@ Check for ALL of these:
 - Outdated seasonal info with specific past years
 - Dead social media handles or apps
 - Old exchange rates presented as current
-- "Recently" or "just" claims that are now old given publish date
 - Business hours presented as definitive
 - Affiliate or booking links that may have changed
 - Safety warnings that may be outdated
+- Any venues flagged as possibly closed above
 
-Return ONLY this JSON structure, nothing else:
+Return ONLY this JSON:
 {
   "summary": "2-3 sentence overview",
   "urgencyReason": "main reason to update now",
@@ -182,11 +245,19 @@ Return ONLY this JSON structure, nothing else:
     const result = {
       postId, postUrl, postTitle, publishDate, modifiedDate,
       brokenLinksCount: brokenLinks?.length || 0,
+      venueChecks: venueResults,
       generatedAt: new Date().toISOString(),
       report,
       fromCache: false,
     };
-    await kvSet(cacheKey, result);
+
+    // Save to cache
+    if (kv) {
+      try {
+        await kv.set(cacheKey, result, { ex: 2592000 });
+      } catch(e) {}
+    }
+
     return res.status(200).json(result);
 
   } catch(e) {
