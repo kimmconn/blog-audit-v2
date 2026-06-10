@@ -10,38 +10,53 @@ function getRedis() {
   return redis;
 }
 
-// Search Google for a venue and check if it appears permanently closed
+// Check venue status using Google Places API (New)
 async function checkVenueStatus(venueName, location) {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) return { venue: venueName, status: 'unknown', flag: false };
+
   try {
-    const query = encodeURIComponent(`${venueName} ${location} permanently closed`);
-    const res = await fetch(`https://www.google.com/search?q=${query}`, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BlogAuditBot/1.0)' },
-      signal: AbortSignal.timeout(8000),
-      redirect: 'follow',
-    });
-    const html = await res.text();
-    const lower = html.toLowerCase();
+    // Text search for the venue
+    const query = `${venueName} ${location}`;
+    const searchRes = await fetch(
+      'https://places.googleapis.com/v1/places:searchText',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': apiKey,
+          'X-Goog-FieldMask': 'places.displayName,places.businessStatus,places.formattedAddress',
+        },
+        body: JSON.stringify({ textQuery: query, maxResultCount: 1 }),
+        signal: AbortSignal.timeout(8000),
+      }
+    );
 
-    // Check for closure signals in Google results
-    const closureSignals = [
-      'permanently closed',
-      'permanently closed',
-      'closed permanently',
-      'this place is closed',
-      'business is closed',
-      'no longer open',
-      'has closed',
-      'has permanently closed',
-    ];
+    if (!searchRes.ok) {
+      return { venue: venueName, status: 'unknown', flag: false };
+    }
 
-    const found = closureSignals.some(s => lower.includes(s));
+    const data = await searchRes.json();
+    const place = data.places?.[0];
+
+    if (!place) {
+      return { venue: venueName, status: 'not_found', flag: false };
+    }
+
+    const status = place.businessStatus;
+    const isClosed = status === 'CLOSED_PERMANENTLY';
+    const isTemporary = status === 'CLOSED_TEMPORARILY';
+
     return {
       venue: venueName,
-      status: found ? 'possibly_closed' : 'appears_open',
-      flag: found,
+      displayName: place.displayName?.text || venueName,
+      address: place.formattedAddress || '',
+      status: isClosed ? 'permanently_closed' : isTemporary ? 'temporarily_closed' : 'open',
+      businessStatus: status,
+      flag: isClosed || isTemporary,
     };
   } catch(e) {
-    return { venue: venueName, status: 'unknown', flag: false };
+    return { venue: venueName, status: 'unknown', flag: false, error: e.message };
   }
 }
 
@@ -97,7 +112,7 @@ export default async function handler(req, res) {
       ? `${brokenLinks.length} potential broken links:\n${brokenLinks.slice(0,8).map(l=>`- ${l.url} (${l.status||'timeout'})`).join('\n')}`
       : 'No broken links detected';
 
-    // Step 1: Quick Claude scan to extract venue names for verification
+    // Step 1: Extract venue names with Haiku
     const venueExtractRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -133,10 +148,10 @@ Return ONLY: {"venues": ["venue name 1", "venue name 2"], "location": "city, cou
       } catch(e) {}
     }
 
-    // Step 2: Check each venue on Google (max 5 to avoid timeout)
+    // Step 2: Check venues via Google Places API
     const venueResults = [];
-    if (venueNames.length > 0) {
-      const venuesToCheck = venueNames.slice(0, 5);
+    if (venueNames.length > 0 && process.env.GOOGLE_PLACES_API_KEY) {
+      const venuesToCheck = venueNames.slice(0, 6);
       const checks = await Promise.allSettled(
         venuesToCheck.map(v => checkVenueStatus(v, location))
       );
@@ -146,7 +161,12 @@ Return ONLY: {"venues": ["venue name 1", "venue name 2"], "location": "city, cou
     }
 
     const venueContext = venueResults.length > 0
-      ? `Venue status checks:\n${venueResults.map(v => `- ${v.venue}: ${v.status === 'possibly_closed' ? '⚠️ POSSIBLY CLOSED (found closure signals on Google)' : 'appears open'}`).join('\n')}`
+      ? `Venue verification results:\n${venueResults.map(v => {
+          if (v.status === 'permanently_closed') return `- ${v.venue}: ❌ PERMANENTLY CLOSED`;
+          if (v.status === 'temporarily_closed') return `- ${v.venue}: ⚠️ TEMPORARILY CLOSED`;
+          if (v.status === 'not_found') return `- ${v.venue}: ❓ NOT FOUND on Google Maps`;
+          return `- ${v.venue}: ✅ open`;
+        }).join('\n')}`
       : '';
 
     // Step 3: Full Claude report
@@ -190,7 +210,7 @@ Check for ALL of these:
 - Business hours presented as definitive
 - Affiliate or booking links that may have changed
 - Safety warnings that may be outdated
-- Any venues flagged as possibly closed above
+- Any venues marked as PERMANENTLY CLOSED or NOT FOUND above
 
 Return ONLY this JSON:
 {
@@ -251,7 +271,6 @@ Return ONLY this JSON:
       fromCache: false,
     };
 
-    // Save to cache
     if (kv) {
       try {
         await kv.set(cacheKey, result, { ex: 2592000 });
