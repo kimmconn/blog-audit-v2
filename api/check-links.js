@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   if (!forceRefresh && kv) {
     try {
       const cached = await kv.get(cacheKey);
-      if (cached) return res.status(200).json({ ...cached, fromCache: true });
+      if (cached && (cached.brokenCount > 0 || cached.scannedAt)) return res.status(200).json({ ...cached, fromCache: true });
     } catch(e) {}
   }
 
