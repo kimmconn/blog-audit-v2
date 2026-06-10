@@ -1,44 +1,15 @@
-// Broken link scanner with Upstash caching
+import { Redis } from '@upstash/redis';
 
-async function kvGet(key) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  try {
-    const res = await fetch(`${url}/get/${encodeURIComponent(key)}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(3000),
-    });
-    const data = await res.json();
-    return data.result ? JSON.parse(data.result) : null;
-  } catch { return null; }
-}
-
-async function kvSet(key, value, ttlSeconds = 2592000) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return;
-  try {
-    // Correct Upstash REST format: /setex/key/ttl/value
-    await fetch(`${url}/setex/${encodeURIComponent(key)}/${ttlSeconds}/${encodeURIComponent(JSON.stringify(value))}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(3000),
-    });
-  } catch {}
-}
-
-async function kvSet(key, value, ttlSeconds = 2592000) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return;
-  try {
-    await fetch(`${url}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(value))}/ex/${ttlSeconds}`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(3000),
-    });
-  } catch {}
+let redis;
+function getRedis() {
+  if (!redis) {
+    const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (url && token) {
+      redis = new Redis({ url, token });
+    }
+  }
+  return redis;
 }
 
 export default async function handler(req, res) {
@@ -52,15 +23,17 @@ export default async function handler(req, res) {
   if (!postUrl) return res.status(400).json({ error: 'Missing postUrl' });
 
   const cacheKey = `links:${siteUrl}:${postId}`;
+  const kv = getRedis();
 
   // Check cache first
-  if (!forceRefresh) {
-    const cached = await kvGet(cacheKey);
-    if (cached) return res.status(200).json({ ...cached, fromCache: true });
+  if (!forceRefresh && kv) {
+    try {
+      const cached = await kv.get(cacheKey);
+      if (cached) return res.status(200).json({ ...cached, fromCache: true });
+    } catch(e) {}
   }
 
   try {
-    // Fetch post content via WordPress REST API
     const apiUrl = `${siteUrl}/wp-json/wp/v2/posts/${postId}?_fields=content`;
     const postRes = await fetch(apiUrl, {
       headers: { 'User-Agent': 'BlogAuditTool/1.0' },
@@ -74,7 +47,6 @@ export default async function handler(req, res) {
     const postData = await postRes.json();
     const html = postData?.content?.rendered || '';
 
-    // Extract all outbound links
     const linkRegex = /href=["'](https?:\/\/[^"']+)["']/gi;
     const allLinks = [];
     let match;
@@ -136,8 +108,14 @@ export default async function handler(req, res) {
       fromCache: false,
     };
 
-    // Save to cache
-    await kvSet(cacheKey, output);
+    // Save to cache with 30 day TTL — same pattern as batch-scan.js
+    if (kv) {
+      try {
+        await kv.set(cacheKey, output, { ex: 2592000 });
+      } catch(e) {
+        output.cacheError = e.message;
+      }
+    }
 
     return res.status(200).json(output);
 
