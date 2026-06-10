@@ -441,6 +441,16 @@ function renderReportModal(data,postIdx){
       <button class="btn btn-sm" style="margin-left:auto" onclick="generateReport(${postIdx},true)">↺ Regenerate</button>
     </div>`;
 
+  // Venue verification results
+  if(data.venueChecks && data.venueChecks.length > 0) {
+    const flagged = data.venueChecks.filter(v => v.flag);
+    const ok = data.venueChecks.filter(v => !v.flag);
+    html += `<div class="report-section"><div class="report-section-title">📍 Venue verification (${data.venueChecks.length} checked)</div><div>`;
+    flagged.forEach(v => { html += `<div class="report-item" style="border-color:var(--red);"><div class="report-item-type" style="background:var(--red-bg);color:var(--red-text)">possibly closed</div><div style="font-weight:500">${v.venue}</div><div class="report-item-issue">⚠️ Closure signals found on Google — verify and update</div></div>`; });
+    ok.forEach(v => { html += `<div style="font-size:11px;color:var(--green-text);padding:4px 0">✓ ${v.venue} — appears open</div>`; });
+    html += `</div></div>`;
+  }
+
   if(r.summary)html+=`<div class="report-section"><div class="report-section-title">📋 Summary</div><div class="report-summary">${r.summary}</div></div>`;
 
   if(r.quickWins?.length){
@@ -671,7 +681,7 @@ function loadDemo(){
   page=1;updateMetrics();renderTable();
 }
 // ===== BATCH AI SCANNER =====
-async function startAIScan() {
+async function startAIScan(forceRefresh=false) {
   if (posts.length === 0) { alert('Please crawl your blog first!'); return; }
   const siteUrl = document.getElementById('urlInput').value.trim().replace(/\/$/, '');
   const banner = document.getElementById('aiScanBanner');
@@ -693,7 +703,7 @@ async function startAIScan() {
         const res = await fetch(BATCH_SCAN_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ postId: post.id, postUrl: post.url, postTitle: post.title, siteUrl }),
+          body: JSON.stringify({ postId: post.id, postUrl: post.url, postTitle: post.title, siteUrl, forceRefresh }),
         });
         if (res.ok) {
           const data = await res.json();
@@ -723,8 +733,8 @@ async function startAIScan() {
   }
 
   banner.className = 'scan-banner scan-complete';
-  banner.innerHTML = `<span>✓ AI scan complete — ${scanned} posts scanned, ${totalVenue} venue issues + ${totalOutdated} outdated items found</span><button class="btn btn-sm" style="margin-left:auto" onclick="startAIScan()">Rescan →</button>`;
-  statusEl.innerHTML = `<span class="tag tag-ok">✓ ${totalVenue} venue + ${totalOutdated} outdated items found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startAIScan()">Rescan</button>`;
+  banner.innerHTML = `<span>✓ AI scan complete — ${scanned} posts scanned, ${totalVenue} venue issues + ${totalOutdated} outdated items found</span><button class="btn btn-sm" style="margin-left:auto" onclick="startAIScan(true)">↺ Force rescan</button>`;
+  statusEl.innerHTML = `<span class="tag tag-ok">✓ ${totalVenue} venue + ${totalOutdated} outdated items found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startAIScan(false)">Load cached</button><button class="btn btn-sm" style="margin-left:4px" onclick="startAIScan(true)">Force rescan</button>`;
   posts.sort((a,b) => b.score - a.score);
   updateMetrics();
   renderTable();
