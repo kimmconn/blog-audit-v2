@@ -395,8 +395,8 @@ function calcScore(p){
   // Hard floor — just marks the post visually, doesn't artificially inflate score
   let hardFloor=false;
   if(p.brokenLinks>=f.bc||p.venueIssues>=f.vc){hardFloor=true;}
-  s=Math.min(Math.round(s),100);
-  const urgency=s>=70?'critical':s>=45?'high':s>=25?'medium':'low';
+  s=Math.min(Math.round(s),150);
+  const urgency=s>=90?'critical':s>=60?'high':s>=30?'medium':'low';
   return{score:s,urgency,hardFloor,flags};
 }
 
@@ -546,7 +546,7 @@ function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.val
 function monthsAgo(d){return d?Math.round((Date.now()-new Date(d))/(1000*60*60*24*30)):36}
 function fmtAge(m){if(m<1)return'This month';if(m<12)return m+'mo ago';const y=Math.floor(m/12),r=m%12;return y+'y'+(r>0?' '+r+'mo':'')+' ago'}
 function classify(t){t=t.toLowerCase();if(/festival/.test(t))return'festival';if(/cafe|restaurant|eat|food|bar|hotel|stay|places|things.*do|where.*go|best.*in|hidden gem|itinerary|road trip|guide|tips|how to|what to|when to|budget|cost|packing/.test(t))return'guide';return'story'}
-function scoreColor(s){return s>=70?'#E24B4A':s>=45?'#BA7517':s>=25?'#378ADD':'#639922'}
+function scoreColor(s){return s>=90?'#E24B4A':s>=60?'#BA7517':s>=30?'#378ADD':'#639922'}
 function healthColor(pct){return pct>=70?'#E24B4A':pct>=40?'#BA7517':pct>=20?'#378ADD':'#639922'}
 function fmtNum(n){if(!n)return'—';if(n>=10000)return Math.round(n/1000)+'k';if(n>=1000)return(n/1000).toFixed(1)+'k';return n}
 function fmtPos(p){if(!p||p===0)return'—';return p.toFixed(1)}
@@ -618,7 +618,7 @@ function renderTable(){
       <td class="col-issues" style="font-size:11px">${issues}</td>
       <td class="col-flags" style="white-space:normal;line-height:1.6">${flagsHtml}</td>
       <td class="col-score">
-        <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${p.score}%;background:${sc}"></div></div><span class="score-num" style="color:${sc}">${p.score}</span></div>
+        <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${Math.min(p.score/150*100,100)}%;background:${sc}"></div></div><span class="score-num" style="color:${sc}">${p.score}</span></div>
         <div style="margin-top:3px">${p.hardFloor?'<span class="floor-pill">forced</span>':'<span class="pill u-'+p.urgency+'">'+p.urgency+'</span>'}</div>
       </td>
       <td class="col-action" style="white-space:normal">
