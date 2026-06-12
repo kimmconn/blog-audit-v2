@@ -285,6 +285,7 @@ const GSC_URL='/api/gsc';
 const AUTH_URL='/api/auth';
 const LINKS_URL='/api/check-links';
 const REPORT_URL='/api/report';
+const KEYWORDS_URL='/api/keywords';
 const BATCH_SCAN_URL='/api/batch-scan';
 let posts=[],page=1,gscToken=null,gscData={};
 const PER_PAGE=25;
@@ -323,7 +324,7 @@ async function loadGSCData(){
     const midDate=new Date(now);midDate.setMonth(midDate.getMonth()-8);
     const startDate=new Date(now);startDate.setMonth(startDate.getMonth()-16);
     const [recentRes,olderRes]=await Promise.all([
-      fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:midDate.toISOString().split('T')[0],endDate})}),
+      fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:midDate.toISOString().split('T')[0],endDate,includeKeywords:true})}),
       fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:startDate.toISOString().split('T')[0],endDate:midDate.toISOString().split('T')[0]})})
     ]);
     if(!recentRes.ok){const e=await recentRes.json().catch(()=>({}));if(recentRes.status===401){gscToken=null;localStorage.removeItem('gsc_token');banner.innerHTML=`<span style="color:var(--red-text)">GSC token expired — please reconnect.</span>`;updateGSCUI(false);return;}throw new Error(e.error||`HTTP ${recentRes.status}`);}
@@ -343,6 +344,9 @@ async function loadGSCData(){
         p.recentClicks=recent?recent.clicks:0;p.olderClicks=older?older.clicks:0;
         p.recentImpressions=recent?recent.impressions:0;p.olderImpressions=older?older.impressions:0;
         p.trafficDeclinePct=p.olderClicks>10?Math.max(0,Math.round(((p.olderClicks-p.recentClicks)/p.olderClicks)*100)):0;
+        // Store top keywords from GSC keyword data
+        const nu2=p.url.replace(/\/$/,'');
+        p.gscKeywords = recentData.keywordsByPage?.[p.url] || recentData.keywordsByPage?.[nu2] || [];
         matched++;
       }
       const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;
@@ -410,6 +414,22 @@ async function generateReport(postIdx, forceRefresh=false){
   document.getElementById('modalBody').innerHTML=`<div class="report-loading">⏳ ${forceRefresh?'Regenerating':'Analyzing'} with Claude AI...<br><span style="font-size:11px;margin-top:8px;display:block">This takes about 15–20 seconds</span></div>`;
   document.getElementById('reportModal').style.display='flex';
   try{
+    // Fetch keyword volumes from DataForSEO if post has GSC data
+    let keywordVolumes = {};
+    if(post.gscKeywords && post.gscKeywords.length > 0) {
+      try {
+        const kwRes = await fetch(KEYWORDS_URL, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ keywords: post.gscKeywords.slice(0, 20) })
+        });
+        if(kwRes.ok) {
+          const kwData = await kwRes.json();
+          keywordVolumes = kwData.volumeMap || {};
+        }
+      } catch(e) {}
+    }
+
     const res=await fetch(REPORT_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -449,6 +469,27 @@ function renderReportModal(data,postIdx){
     flagged.forEach(v => { html += `<div class="report-item" style="border-color:var(--red);"><div class="report-item-type" style="background:var(--red-bg);color:var(--red-text)">possibly closed</div><div style="font-weight:500">${v.venue}</div><div class="report-item-issue">⚠️ Closure signals found on Google — verify and update</div></div>`; });
     ok.forEach(v => { html += `<div style="font-size:11px;color:var(--green-text);padding:4px 0">✓ ${v.venue} — appears open</div>`; });
     html += `</div></div>`;
+  }
+
+  // Keyword volumes section
+  if(data.keywordVolumes && Object.keys(data.keywordVolumes).length > 0) {
+    const kvEntries = Object.entries(data.keywordVolumes)
+      .filter(([k,v]) => v.volume > 0)
+      .sort((a,b) => b[1].volume - a[1].volume)
+      .slice(0, 10);
+    if(kvEntries.length > 0) {
+      html += `<div class="report-section"><div class="report-section-title">🔍 Keyword volumes (from DataForSEO)</div><div>`;
+      kvEntries.forEach(([kw, data]) => {
+        const vol = data.volume >= 1000 ? (data.volume/1000).toFixed(1)+'k' : data.volume;
+        const trend = data.trend && data.trend.length > 0 ? 
+          (data.trend[data.trend.length-1] > data.trend[0] ? '📈' : '📉') : '';
+        html += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px">
+          <span>${kw}</span>
+          <span style="font-weight:500">${vol}/mo ${trend}</span>
+        </div>`;
+      });
+      html += `</div></div>`;
+    }
   }
 
   if(r.summary)html+=`<div class="report-section"><div class="report-section-title">📋 Summary</div><div class="report-summary">${r.summary}</div></div>`;
