@@ -137,6 +137,7 @@
     <button class="tab active" onclick="switchTab('catalog',this)">Post catalog</button>
     <button class="tab" onclick="switchTab('connect',this)">Data sources</button>
     <button class="tab" onclick="switchTab('settings',this)">Scoring weights</button>
+    <button class="tab" onclick="switchTab('indexing',this)">🔍 Indexing</button>
   </div>
 
   <div id="tabCatalog">
@@ -212,6 +213,26 @@
         <div class="int-card"><div class="int-name">Link issue scanner</div><div class="int-desc">Scans all outbound links and flags potential 4xx/5xx issues. Runs in background.</div><div id="linkScanStatus"><button class="btn btn-sm btn-primary" onclick="startLinkScan()">Scan all posts for link issues</button></div></div>
         <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume for your top ranking keywords via DataForSEO. Boosts urgency score for high-volume page 2 opportunities.</div><div id="kwScanStatus"><button class="btn btn-sm btn-primary" onclick="startKWScan()">Scan keyword volumes</button><div style="font-size:11px;color:var(--text2);margin-top:6px">~$0.01 for 500 posts · cached 30 days</div></div></div>
         <div class="int-card"><div class="int-name">AI content scan</div><div class="int-desc">Claude scans every post for outdated prices, closed venues, old currency, COVID refs, and more. Updates urgency scores automatically.</div><div id="aiScanStatus"><button class="btn btn-sm btn-primary" onclick="startAIScan()">Scan all posts with AI</button><div style="font-size:11px;color:var(--text2);margin-top:6px">Uses Claude Haiku — ~$0.50-1.00 for 500 posts</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tabIndexing" style="display:none">
+    <div class="panel">
+      <div class="panel-title">Posts not appearing in Google Search Console <span class="tag" id="indexingCount"></span></div>
+      <p class="note">These posts exist on your blog but have zero impressions and clicks in GSC. They may be deindexed, blocked, or never crawled. Click the 🔍 link to inspect each URL directly in Google Search Console.</p>
+      <div id="indexingEmpty" class="empty" style="display:none"><div style="font-size:32px;margin-bottom:8px">✅</div><div>All posts are appearing in GSC! Load GSC data first if you haven't.</div></div>
+      <div class="table-wrap" id="indexingTableWrap">
+        <table>
+          <thead><tr>
+            <th style="width:40%">Post title</th>
+            <th style="width:10%">Age</th>
+            <th style="width:10%">Type</th>
+            <th style="width:15%">Last updated</th>
+            <th style="width:25%">Actions</th>
+          </tr></thead>
+          <tbody id="indexingTableBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -376,7 +397,7 @@ async function loadGSCData(){
     posts.sort((a,b)=>b.score-a.score);
     banner.className='gsc-banner gsc-connected';
     banner.innerHTML=`<span>✓ GSC data loaded — ${matched} of ${posts.length} posts matched</span><button class="btn btn-sm" style="margin-left:auto" onclick="loadGSCData()">Refresh →</button>`;
-    updateMetrics();renderTable();
+    updateMetrics();renderTable();renderIndexingTab();
   }catch(e){banner.innerHTML=`<span style="color:var(--red-text)">Error: ${e.message}</span>`;}
 }
 
@@ -409,11 +430,10 @@ function calcScore(p){
 
   // 🔥 High impressions gap flag
   if(p.impressions>=t.hotImpr&&p.ctr<t.hotCtr)flags.push({type:'hotimpr',label:'🔥 Impression gap'});
-  // 🔍 Not indexed — in WordPress but zero GSC presence, post is old enough to be indexed
+  // 🔍 Not indexed — flag only, no score manipulation (handled in separate Indexing tab)
   const hasAnyGSC=(p.recentImpressions>0||p.olderImpressions>0||p.recentClicks>0||p.olderClicks>0);
   if(p.gscChecked&&!hasAnyGSC&&p.ageMonths>=3){
     flags.push({type:'notindexed',label:'🔍 Not in GSC'});
-    if(p.ageMonths>=6) s+=8; // boost score — should be indexed by now
   }
   // Potential venue issues from batch AI scan
   if(p.aiScanned&&p.venueIssues>0&&!p.venueConfirmed){
@@ -650,6 +670,33 @@ function getFiltered(){
   r.sort((a,b)=>so==='score'?b.score-a.score:so==='age'?b.ageMonths-a.ageMonths:so==='traffic'?b.traffic-a.traffic:so==='decline'?b.trafficDeclinePct-a.trafficDeclinePct:a.title.localeCompare(b.title));
   return r;
 }
+function renderIndexingTab(){
+  const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
+  const unindexed=posts.filter(p=>p.gscChecked&&!(p.recentImpressions>0||p.olderImpressions>0||p.recentClicks>0||p.olderClicks>0));
+  const countEl=document.getElementById('indexingCount');
+  const emptyEl=document.getElementById('indexingEmpty');
+  const tbody=document.getElementById('indexingTableBody');
+  if(!countEl||!tbody) return;
+  countEl.textContent=unindexed.length+' posts';
+  countEl.className=unindexed.length>0?'tag tag-err':'tag tag-ok';
+  if(unindexed.length===0){emptyEl.style.display='block';tbody.innerHTML='';return;}
+  emptyEl.style.display='none';
+  tbody.innerHTML=unindexed.sort((a,b)=>b.ageMonths-a.ageMonths).map(p=>{
+    const gscInspect=`https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(siteUrl+'/') }&id=${encodeURIComponent(p.url)}`;
+    const ageCol=p.ageMonths>=24?'var(--red-text)':p.ageMonths>=12?'var(--amber-text)':'var(--text2)';
+    return`<tr>
+      <td title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,50)}${p.title.length>50?'…':''}</a></td>
+      <td style="font-size:11px;color:${ageCol}">${fmtAge(p.ageMonths)}</td>
+      <td><span class="type-pill">${p.type}</span></td>
+      <td style="font-size:11px;color:var(--text2)">${p.lastModified?new Date(p.lastModified).toLocaleDateString():'—'}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <a href="${gscInspect}" target="_blank" class="btn btn-sm">🔍 Inspect in GSC</a>
+        <a href="${p.url}" target="_blank" class="btn btn-sm">Open post ↗</a>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
 function renderTable(){
   const filtered=getFiltered(),start=(page-1)*PER_PAGE,slice=filtered.slice(start,start+PER_PAGE);
   const tbody=document.getElementById('tableBody'),empty=document.getElementById('emptyState'),pag=document.getElementById('pagRow');
@@ -850,7 +897,7 @@ async function startKWScan(forceRefresh=false) {
     // Apply results to posts
     let updated = 0;
     posts.forEach(p => {
-      const result = data.results?.[p.id];
+      const result = data.results?.[p.id] || data.results?.[String(p.id)];
       if(result) {
         p.topKeyword = result.topKeyword;
         p.topKeywordVolume = result.topVolume;
