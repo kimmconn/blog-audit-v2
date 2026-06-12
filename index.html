@@ -397,6 +397,8 @@ async function loadGSCData(){
     posts.sort((a,b)=>b.score-a.score);
     banner.className='gsc-banner gsc-connected';
     banner.innerHTML=`<span>✓ GSC data loaded — ${matched} of ${posts.length} posts matched</span><button class="btn btn-sm" style="margin-left:auto" onclick="loadGSCData()">Refresh →</button>`;
+    // Mark ALL posts as gscChecked — posts not in GSC get zero values but are still checked
+    posts.forEach(p => { p.gscChecked = true; });
     updateMetrics();renderTable();renderIndexingTab();
   }catch(e){banner.innerHTML=`<span style="color:var(--red-text)">Error: ${e.message}</span>`;}
 }
