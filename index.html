@@ -352,14 +352,23 @@ async function loadGSCData(){
         p.recentImpressions=recent?recent.impressions:0;p.olderImpressions=older?older.impressions:0;
         p.trafficDeclinePct=p.olderClicks>10?Math.max(0,Math.round(((p.olderClicks-p.recentClicks)/p.olderClicks)*100)):0;
         // Store top keywords from GSC keyword data
-        const nu2=p.url.replace(/\/$/,'');
-        const nu2slash=nu2+'/';
-        p.gscKeywords = recentData.keywordsByPage?.[p.url] 
-          || recentData.keywordsByPage?.[nu2] 
-          || recentData.keywordsByPage?.[nu2slash]
-          || recentData.keywordsByPage?.[p.url.replace('https://www.','https://')]
-          || recentData.keywordsByPage?.[p.url.replace('https://','https://www.')]
-          || [];
+        // Try all URL variations for keyword matching
+        const urlVariants = [
+          p.url,
+          p.url.replace(/\/$/, ''),
+          p.url.endsWith('/') ? p.url : p.url + '/',
+          p.url.replace('https://www.', 'https://'),
+          p.url.replace('https://', 'https://www.'),
+          p.url.replace('https://www.', 'https://').replace(/\/$/, ''),
+          p.url.replace('https://', 'https://www.').replace(/\/$/, ''),
+        ];
+        p.gscKeywords = [];
+        for(const variant of urlVariants) {
+          if(recentData.keywordsByPage?.[variant]?.length > 0) {
+            p.gscKeywords = recentData.keywordsByPage[variant];
+            break;
+          }
+        }
         matched++;
       }
       const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;
