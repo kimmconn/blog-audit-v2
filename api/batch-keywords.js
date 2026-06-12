@@ -18,7 +18,6 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { posts, forceRefresh } = req.body;
-  // posts = array of { postId, url, keywords: ['kw1','kw2','kw3'] }
   if (!posts || !posts.length) return res.status(400).json({ error: 'Missing posts' });
 
   const login = process.env.DATAFORSEO_LOGIN;
@@ -27,10 +26,8 @@ export default async function handler(req, res) {
 
   const kv = getRedis();
   const credentials = Buffer.from(`${login}:${password}`).toString('base64');
-
-  // Check cache for each post, only fetch uncached ones
   const results = {};
-  const toFetch = []; // { postId, keywords }
+  const toFetch = [];
   const allKeywords = new Set();
 
   for (const post of posts) {
@@ -49,14 +46,10 @@ export default async function handler(req, res) {
     post.keywords.slice(0, 3).forEach(kw => allKeywords.add(kw));
   }
 
-  // If nothing to fetch, return cached results
   if (toFetch.length === 0) {
     return res.status(200).json({ results, cached: Object.keys(results).length, fetched: 0 });
   }
 
-  // Batch all unique keywords into one DataForSEO request (much cheaper)
-  const uniqueKeywords = [...allKeywords].slice(0, 1000);
-  
   try {
     const dfsRes = await fetch(
       'https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live',
@@ -67,42 +60,31 @@ export default async function handler(req, res) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify([{
-          keywords: uniqueKeywords,
-          location_code: 2840, // US
+          keywords: [...allKeywords].slice(0, 1000),
+          location_code: 2840,
           language_code: 'en',
         }]),
         signal: AbortSignal.timeout(30000),
       }
     );
 
-    if (!dfsRes.ok) {
-      return res.status(200).json({ error: `DataForSEO error ${dfsRes.status}`, results });
-    }
-
+    if (!dfsRes.ok) return res.status(200).json({ error: `DataForSEO error ${dfsRes.status}`, results });
     const dfsData = await dfsRes.json();
-    if (dfsData.status_code !== 20000) {
-      return res.status(200).json({ error: `DataForSEO: ${dfsData.status_message}`, results });
-    }
+    if (dfsData.status_code !== 20000) return res.status(200).json({ error: `DataForSEO: ${dfsData.status_message}`, results });
 
-    // Build volume lookup map
     const volumeMap = {};
     (dfsData.tasks?.[0]?.result || []).forEach(item => {
       if (item.keyword) volumeMap[item.keyword] = item.search_volume || 0;
     });
 
-    // Map volumes back to posts and cache
     for (const post of toFetch) {
       const kwVolumes = {};
       let topVolume = 0;
       let topKeyword = '';
-
-      post.keywords.slice(0, 3).forEach(kw => {
+      (post.keywords || []).slice(0, 3).forEach(kw => {
         const vol = volumeMap[kw] || 0;
         kwVolumes[kw] = vol;
-        if (vol > topVolume) {
-          topVolume = vol;
-          topKeyword = kw;
-        }
+        if (vol > topVolume) { topVolume = vol; topKeyword = kw; }
       });
 
       const postResult = {
@@ -115,12 +97,8 @@ export default async function handler(req, res) {
       };
 
       results[post.postId] = postResult;
-
-      // Cache per post
       if (kv) {
-        try {
-          await kv.set(`kw:${post.postId}`, postResult, { ex: 2592000 });
-        } catch(e) {}
+        try { await kv.set(`kw:${post.postId}`, postResult, { ex: 2592000 }); } catch(e) {}
       }
     }
 
@@ -128,7 +106,7 @@ export default async function handler(req, res) {
       results,
       cached: Object.keys(results).length - toFetch.length,
       fetched: toFetch.length,
-      keywordsLookedUp: uniqueKeywords.length,
+      keywordsLookedUp: allKeywords.size,
     });
 
   } catch(e) {
