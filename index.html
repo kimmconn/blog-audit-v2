@@ -863,6 +863,16 @@ async function startAIScan(forceRefresh=false) {
 }
 
 // ===== BATCH KEYWORD SCANNER =====
+function extractTitleKeyword(title) {
+  const stopWords = new Set(['a','an','the','and','or','but','in','on','at','to','for','of','with','by','from','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','must','can','that','this','these','those','i','my','your','his','her','its','our','their','what','which','who','how','why','when','where','all','both','each','more','most','other','some','no','not','only','same','so','than','too','very','just','about','after','before','up','down','out','over','here','there','any','every','much','many','also','back','new','old','first','last','long','big','high','low','next','fun','best','unique','amazing','incredible','ultimate','complete','easy','quick','top','things','places','ways','tips','guide','review','list','must','cannot','miss','dont','travel','updated','hidden','gems']);
+  const clean = title.toLowerCase()
+    .replace(/\d+\+?\s*/g,'').replace(/[!?:,\-\u2013\u2014+]/g,' ')
+    .replace(/\b(you cannot miss|don't miss|must see|must visit|complete guide|travel guide|updated \d{4}|in \d{4}|for beginners|everything you need to know)\b/gi,'')
+    .replace(/\s+/g,' ').trim();
+  const words = clean.split(' ').filter(w => w.length > 2 && !stopWords.has(w));
+  return words.slice(0,5).join(' ');
+}
+
 async function startKWScan(forceRefresh=false) {
   if(posts.length === 0) { alert('Please crawl your blog and load GSC data first!'); return; }
   const postsWithKeywords = posts.filter(p => p.gscKeywords && p.gscKeywords.length > 0);
