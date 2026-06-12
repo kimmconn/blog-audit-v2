@@ -36,14 +36,15 @@ export default async function handler(req, res) {
     if (!forceRefresh && kv) {
       try {
         const cached = await kv.get(cacheKey);
-        if (cached && cached.scannedAt) {
+        if (cached && cached.scannedAt && cached.topVolume > 0) {
           results[post.postId] = { ...cached, fromCache: true };
           continue;
         }
       } catch(e) {}
     }
     toFetch.push(post);
-    post.keywords.slice(0, 3).forEach(kw => allKeywords.add(kw));
+    post.keywords.slice(0, 5).forEach(kw => allKeywords.add(kw));
+    if (post.titleKeyword) allKeywords.add(post.titleKeyword);
   }
 
   if (toFetch.length === 0) {
@@ -81,7 +82,19 @@ export default async function handler(req, res) {
       const kwVolumes = {};
       let topVolume = 0;
       let topKeyword = '';
-      (post.keywords || []).slice(0, 3).forEach(kw => {
+
+      // Title keyword gets priority as the primary display keyword
+      if (post.titleKeyword) {
+        const titleVol = volumeMap[post.titleKeyword] || 0;
+        kwVolumes[post.titleKeyword] = titleVol;
+        if (titleVol > 0) {
+          topVolume = titleVol;
+          topKeyword = post.titleKeyword;
+        }
+      }
+
+      // Also check GSC keywords — if any have higher volume, use that
+      (post.keywords || []).slice(0, 5).forEach(kw => {
         const vol = volumeMap[kw] || 0;
         kwVolumes[kw] = vol;
         if (vol > topVolume) { topVolume = vol; topKeyword = kw; }
