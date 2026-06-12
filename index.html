@@ -884,7 +884,8 @@ async function startKWScan(forceRefresh=false) {
         posts: postsWithKeywords.map(p => ({
           postId: p.id,
           url: p.url,
-          keywords: p.gscKeywords.slice(0, 3)
+          titleKeyword: extractTitleKeyword(p.title),
+          keywords: p.gscKeywords.slice(0, 5)
         }))
       })
     });
