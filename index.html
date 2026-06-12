@@ -816,7 +816,7 @@ async function startAIScan(forceRefresh=false) {
 }
 
 // ===== BATCH KEYWORD SCANNER =====
-async function startKWScan() {
+async function startKWScan(forceRefresh=false) {
   if(posts.length === 0) { alert('Please crawl your blog and load GSC data first!'); return; }
   const postsWithKeywords = posts.filter(p => p.gscKeywords && p.gscKeywords.length > 0);
   if(postsWithKeywords.length === 0) { alert('No keyword data found. Please load GSC data first.'); return; }
@@ -833,6 +833,7 @@ async function startKWScan() {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
+        forceRefresh,
         posts: postsWithKeywords.map(p => ({
           postId: p.id,
           url: p.url,
@@ -866,7 +867,7 @@ async function startKWScan() {
 
     banner.className = 'scan-banner scan-complete';
     banner.innerHTML = `<span>✓ Keyword volumes loaded — ${updated} posts updated (${data.cached||0} from cache, ${data.fetched||0} fresh)</span>`;
-    statusEl.innerHTML = `<span class="tag tag-ok">✓ ${updated} posts have keyword data</span><button class="btn btn-sm" style="margin-left:8px" onclick="startKWScan()">Rescan</button>`;
+    statusEl.innerHTML = `<span class="tag tag-ok">✓ ${updated} posts have keyword data</span><button class="btn btn-sm" style="margin-left:8px" onclick="startKWScan(true)">Force rescan</button>`;
 
   } catch(e) {
     banner.innerHTML = `<span style="color:var(--red-text)">❌ ${e.message}</span>`;
