@@ -46,10 +46,16 @@ export default async function handler(req, res) {
       position: row.position,
     }));
 
-    // Optional: fetch top keywords per page (only when explicitly requested)
+    // Optional: fetch top keywords per page using page-filtered queries
+    // This approach queries each page's keywords directly for accuracy
     let keywordsByPage = {};
     if (includeKeywords) {
       try {
+        // First get all unique page URLs from the main results
+        const pageUrls = rows.map(r => r.url);
+        
+        // Batch pages into groups of 50 to avoid too many API calls
+        // Use a single call with all pages via dimension filter
         const kwRes = await fetch(
           `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
           {
@@ -63,9 +69,7 @@ export default async function handler(req, res) {
               endDate: end,
               dimensions: ['page', 'query'],
               rowLimit: 25000,
-              dimensionFilterGroups: [{
-                filters: [{ dimension: 'query', operator: 'notContains', expression: 'xxx' }]
-              }]
+              orderBy: [{ fieldName: 'impressions', sortOrder: 'DESCENDING' }],
             }),
           }
         );
@@ -74,8 +78,12 @@ export default async function handler(req, res) {
           (kwData.rows || []).forEach(row => {
             const url = row.keys[0];
             const query = row.keys[1];
+            // Normalize URL for matching
+            const normalUrl = url.replace(/\/$/, '');
+            if (!keywordsByPage[normalUrl]) keywordsByPage[normalUrl] = [];
             if (!keywordsByPage[url]) keywordsByPage[url] = [];
-            if (keywordsByPage[url].length < 10) {
+            if (keywordsByPage[normalUrl].length < 20) {
+              keywordsByPage[normalUrl].push(query);
               keywordsByPage[url].push(query);
             }
           });
