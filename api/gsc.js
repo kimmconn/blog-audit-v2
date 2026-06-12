@@ -27,7 +27,7 @@ export default async function handler(req, res) {
           startDate: start,
           endDate: end,
           dimensions: ['page'],
-          rowLimit: 1000,
+          rowLimit: 5000,
         }),
       }
     );
