@@ -49,7 +49,7 @@
   td{padding:9px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   tr:last-child td{border-bottom:none}
   tr:hover td{background:var(--bg2)}
-  .col-title{width:20%}.col-age{width:7%}.col-type{width:7%}.col-traffic{width:7%}.col-impr{width:7%}.col-pos{width:6%}.col-health{width:9%}.col-issues{width:9%}.col-flags{width:11%}.col-score{width:10%}.col-action{width:7%}
+  .col-title{width:18%}.col-age{width:6%}.col-type{width:6%}.col-traffic{width:6%}.col-impr{width:6%}.col-pos{width:5%}.col-health{width:8%}.col-issues{width:8%}.col-kw{width:6%}.col-flags{width:11%}.col-score{width:9%}.col-action{width:7%}
   .pill{display:inline-block;font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px}
   .u-critical{background:var(--red-bg);color:var(--red-text)}
   .u-high{background:var(--amber-bg);color:var(--amber-text)}
@@ -155,6 +155,7 @@
     <div id="gscBanner" style="display:none"></div>
     <div id="linkScanBanner" style="display:none"></div>
     <div id="aiScanBanner" style="display:none"></div>
+    <div id="kwScanBanner" style="display:none"></div>
     <div class="panel">
       <div class="floor-note"><strong>Hard urgency floors:</strong> posts meeting the thresholds below are marked <strong>forced</strong> — scores reflect actual signals, not artificial minimums.</div>
       <div class="gsc-note">⚠️ GSC data covers the last 16 months only. Posts older than 16 months may have peaked earlier — check Google Analytics manually for full history.</div>
@@ -179,6 +180,7 @@
             <th class="col-pos">Pos.</th>
             <th class="col-health">Traffic health</th>
             <th class="col-issues">Issues</th>
+            <th class="col-kw" style="width:7%">KW Vol</th>
             <th class="col-flags">Flags</th>
             <th class="col-score">Urgency</th>
             <th class="col-action">Actions</th>
@@ -208,7 +210,7 @@
         </div>
         <div class="int-card"><div class="int-name">Google Maps / Places</div><div class="int-desc">Checks if venues are still open or permanently closed.</div><button class="btn btn-sm">Coming soon</button></div>
         <div class="int-card"><div class="int-name">Link issue scanner</div><div class="int-desc">Scans all outbound links and flags potential 4xx/5xx issues. Runs in background.</div><div id="linkScanStatus"><button class="btn btn-sm btn-primary" onclick="startLinkScan()">Scan all posts for link issues</button></div></div>
-        <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume per post's target keyword.</div><button class="btn btn-sm">Coming soon</button></div>
+        <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume for your top ranking keywords via DataForSEO. Boosts urgency score for high-volume page 2 opportunities.</div><div id="kwScanStatus"><button class="btn btn-sm btn-primary" onclick="startKWScan()">Scan keyword volumes</button><div style="font-size:11px;color:var(--text2);margin-top:6px">~$0.01 for 500 posts · cached 30 days</div></div></div>
         <div class="int-card"><div class="int-name">AI content scan</div><div class="int-desc">Claude scans every post for outdated prices, closed venues, old currency, COVID refs, and more. Updates urgency scores automatically.</div><div id="aiScanStatus"><button class="btn btn-sm btn-primary" onclick="startAIScan()">Scan all posts with AI</button><div style="font-size:11px;color:var(--text2);margin-top:6px">Uses Claude Haiku — ~$0.50-1.00 for 500 posts</div></div></div>
       </div>
     </div>
@@ -244,6 +246,8 @@
         <div class="floor-row"><span style="min-width:260px">"Fallen off map" — min impressions</span><input type="number" id="tOffmapImpr" value="500" min="100" max="10000"/></div>
         <div class="floor-row"><span style="min-width:260px">🔥 High impressions gap — min impressions</span><input type="number" id="tHotImpr" value="5000" min="500" max="100000"/></div>
         <div class="floor-row"><span style="min-width:260px">🔥 High impressions gap — max CTR %</span><input type="number" id="tHotCtr" value="2" min="0.5" max="10"/> <span style="color:var(--text2)">%</span></div>
+        <div class="floor-row"><span style="min-width:260px">Keyword volume — "high" threshold</span><input type="number" id="tKwHigh" value="1000" min="100" max="100000"/><span style="color:var(--text2)">searches/mo</span></div>
+        <div class="floor-row"><span style="min-width:260px">Keyword volume — "medium" threshold</span><input type="number" id="tKwMed" value="300" min="50" max="10000"/><span style="color:var(--text2)">searches/mo</span></div>
       </div>
       <div style="margin-top:16px"><button class="btn btn-primary" onclick="applyWeights()">Apply thresholds</button></div>
     </div>
@@ -286,6 +290,7 @@ const AUTH_URL='/api/auth';
 const LINKS_URL='/api/check-links';
 const REPORT_URL='/api/report';
 const KEYWORDS_URL='/api/keywords';
+const BATCH_KEYWORDS_URL='/api/batch-keywords';
 const BATCH_SCAN_URL='/api/batch-scan';
 let posts=[],page=1,gscToken=null,gscData={};
 const PER_PAGE=25;
@@ -298,6 +303,8 @@ function getThresholds(){return{
   offmapImpr:parseInt(document.getElementById('tOffmapImpr')?.value||500),
   hotImpr:parseInt(document.getElementById('tHotImpr')?.value||5000),
   hotCtr:parseFloat(document.getElementById('tHotCtr')?.value||2)/100,
+  kwHigh:parseInt(document.getElementById('tKwHigh')?.value||1000),
+  kwMed:parseInt(document.getElementById('tKwMed')?.value||300),
 };}
 
 window.addEventListener('load',()=>{
@@ -376,6 +383,15 @@ function calcScore(p){
   }
   if(p.position>10&&p.position<=20&&p.impressions>200){s+=weights.positionOpportunity;flags.push({type:'opportunity',label:'🟣 Page 2 opp.'});}
   else if(p.position>3&&p.position<=10&&p.impressions>500)s+=weights.positionOpportunity*0.4;
+  // Keyword volume opportunity signal
+  if(p.topKeywordVolume > 0 && p.position > 10 && p.position <= 20) {
+    const kwHigh = parseInt(document.getElementById('tKwHigh')?.value || 1000);
+    const kwMed = parseInt(document.getElementById('tKwMed')?.value || 300);
+    if(p.topKeywordVolume >= kwHigh) s += 20; // huge opportunity
+    else if(p.topKeywordVolume >= kwMed) s += 10; // medium opportunity
+    else s += 3; // small opportunity
+  }
+
   // 🔥 High impressions gap flag
   if(p.impressions>=t.hotImpr&&p.ctr<t.hotCtr)flags.push({type:'hotimpr',label:'🔥 Impression gap'});
   // 🔍 Not indexed — in WordPress but zero GSC presence, post is old enough to be indexed
@@ -657,6 +673,9 @@ function renderTable(){
       <td class="col-pos" style="font-size:11px;color:${p.position>10&&p.position<=20?'var(--purple-text)':p.position>0?'var(--text)':'var(--text3)'}">${fmtPos(p.position)}</td>
       <td class="col-health">${healthHtml}</td>
       <td class="col-issues" style="font-size:11px">${issues}</td>
+      <td class="col-kw" style="font-size:11px;color:${p.topKeywordVolume >= (t.kwHigh||1000) ? 'var(--purple-text)' : p.topKeywordVolume > 0 ? 'var(--text)' : 'var(--text3)'}">
+        ${p.topKeywordVolume >= 1000 ? (p.topKeywordVolume/1000).toFixed(1)+'k' : p.topKeywordVolume > 0 ? p.topKeywordVolume : '—'}
+      </td>
       <td class="col-flags" style="white-space:normal;line-height:1.6">${flagsHtml}</td>
       <td class="col-score">
         <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${Math.min(p.score/150*100,100)}%;background:${sc}"></div></div><span class="score-num" style="color:${sc}">${p.score}</span></div>
@@ -779,6 +798,65 @@ async function startAIScan(forceRefresh=false) {
   posts.sort((a,b) => b.score - a.score);
   updateMetrics();
   renderTable();
+}
+
+// ===== BATCH KEYWORD SCANNER =====
+async function startKWScan() {
+  if(posts.length === 0) { alert('Please crawl your blog and load GSC data first!'); return; }
+  const postsWithKeywords = posts.filter(p => p.gscKeywords && p.gscKeywords.length > 0);
+  if(postsWithKeywords.length === 0) { alert('No keyword data found. Please load GSC data first.'); return; }
+
+  const banner = document.getElementById('kwScanBanner');
+  const statusEl = document.getElementById('kwScanStatus');
+  banner.className = 'scan-banner';
+  banner.style.display = 'flex';
+  banner.innerHTML = '<span>🔍 Looking up keyword volumes...</span>';
+  statusEl.innerHTML = '<span class="tag">Scanning...</span>';
+
+  try {
+    const res = await fetch(BATCH_KEYWORDS_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        posts: postsWithKeywords.map(p => ({
+          postId: p.id,
+          url: p.url,
+          keywords: p.gscKeywords.slice(0, 3)
+        }))
+      })
+    });
+
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if(data.error) throw new Error(data.error);
+
+    // Apply results to posts
+    let updated = 0;
+    posts.forEach(p => {
+      const result = data.results?.[p.id];
+      if(result) {
+        p.topKeyword = result.topKeyword;
+        p.topKeywordVolume = result.topVolume;
+        p.keywordVolumes = result.keywords;
+        const r = calcScore(p);
+        p.score = r.score; p.urgency = r.urgency; p.hardFloor = r.hardFloor; p.flags = r.flags;
+        updated++;
+      }
+    });
+
+    posts.sort((a,b) => b.score - a.score);
+    updateMetrics();
+    renderTable();
+
+    banner.className = 'scan-banner scan-complete';
+    banner.innerHTML = `<span>✓ Keyword volumes loaded — ${updated} posts updated (${data.cached||0} from cache, ${data.fetched||0} fresh)</span>`;
+    statusEl.innerHTML = `<span class="tag tag-ok">✓ ${updated} posts have keyword data</span><button class="btn btn-sm" style="margin-left:8px" onclick="startKWScan()">Rescan</button>`;
+
+  } catch(e) {
+    banner.innerHTML = `<span style="color:var(--red-text)">❌ ${e.message}</span>`;
+    statusEl.innerHTML = '<button class="btn btn-sm btn-primary" onclick="startKWScan()">Retry</button>';
+  }
 }
 
 renderTable();
