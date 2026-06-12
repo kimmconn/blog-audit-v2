@@ -62,7 +62,7 @@ export default async function handler(req, res) {
               startDate: start,
               endDate: end,
               dimensions: ['page', 'query'],
-              rowLimit: 5000,
+              rowLimit: 25000,
               dimensionFilterGroups: [{
                 filters: [{ dimension: 'query', operator: 'notContains', expression: 'xxx' }]
               }]
