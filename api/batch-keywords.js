@@ -52,36 +52,37 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Batch keywords into chunks of 200 (DataForSEO works best with smaller batches)
-    const allKwArray = [...allKeywords].slice(0, 1000);
-    const CHUNK_SIZE = 100;
+    // Single DataForSEO call — frontend batches posts into chunks of 50
+    // so we never have more than ~300 keywords per server call
+    const allKwArray = [...allKeywords].slice(0, 300);
     const volumeMap = {};
 
-    for (let i = 0; i < allKwArray.length; i += CHUNK_SIZE) {
-      const chunk = allKwArray.slice(i, i + CHUNK_SIZE);
-      const dfsRes = await fetch(
-        'https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${credentials}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify([{
-            keywords: chunk,
-            location_code: 2840,
-            language_code: 'en',
-          }]),
-          signal: AbortSignal.timeout(30000),
-        }
-      );
-      if (!dfsRes.ok) continue;
-      const dfsData = await dfsRes.json();
-      if (dfsData.status_code !== 20000) continue;
-      (dfsData.tasks?.[0]?.result || []).forEach(item => {
-        if (item.keyword) volumeMap[item.keyword] = item.search_volume || 0;
-      });
-    }
+    const dfsRes = await fetch(
+      'https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify([{
+          keywords: allKwArray,
+          location_code: 2840,
+          language_code: 'en',
+        }]),
+        signal: AbortSignal.timeout(25000),
+      }
+    );
+
+    if (!dfsRes.ok) return res.status(200).json({ error: `DataForSEO error ${dfsRes.status}`, results });
+    const dfsData = await dfsRes.json();
+    if (dfsData.status_code !== 20000) return res.status(200).json({ error: `DataForSEO: ${dfsData.status_message}`, results });
+    const dfsResults = dfsData.tasks?.[0]?.result || [];
+    dfsResults.forEach(item => {
+      if (item.keyword) volumeMap[item.keyword] = item.search_volume || 0;
+    });
+    // Debug: return raw DFS result count
+    const _debug = { dfsResultCount: dfsResults.length, keywordsSent: allKwArray.length, sampleVolume: dfsResults[0] ? `${dfsResults[0].keyword}:${dfsResults[0].search_volume}` : 'none' };
 
     for (const post of toFetch) {
       const kwVolumes = {};
