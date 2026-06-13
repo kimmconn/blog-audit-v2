@@ -52,31 +52,36 @@ export default async function handler(req, res) {
   }
 
   try {
-    const dfsRes = await fetch(
-      'https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify([{
-          keywords: [...allKeywords].slice(0, 1000),
-          location_code: 2840,
-          language_code: 'en',
-        }]),
-        signal: AbortSignal.timeout(30000),
-      }
-    );
-
-    if (!dfsRes.ok) return res.status(200).json({ error: `DataForSEO error ${dfsRes.status}`, results });
-    const dfsData = await dfsRes.json();
-    if (dfsData.status_code !== 20000) return res.status(200).json({ error: `DataForSEO: ${dfsData.status_message}`, results });
-
+    // Batch keywords into chunks of 200 (DataForSEO works best with smaller batches)
+    const allKwArray = [...allKeywords].slice(0, 1000);
+    const CHUNK_SIZE = 200;
     const volumeMap = {};
-    (dfsData.tasks?.[0]?.result || []).forEach(item => {
-      if (item.keyword) volumeMap[item.keyword] = item.search_volume || 0;
-    });
+
+    for (let i = 0; i < allKwArray.length; i += CHUNK_SIZE) {
+      const chunk = allKwArray.slice(i, i + CHUNK_SIZE);
+      const dfsRes = await fetch(
+        'https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${credentials}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify([{
+            keywords: chunk,
+            location_code: 2840,
+            language_code: 'en',
+          }]),
+          signal: AbortSignal.timeout(30000),
+        }
+      );
+      if (!dfsRes.ok) continue;
+      const dfsData = await dfsRes.json();
+      if (dfsData.status_code !== 20000) continue;
+      (dfsData.tasks?.[0]?.result || []).forEach(item => {
+        if (item.keyword) volumeMap[item.keyword] = item.search_volume || 0;
+      });
+    }
 
     for (const post of toFetch) {
       const kwVolumes = {};
