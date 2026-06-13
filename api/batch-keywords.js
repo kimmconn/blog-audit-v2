@@ -30,21 +30,37 @@ export default async function handler(req, res) {
   const toFetch = [];
   const allKeywords = new Set();
 
-  for (const post of posts) {
-    if (!post.keywords || post.keywords.length === 0) continue;
-    const cacheKey = `kw:${post.postId}`;
-    if (!forceRefresh && kv) {
-      try {
+  // Check cache in parallel instead of sequentially
+  const postsWithKeywords = posts.filter(p => p.keywords && p.keywords.length > 0);
+  
+  if (!forceRefresh && kv) {
+    const cacheChecks = await Promise.allSettled(
+      postsWithKeywords.map(async post => {
+        const cacheKey = `kw:${post.postId}`;
         const cached = await kv.get(cacheKey);
+        return { post, cached };
+      })
+    );
+    for (const check of cacheChecks) {
+      if (check.status === 'fulfilled') {
+        const { post, cached } = check.value;
         if (cached && cached.scannedAt && cached.topVolume > 0) {
           results[post.postId] = { ...cached, fromCache: true };
-          continue;
+        } else {
+          toFetch.push(post);
+          post.keywords.slice(0, 5).forEach(kw => allKeywords.add(kw));
+          if (post.titleKeyword) allKeywords.add(post.titleKeyword);
         }
-      } catch(e) {}
+      } else {
+        toFetch.push(check.reason?.post || postsWithKeywords[0]);
+      }
     }
-    toFetch.push(post);
-    post.keywords.slice(0, 5).forEach(kw => allKeywords.add(kw));
-    if (post.titleKeyword) allKeywords.add(post.titleKeyword);
+  } else {
+    postsWithKeywords.forEach(post => {
+      toFetch.push(post);
+      post.keywords.slice(0, 5).forEach(kw => allKeywords.add(kw));
+      if (post.titleKeyword) allKeywords.add(post.titleKeyword);
+    });
   }
 
   if (toFetch.length === 0) {
