@@ -888,46 +888,55 @@ async function startKWScan(forceRefresh=false) {
   statusEl.innerHTML = '<span class="tag">Scanning...</span>';
 
   try {
-    const res = await fetch(BATCH_KEYWORDS_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        forceRefresh,
-        posts: postsWithKeywords.map(p => ({
-          postId: p.id,
-          url: p.url,
-          titleKeyword: extractTitleKeyword(p.title),
-          keywords: p.gscKeywords.slice(0, 5)
-        }))
-      })
-    });
+    // Process in batches of 50 to avoid Vercel timeout
+    const BATCH_SIZE = 50;
+    const allPostData = postsWithKeywords.map(p => ({
+      postId: p.id,
+      url: p.url,
+      titleKeyword: extractTitleKeyword(p.title),
+      keywords: p.gscKeywords.slice(0, 5)
+    }));
 
-    if(!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    let totalUpdated = 0, totalCached = 0, totalFresh = 0;
 
-    if(data.error) throw new Error(data.error);
+    for(let i = 0; i < allPostData.length; i += BATCH_SIZE) {
+      const chunk = allPostData.slice(i, i + BATCH_SIZE);
+      const progress = Math.round((i / allPostData.length) * 100);
+      banner.innerHTML = `<span>🔍 Looking up keyword volumes... ${progress}% (${i}/${allPostData.length} posts)</span>`;
 
-    // Apply results to posts
-    let updated = 0;
-    posts.forEach(p => {
-      const result = data.results?.[p.id] || data.results?.[String(p.id)];
-      if(result) {
-        p.topKeyword = result.topKeyword;
-        p.topKeywordVolume = result.topVolume;
-        p.keywordVolumes = result.keywords;
-        const r = calcScore(p);
-        p.score = r.score; p.urgency = r.urgency; p.hardFloor = r.hardFloor; p.flags = r.flags;
-        updated++;
-      }
-    });
+      const res = await fetch(BATCH_KEYWORDS_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ forceRefresh, posts: chunk })
+      });
+
+      if(!res.ok) continue;
+      const data = await res.json();
+      if(data.error) { console.warn('KW batch error:', data.error); continue; }
+
+      totalCached += data.cached || 0;
+      totalFresh += data.fetched || 0;
+
+      posts.forEach(p => {
+        const result = data.results?.[p.id] || data.results?.[String(p.id)];
+        if(result && (result.topVolume > 0 || result.scannedAt)) {
+          p.topKeyword = result.topKeyword;
+          p.topKeywordVolume = result.topVolume;
+          p.keywordVolumes = result.keywords;
+          const r = calcScore(p);
+          p.score = r.score; p.urgency = r.urgency; p.hardFloor = r.hardFloor; p.flags = r.flags;
+          totalUpdated++;
+        }
+      });
+    }
 
     posts.sort((a,b) => b.score - a.score);
     updateMetrics();
     renderTable();
 
     banner.className = 'scan-banner scan-complete';
-    banner.innerHTML = `<span>✓ Keyword volumes loaded — ${updated} posts updated (${data.cached||0} from cache, ${data.fetched||0} fresh)</span>`;
-    statusEl.innerHTML = `<span class="tag tag-ok">✓ ${updated} posts have keyword data</span><button class="btn btn-sm" style="margin-left:8px" onclick="startKWScan(true)">Force rescan</button>`;
+    banner.innerHTML = `<span>✓ Keyword volumes loaded — ${totalUpdated} posts updated (${totalCached} from cache, ${totalFresh} fresh)</span>`;
+    statusEl.innerHTML = `<span class="tag tag-ok">✓ ${totalUpdated} posts have keyword data</span><button class="btn btn-sm" style="margin-left:8px" onclick="startKWScan(true)">Force rescan</button>`;
 
   } catch(e) {
     banner.innerHTML = `<span style="color:var(--red-text)">❌ ${e.message}</span>`;
