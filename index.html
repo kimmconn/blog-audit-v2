@@ -907,7 +907,7 @@ async function startKWScan(forceRefresh=false) {
       const res = await fetch(BATCH_KEYWORDS_URL, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ forceRefresh, posts: chunk })
+        body: JSON.stringify({ forceRefresh: true, posts: chunk })
       });
 
       if(!res.ok) continue;
