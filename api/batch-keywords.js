@@ -54,7 +54,7 @@ export default async function handler(req, res) {
   try {
     // Batch keywords into chunks of 200 (DataForSEO works best with smaller batches)
     const allKwArray = [...allKeywords].slice(0, 1000);
-    const CHUNK_SIZE = 200;
+    const CHUNK_SIZE = 100;
     const volumeMap = {};
 
     for (let i = 0; i < allKwArray.length; i += CHUNK_SIZE) {
