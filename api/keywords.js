@@ -18,8 +18,7 @@ export default async function handler(req, res) {
   try {
     const credentials = Buffer.from(`${login}:${password}`).toString('base64');
     
-    // Cap at 20 keywords per request to control costs
-    const keywordsToCheck = keywords.slice(0, 20);
+    const keywordsToCheck = keywords.slice(0, 500);
 
     const response = await fetch(
       'https://api.dataforseo.com/v3/keywords_data/google_ads/search_volume/live',
