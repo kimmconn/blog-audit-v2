@@ -899,55 +899,51 @@ async function startKWScan(forceRefresh=false) {
 
     let totalUpdated = 0, totalCached = 0, totalFresh = 0;
 
-    for(let i = 0; i < allPostData.length; i += BATCH_SIZE) {
-      const chunk = allPostData.slice(i, i + BATCH_SIZE);
-      const progress = Math.round((i / allPostData.length) * 100);
-      banner.innerHTML = `<span>🔍 Looking up keyword volumes... ${progress}% (${i}/${allPostData.length} posts)</span>`;
-
-      // Collect all unique keywords for this chunk
-      const chunkKws = new Set();
-      chunk.forEach(p => {
-        (p.keywords||[]).forEach(k => chunkKws.add(k));
-        if(p.titleKeyword) chunkKws.add(p.titleKeyword);
-      });
-
-      // Use keywords.js directly — proven to work
-      const res = await fetch(KEYWORDS_URL, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ keywords: [...chunkKws] })
-      });
-
-      if(!res.ok) continue;
-      const data = await res.json();
-      if(data.error) { console.warn('KW error:', data.error); continue; }
-
-      const volumeMap = data.volumeMap || {};
-      totalFresh += chunk.length;
-
-      chunk.forEach(chunkPost => {
-        const p = posts.find(x => x.id === chunkPost.postId);
-        if(!p) return;
-        let topVolume = 0, topKeyword = '';
-        // Title keyword gets priority
-        if(chunkPost.titleKeyword && volumeMap[chunkPost.titleKeyword]?.volume > 0) {
-          topVolume = volumeMap[chunkPost.titleKeyword].volume;
-          topKeyword = chunkPost.titleKeyword;
-        }
-        // Check GSC keywords for higher volume
-        (chunkPost.keywords||[]).forEach(kw => {
-          const vol = volumeMap[kw]?.volume || 0;
-          if(vol > topVolume) { topVolume = vol; topKeyword = kw; }
+    // Build full volume map by sending keywords in small batches of 10
+    const masterVolumeMap = {};
+    const allKws = new Set();
+    allPostData.forEach(p => {
+      (p.keywords||[]).forEach(k => allKws.add(k));
+      if(p.titleKeyword) allKws.add(p.titleKeyword);
+    });
+    const kwArray = [...allKws];
+    const KW_BATCH = 10;
+    for(let k = 0; k < kwArray.length; k += KW_BATCH) {
+      const kwChunk = kwArray.slice(k, k + KW_BATCH);
+      const progress = Math.round((k / kwArray.length) * 100);
+      banner.innerHTML = `<span>🔍 Looking up keyword volumes... ${progress}% (${k}/${kwArray.length} keywords)</span>`;
+      try {
+        const res = await fetch(KEYWORDS_URL, {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ keywords: kwChunk })
         });
-        if(topVolume > 0 || chunkPost.titleKeyword) {
-          p.topKeyword = topKeyword;
-          p.topKeywordVolume = topVolume;
-          const r = calcScore(p);
-          p.score = r.score; p.urgency = r.urgency; p.hardFloor = r.hardFloor; p.flags = r.flags;
-          totalUpdated++;
+        if(res.ok) {
+          const data = await res.json();
+          Object.assign(masterVolumeMap, data.volumeMap || {});
         }
-      });
+      } catch(e) {}
     }
+
+    // Apply volumes to posts
+    allPostData.forEach(chunkPost => {
+      const p = posts.find(x => x.id === chunkPost.postId);
+      if(!p) return;
+      let topVolume = 0, topKeyword = '';
+      if(chunkPost.titleKeyword && masterVolumeMap[chunkPost.titleKeyword]?.volume > 0) {
+        topVolume = masterVolumeMap[chunkPost.titleKeyword].volume;
+        topKeyword = chunkPost.titleKeyword;
+      }
+      (chunkPost.keywords||[]).forEach(kw => {
+        const vol = masterVolumeMap[kw]?.volume || 0;
+        if(vol > topVolume) { topVolume = vol; topKeyword = kw; }
+      });
+      p.topKeyword = topKeyword;
+      p.topKeywordVolume = topVolume;
+      const r = calcScore(p);
+      p.score = r.score; p.urgency = r.urgency; p.hardFloor = r.hardFloor; p.flags = r.flags;
+      if(topVolume > 0) totalUpdated++;
+    });
+    totalFresh = allPostData.length;
 
     posts.sort((a,b) => b.score - a.score);
     updateMetrics();
