@@ -904,25 +904,44 @@ async function startKWScan(forceRefresh=false) {
       const progress = Math.round((i / allPostData.length) * 100);
       banner.innerHTML = `<span>🔍 Looking up keyword volumes... ${progress}% (${i}/${allPostData.length} posts)</span>`;
 
-      const res = await fetch(BATCH_KEYWORDS_URL, {
+      // Collect all unique keywords for this chunk
+      const chunkKws = new Set();
+      chunk.forEach(p => {
+        (p.keywords||[]).forEach(k => chunkKws.add(k));
+        if(p.titleKeyword) chunkKws.add(p.titleKeyword);
+      });
+
+      // Use keywords.js directly — proven to work
+      const res = await fetch(KEYWORDS_URL, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ forceRefresh: true, posts: chunk })
+        body: JSON.stringify({ keywords: [...chunkKws] })
       });
 
       if(!res.ok) continue;
       const data = await res.json();
-      if(data.error) { console.warn('KW batch error:', data.error); continue; }
+      if(data.error) { console.warn('KW error:', data.error); continue; }
 
-      totalCached += data.cached || 0;
-      totalFresh += data.fetched || 0;
+      const volumeMap = data.volumeMap || {};
+      totalFresh += chunk.length;
 
-      posts.forEach(p => {
-        const result = data.results?.[p.id] || data.results?.[String(p.id)];
-        if(result && (result.topVolume > 0 || result.scannedAt)) {
-          p.topKeyword = result.topKeyword;
-          p.topKeywordVolume = result.topVolume;
-          p.keywordVolumes = result.keywords;
+      chunk.forEach(chunkPost => {
+        const p = posts.find(x => x.id === chunkPost.postId);
+        if(!p) return;
+        let topVolume = 0, topKeyword = '';
+        // Title keyword gets priority
+        if(chunkPost.titleKeyword && volumeMap[chunkPost.titleKeyword]?.volume > 0) {
+          topVolume = volumeMap[chunkPost.titleKeyword].volume;
+          topKeyword = chunkPost.titleKeyword;
+        }
+        // Check GSC keywords for higher volume
+        (chunkPost.keywords||[]).forEach(kw => {
+          const vol = volumeMap[kw]?.volume || 0;
+          if(vol > topVolume) { topVolume = vol; topKeyword = kw; }
+        });
+        if(topVolume > 0 || chunkPost.titleKeyword) {
+          p.topKeyword = topKeyword;
+          p.topKeywordVolume = topVolume;
           const r = calcScore(p);
           p.score = r.score; p.urgency = r.urgency; p.hardFloor = r.hardFloor; p.flags = r.flags;
           totalUpdated++;
