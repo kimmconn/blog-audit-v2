@@ -781,7 +781,7 @@ async function startCrawl(){
     document.getElementById('crawlStatus').textContent=`${posts.length} posts crawled`;
     document.getElementById('crawlStatus').className='tag tag-ok';
     page=1;updateMetrics();renderTable();
-    if(gscToken)showGSCBanner(true);
+    if(gscToken){showGSCBanner(true);loadGSCData();} // auto-reload GSC after crawl finishes
   }catch(e){
     document.getElementById('statusMsg').textContent='Error: '+e.message;
     document.getElementById('crawlStatus').textContent='error';
