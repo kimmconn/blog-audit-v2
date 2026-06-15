@@ -1,6 +1,11 @@
 {
   "version": 2,
   "installCommand": "npm install",
+  "functions": {
+    "api/report.js": {
+      "maxDuration": 60
+    }
+  },
   "headers": [
     {
       "source": "/api/(.*)",
@@ -12,4 +17,3 @@
     }
   ]
 }
- 
