@@ -266,6 +266,12 @@ Return ONLY this JSON:
       postId, postUrl, postTitle, publishDate, modifiedDate,
       brokenLinksCount: brokenLinks?.length || 0,
       venueChecks: venueResults,
+      _venueDebug: {
+        extractedVenues: venueNames,
+        location,
+        placesApiKeyPresent: !!process.env.GOOGLE_PLACES_API_KEY,
+        venueResultsRaw: venueResults,
+      },
       generatedAt: new Date().toISOString(),
       report,
       fromCache: false,
