@@ -51,7 +51,7 @@ export default async function handler(req, res) {
     const rawHtml = wpData?.content?.rendered || '';
     const content = rawHtml
       .replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ')
-      .replace(/\s{2,}/g, ' ').trim().slice(0, 4000);
+      .replace(/\s{2,}/g, ' ').trim();
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
