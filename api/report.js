@@ -129,7 +129,7 @@ export default async function handler(req, res) {
           content: `Extract up to 8 specific named venues (hotels, restaurants, cafes, bars, attractions) from this post, and the main destination/city.
 
 Title: "${postTitle}"
-Content: ${content.slice(0, 2000)}
+Content: ${content}
 
 Return ONLY: {"venues": ["venue name 1", "venue name 2"], "location": "city, country"}`
         }]
