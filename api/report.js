@@ -152,7 +152,7 @@ Return ONLY this JSON:
 }`
         }]
       }),
-      signal: AbortSignal.timeout(55000),
+      signal: AbortSignal.timeout(240000),
     });
 
     if (!claudeRes.ok) {
