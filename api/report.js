@@ -82,7 +82,7 @@ export default async function handler(req, res) {
       .replace(/<li[^>]*>/gi, '\n- ').replace(/<p[^>]*>/gi, '\n')
       .replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/\n{3,}/g, '\n\n')
-      .trim();
+      .trim().slice(0, 12000);
 
     const publishDate = wpData?.date?.split('T')[0] || 'unknown';
     const modifiedDate = wpData?.modified?.split('T')[0] || 'unknown';
@@ -105,7 +105,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 3000,
+        max_tokens: 4000,
         system: `You are an expert travel blog content auditor. Today's date is ${new Date().toLocaleDateString("en-US", {year:"numeric",month:"long",day:"numeric"})}. Always use the current year when making suggestions. Be specific — quote actual text from the post when flagging issues. Return ONLY valid JSON, no markdown fences.`,
         messages: [{
           role: 'user',
