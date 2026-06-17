@@ -3,7 +3,10 @@
   "installCommand": "npm install",
   "functions": {
     "api/report.js": {
-      "maxDuration": 60
+      "maxDuration": 300
+    },
+    "api/batch-scan.js": {
+      "maxDuration": 120
     }
   },
   "headers": [
