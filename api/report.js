@@ -118,7 +118,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 8000,
+        max_tokens: 16000,
         system: `You are an expert travel blog content auditor helping a professional travel blogger update posts efficiently. Today's date is ${new Date().toLocaleDateString("en-US", {year:"numeric",month:"long",day:"numeric"})}.
 
 Your job is to create a POST UPDATE BRIEF that a VA can work through from TOP TO BOTTOM of the article without jumping around. Issues must be organized BY SECTION IN THE ORDER THEY APPEAR IN THE POST.
