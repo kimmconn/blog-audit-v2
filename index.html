@@ -514,75 +514,96 @@ function renderReportModal(data,postIdx){
       <button class="btn btn-sm" style="margin-left:auto" onclick="generateReport(${postIdx},true)">↺ Regenerate</button>
     </div>`;
 
-  // Venue verification results
+  // Summary
+  if(r.summary) html+=`<div class="report-section"><div class="report-section-title">📋 Summary</div><div class="report-summary">${r.summary}</div></div>`;
+
+  // Venue verification
   if(data.venueChecks && data.venueChecks.length > 0) {
-    const flagged = data.venueChecks.filter(v => v.flag);
-    const ok = data.venueChecks.filter(v => !v.flag);
-    html += `<div class="report-section"><div class="report-section-title">📍 Venue verification (${data.venueChecks.length} checked)</div><div>`;
-    flagged.forEach(v => { html += `<div class="report-item" style="border-color:var(--red);"><div class="report-item-type" style="background:var(--red-bg);color:var(--red-text)">possibly closed</div><div style="font-weight:500">${v.venue}</div><div class="report-item-issue">⚠️ Closure signals found on Google — verify and update</div></div>`; });
-    ok.forEach(v => { html += `<div style="font-size:11px;color:var(--green-text);padding:4px 0">✓ ${v.venue} — appears open</div>`; });
-    html += `</div></div>`;
+    const flagged=data.venueChecks.filter(v=>v.flag);
+    const ok=data.venueChecks.filter(v=>!v.flag);
+    html+=`<div class="report-section"><div class="report-section-title">📍 Venue verification (${data.venueChecks.length} checked)</div><div>`;
+    flagged.forEach(v=>{html+=`<div class="report-item" style="border-color:var(--red)"><div class="report-item-type" style="background:var(--red-bg);color:var(--red-text)">${v.status==='permanently_closed'?'❌ permanently closed':'⚠️ temporarily closed'}</div><div style="font-weight:500">${v.venue}</div>${v.address?`<div style="font-size:11px;color:var(--text2)">${v.address}</div>`:''}</div>`;});
+    ok.forEach(v=>{html+=`<div style="font-size:11px;color:var(--green-text);padding:3px 0">✓ ${v.venue} — appears open</div>`;});
+    html+=`</div></div>`;
   }
 
-  // Keyword volumes section
-  if(data.keywordVolumes && Object.keys(data.keywordVolumes).length > 0) {
-    const kvEntries = Object.entries(data.keywordVolumes)
-      .filter(([k,v]) => v.volume > 0)
-      .sort((a,b) => b[1].volume - a[1].volume)
-      .slice(0, 10);
-    if(kvEntries.length > 0) {
-      html += `<div class="report-section"><div class="report-section-title">🔍 Keyword volumes (from DataForSEO)</div><div>`;
-      kvEntries.forEach(([kw, data]) => {
-        const vol = data.volume >= 1000 ? (data.volume/1000).toFixed(1)+'k' : data.volume;
-        const trend = data.trend && data.trend.length > 0 ? 
-          (data.trend[data.trend.length-1] > data.trend[0] ? '📈' : '📉') : '';
-        html += `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px">
-          <span>${kw}</span>
-          <span style="font-weight:500">${vol}/mo ${trend}</span>
+  // Quick reference lists (free entry, sunset spots, etc)
+  if(r.quickReferenceLists?.length) {
+    html+=`<div class="report-section"><div class="report-section-title">📌 Quick reference lists</div>`;
+    r.quickReferenceLists.forEach(list=>{
+      html+=`<div style="margin-bottom:12px">
+        <div style="font-weight:500;font-size:12px;margin-bottom:4px">${list.title}</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">${list.items.join(' · ')}</div>
+        ${list.suggestedPlacement?`<div style="font-size:11px;color:var(--blue-text)">💡 ${list.suggestedPlacement}</div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // SECTION BY SECTION — the main update checklist
+  if(r.sections?.length) {
+    html+=`<div class="report-section"><div class="report-section-title">📝 Update checklist — work through in order</div>`;
+    r.sections.forEach(section=>{
+      if(!section.fixes?.length) return;
+      html+=`<div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--text);background:var(--bg2);padding:6px 10px;border-radius:var(--radius);margin-bottom:6px;border-left:3px solid var(--border2)">${section.sectionName}</div>`;
+      section.fixes.forEach(fix=>{
+        const priorityColor=fix.priority==='critical'?'var(--red)':fix.priority==='high'?'var(--amber)':'var(--blue)';
+        const priorityBg=fix.priority==='critical'?'var(--red-bg)':fix.priority==='high'?'var(--amber-bg)':'var(--blue-bg)';
+        const priorityText=fix.priority==='critical'?'var(--red-text)':fix.priority==='high'?'var(--amber-text)':'var(--blue-text)';
+        const typeLabel=fix.type?.replace(/_/g,' ')||'fix';
+        html+=`<div class="report-item" style="margin-left:8px;border-left:3px solid ${priorityColor}">
+          <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
+            <span class="report-item-type" style="background:${priorityBg};color:${priorityText}">${typeLabel}</span>
+            <span style="font-size:10px;color:${priorityText};font-weight:500">${fix.priority}</span>
+          </div>
+          ${fix.currentText?`<div class="report-item-quote">"${fix.currentText}"</div>`:''}
+          <div class="report-item-issue" style="margin-bottom:6px">${fix.action||''}</div>
+          ${fix.suggestedText?`<div style="background:var(--green-bg);border-radius:var(--radius);padding:8px;font-size:11px;color:var(--green-text);margin-top:4px"><strong>Suggested:</strong> ${fix.suggestedText}</div>`:''}
         </div>`;
       });
-      html += `</div></div>`;
-    }
+      html+=`</div>`;
+    });
+    html+=`</div>`;
   }
 
-  if(r.summary)html+=`<div class="report-section"><div class="report-section-title">📋 Summary</div><div class="report-summary">${r.summary}</div></div>`;
+  // Top 2 content gaps with suggested text
+  if(r.topContentGaps?.length) {
+    html+=`<div class="report-section"><div class="report-section-title">🎯 Top content gaps to add</div>`;
+    r.topContentGaps.slice(0,2).forEach((gap,i)=>{
+      html+=`<div class="report-item" style="margin-bottom:10px;border-color:var(--purple)">
+        <div class="report-item-type" style="background:var(--purple-bg);color:var(--purple-text)">#${i+1} priority</div>
+        <div style="font-weight:500;margin-bottom:4px">${gap.topic}</div>
+        <div style="font-size:11px;color:var(--amber-text);margin-bottom:8px">Why urgent: ${gap.whyUrgent}</div>
+        ${gap.placement?`<div style="font-size:11px;color:var(--text2);margin-bottom:6px">📍 Add: ${gap.placement}</div>`:''}
+        ${gap.suggestedText?`<div style="background:var(--bg2);border-radius:var(--radius);padding:8px;font-size:11px;color:var(--text2);font-style:italic">${gap.suggestedText}</div>`:''}
+      </div>`;
+    });
+    html+=`</div>`;
+  }
 
-  if(r.quickWins?.length){
-    html+=`<div class="report-section"><div class="report-section-title">⚡ Quick wins</div><ul class="quick-wins">`;
-    r.quickWins.forEach(w=>{html+=`<li class="quick-win"><span>✓</span><span>${w}</span></li>`;});
+  // SEO quick wins
+  if(r.seoQuickWins?.length) {
+    html+=`<div class="report-section"><div class="report-section-title">📈 SEO quick wins</div><ul class="quick-wins">`;
+    r.seoQuickWins.forEach(w=>{html+=`<li class="quick-win" style="background:var(--blue-bg);color:var(--blue-text)"><span>→</span><span>${w}</span></li>`;});
     html+=`</ul></div>`;
   }
 
-  if(r.outdatedContent?.length){
-    html+=`<div class="report-section"><div class="report-section-title">⚠️ Outdated content (${r.outdatedContent.length} issues found)</div>`;
-    r.outdatedContent.forEach(item=>{
-      html+=`<div class="report-item">
-        <div class="report-item-type">${item.type||'issue'}</div>
-        ${item.quote?`<div class="report-item-quote">"${item.quote}"</div>`:''}
-        <div class="report-item-issue">⚠ ${item.issue||''}</div>
-        <div class="report-item-suggestion">→ ${item.suggestion||''}</div>
-      </div>`;
+  // Other content ideas (collapsed/minimal)
+  if(r.otherContentIdeas?.length) {
+    html+=`<div class="report-section"><div class="report-section-title" style="color:var(--text2)">💡 Other ideas (optional)</div>
+    <div style="font-size:11px;color:var(--text2);display:flex;flex-wrap:wrap;gap:6px">`;
+    r.otherContentIdeas.forEach(idea=>{
+      html+=`<span style="background:var(--bg2);padding:3px 8px;border-radius:20px">${idea}</span>`;
     });
-    html+=`</div>`;
+    html+=`</div></div>`;
   }
 
-  if(r.seoOpportunities?.length){
-    html+=`<div class="report-section"><div class="report-section-title">📈 SEO opportunities (${r.seoOpportunities.length})</div>`;
-    r.seoOpportunities.forEach(item=>{
-      html+=`<div class="report-seo-item">
-        <div style="margin-bottom:4px"><span class="report-item-type" style="background:var(--blue-bg);color:var(--blue-text)">${item.type||'seo'}</span></div>
-        <div style="color:var(--text);margin-bottom:3px;font-size:12px">${item.issue||''}</div>
-        <div style="color:var(--text2);font-size:11px">→ ${item.suggestion||''}</div>
-      </div>`;
-    });
-    html+=`</div>`;
-  }
-
-  if(r.contentGaps?.length){
-    html+=`<div class="report-section"><div class="report-section-title">🔍 Content gaps (${r.contentGaps.length})</div><div>`;
-    r.contentGaps.forEach(item=>{
-      html+=`<div class="report-gap-item"><div style="font-weight:500;min-width:160px">${item.topic||''}</div><div style="color:var(--text2)">${item.reason||''}</div></div>`;
-    });
+  // Competitors if found
+  if(data.competitors?.titles?.length) {
+    html+=`<div class="report-section"><div class="report-section-title" style="color:var(--text2)">🔍 Competing results (2026 search)</div>
+    <div style="font-size:11px;color:var(--text2)">`;
+    data.competitors.titles.forEach(t=>{html+=`<div style="padding:3px 0;border-bottom:0.5px solid var(--border)">${t}</div>`;});
     html+=`</div></div>`;
   }
 
@@ -590,7 +611,6 @@ function renderReportModal(data,postIdx){
     <a href="${data.postUrl}" target="_blank" class="btn btn-primary btn-sm">Open post ↗</a>
     <button class="btn btn-sm" onclick="closeModal()">Close</button>
   </div>`;
-
   document.getElementById('modalBody').innerHTML=html;
 }
 
