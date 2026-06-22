@@ -152,6 +152,11 @@ PRICES:
 - Croatia switched to Euro in January 2023 — NEVER suggest prices in HRK (Croatian Kuna)
 - If you flag a price as outdated, your action should be: "Verify current price at [official website URL]"
 
+YEAR REFERENCES:
+- Do NOT suggest adding the current year throughout the post body (e.g. "add 2026 to this section", "mention 2026 here")
+- It's fine to suggest updating the title with a year ONCE if relevant for SEO
+- Do not suggest "last updated in June 2026" type phrases scattered through the post
+
 VENUES — BE THOROUGH:
 - Extract ALL named venues: restaurants, bars, cafes, hotels, hostels, apartments, attractions, parks, beaches, clubs, tour operators — everything with a name
 - These get verified via Google Places API — missing venues means missed closures
@@ -215,7 +220,7 @@ Return ONLY this JSON:
           "priority": "critical|high|medium",
           "currentText": "exact short quote from post that needs changing",
           "action": "specific instruction — for prices always include the official website URL to check",
-          "suggestedText": "OPTIONAL: only include if you can write something accurate in Kimmie's voice. Omit entirely if unsure. Never write generic filler."
+        "suggestedText": "Rules by type — broken_link: short suggested replacement anchor text only (e.g. 'Book a Cooking Class Here'); add_content: full paragraph in Kimmie's first-person casual voice, no prices, no generic filler; seo_fix: exact suggested change written out; outdated_price: OMIT suggestedText entirely, put verification URL in action field instead; outdated_info: only include if factually certain without inventing anything, omit if unsure. Never say 'verify before publishing' in suggestedText."
         }
       ]
     }
