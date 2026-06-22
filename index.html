@@ -607,10 +607,12 @@ function renderReportModal(data,postIdx){
     html+=`</div></div>`;
   }
 
-  html+=`<div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border);display:flex;gap:8px">
-    <a href="${data.postUrl}" target="_blank" class="btn btn-primary btn-sm">Open post ↗</a>
+ html+=`<div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-primary btn-sm" onclick="openBriefBuilder(window._lastReportData,${postIdx})">📋 Build Brief & Download PDF</button>
+    <a href="${data.postUrl}" target="_blank" class="btn btn-sm">Open post ↗</a>
     <button class="btn btn-sm" onclick="closeModal()">Close</button>
   </div>`;
+  window._lastReportData = data;
   document.getElementById('modalBody').innerHTML=html;
 }
 
@@ -980,6 +982,287 @@ async function startKWScan(forceRefresh=false) {
 }
 
 renderTable();
+ // BRIEF BUILDER — add this function to index.html
+// Call openBriefBuilder(data, postIdx) instead of or after renderReportModal
+
+function openBriefBuilder(data, postIdx) {
+  const r = data.report;
+  
+  // Build editable items list from sections
+  let items = [];
+  let itemId = 0;
+  
+  // Add venue issues first
+  (data.venueChecks||[]).filter(v=>v.flag).forEach(v => {
+    items.push({
+      id: itemId++, checked: true, section: '📍 Venue',
+      type: v.status === 'permanently_closed' ? '❌ PERMANENTLY CLOSED' : '⚠️ TEMPORARILY CLOSED',
+      priority: 'critical',
+      text: `${v.venue}${v.address ? ' — ' + v.address : ''}`,
+      action: 'Remove or replace all mentions',
+      note: ''
+    });
+  });
+
+  // Add section fixes
+  (r.sections||[]).forEach(section => {
+    (section.fixes||[]).forEach(fix => {
+      items.push({
+        id: itemId++, checked: fix.priority === 'critical' || fix.priority === 'high',
+        section: section.sectionName,
+        type: (fix.type||'fix').replace(/_/g,' '),
+        priority: fix.priority || 'medium',
+        text: fix.currentText ? `"${fix.currentText}"` : fix.action,
+        action: fix.action || '',
+        suggested: fix.suggestedText || '',
+        note: ''
+      });
+    });
+  });
+
+  // Add top content gaps
+  (r.topContentGaps||[]).slice(0,2).forEach((gap, i) => {
+    items.push({
+      id: itemId++, checked: true,
+      section: '🎯 Content Gap #' + (i+1),
+      type: 'add content',
+      priority: 'high',
+      text: gap.topic,
+      action: gap.whyUrgent + (gap.placement ? '\n📍 ' + gap.placement : ''),
+      suggested: gap.suggestedText || '',
+      note: ''
+    });
+  });
+
+  // Add SEO quick wins
+  (r.seoQuickWins||[]).forEach(win => {
+    items.push({
+      id: itemId++, checked: false,
+      section: '📈 SEO',
+      type: 'seo fix',
+      priority: 'medium',
+      text: win,
+      action: '', suggested: '', note: ''
+    });
+  });
+
+  // Store items globally for PDF generation
+  window._briefItems = items;
+  window._briefData = data;
+  window._briefPostIdx = postIdx;
+
+  // Render the brief builder modal
+  const priorityColor = p => p==='critical'?'var(--red)':p==='high'?'var(--amber)':'var(--blue)';
+  const priorityBg = p => p==='critical'?'var(--red-bg)':p==='high'?'var(--amber-bg)':'var(--blue-bg)';
+  const priorityText = p => p==='critical'?'var(--red-text)':p==='high'?'var(--amber-text)':'var(--blue-text)';
+
+  let html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div style="font-size:13px;font-weight:500">📋 Build Post Update Brief</div>
+        <div style="font-size:11px;color:var(--text2)">${data.postTitle} — check what to include, add notes, then download</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm" onclick="briefCheckAll(true)">Check all</button>
+        <button class="btn btn-sm" onclick="briefCheckAll(false)">Uncheck all</button>
+        <button class="btn btn-primary btn-sm" onclick="downloadBriefPDF()">⬇ Download PDF</button>
+      </div>
+    </div>
+    
+    <div style="font-size:11px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:var(--radius)">
+      ✅ Checked items = included in PDF for your VA &nbsp;·&nbsp; 📝 Add notes to any item &nbsp;·&nbsp; ➕ Add your own tasks at the bottom
+    </div>`;
+
+  let currentSection = '';
+  items.forEach(item => {
+    if(item.section !== currentSection) {
+      currentSection = item.section;
+      html += `<div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 6px;padding-bottom:4px;border-bottom:0.5px solid var(--border)">${item.section}</div>`;
+    }
+    html += `
+      <div id="brief-item-${item.id}" style="display:flex;gap:8px;padding:8px;border:0.5px solid var(--border);border-left:3px solid ${priorityColor(item.priority)};border-radius:var(--radius);margin-bottom:6px;background:${item.checked?'var(--bg)':'var(--bg2)'}">
+        <input type="checkbox" ${item.checked?'checked':''} onchange="briefToggle(${item.id},this.checked)" style="margin-top:3px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
+            <span style="font-size:10px;padding:1px 6px;border-radius:var(--radius);background:${priorityBg(item.priority)};color:${priorityText(item.priority)};text-transform:uppercase">${item.type}</span>
+            <span style="font-size:10px;color:${priorityText(item.priority)};font-weight:500">${item.priority}</span>
+          </div>
+          <div style="font-size:12px;color:var(--text);margin-bottom:3px">${item.text}</div>
+          ${item.action ? `<div style="font-size:11px;color:var(--text2);margin-bottom:4px">${item.action}</div>` : ''}
+          ${item.suggested ? `<div style="font-size:11px;color:var(--green-text);background:var(--green-bg);padding:6px 8px;border-radius:var(--radius);margin-bottom:4px"><strong>Suggested:</strong> ${item.suggested}</div>` : ''}
+          <textarea 
+            placeholder="Add a note for your VA (optional)..."
+            onchange="briefNote(${item.id},this.value)"
+            style="width:100%;font-size:11px;padding:4px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;min-height:28px;margin-top:4px;font-family:inherit"
+            rows="1">${item.note}</textarea>
+        </div>
+      </div>`;
+  });
+
+  // Custom task area
+  html += `
+    <div style="margin-top:16px;padding-top:12px;border-top:0.5px solid var(--border)">
+      <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px">➕ ADD YOUR OWN TASKS</div>
+      <div id="customTasks"></div>
+      <button class="btn btn-sm" onclick="briefAddCustomTask()" style="margin-top:6px">+ Add task</button>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="downloadBriefPDF()">⬇ Download Brief PDF</button>
+      <button class="btn btn-sm" onclick="showReportView()">← Back to report</button>
+    </div>`;
+
+  document.getElementById('modalBody').innerHTML = html;
+}
+
+function briefToggle(id, checked) {
+  const item = window._briefItems.find(i=>i.id===id);
+  if(item) {
+    item.checked = checked;
+    const el = document.getElementById('brief-item-'+id);
+    if(el) el.style.background = checked ? 'var(--bg)' : 'var(--bg2)';
+  }
+}
+
+function briefNote(id, note) {
+  const item = window._briefItems.find(i=>i.id===id);
+  if(item) item.note = note;
+}
+
+function briefCheckAll(checked) {
+  window._briefItems.forEach(item => {
+    item.checked = checked;
+    const el = document.getElementById('brief-item-'+item.id);
+    if(el) {
+      el.querySelector('input[type=checkbox]').checked = checked;
+      el.style.background = checked ? 'var(--bg)' : 'var(--bg2)';
+    }
+  });
+}
+
+let customTaskCount = 0;
+function briefAddCustomTask() {
+  const id = 'custom-' + customTaskCount++;
+  const div = document.createElement('div');
+  div.id = id;
+  div.style.cssText = 'display:flex;gap:8px;margin-bottom:6px;align-items:flex-start';
+  div.innerHTML = `
+    <input type="checkbox" checked style="margin-top:8px;flex-shrink:0" onchange="this.parentElement.style.opacity=this.checked?'1':'0.5'">
+    <textarea placeholder="Describe the task for your VA..." 
+      style="flex:1;font-size:12px;padding:6px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;font-family:inherit"
+      rows="2" id="${id}-text"></textarea>
+    <button onclick="document.getElementById('${id}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:6px;font-size:16px;flex-shrink:0">×</button>`;
+  document.getElementById('customTasks').appendChild(div);
+}
+
+function showReportView() {
+  if(window._briefData && window._briefPostIdx !== undefined) {
+    renderReportModal(window._briefData, window._briefPostIdx);
+  }
+}
+
+function downloadBriefPDF() {
+  const data = window._briefData;
+  const r = data?.report;
+  if(!data) return;
+
+  const checkedItems = (window._briefItems||[]).filter(i=>i.checked);
+  
+  // Gather custom tasks
+  const customTasks = [];
+  document.querySelectorAll('[id^="custom-"]').forEach(el => {
+    const cb = el.querySelector('input[type=checkbox]');
+    const ta = el.querySelector('textarea');
+    if(cb?.checked && ta?.value.trim()) customTasks.push(ta.value.trim());
+  });
+
+  const priorityColor = p => p==='critical'?'#A32D2D':p==='high'?'#854F0B':'#185FA5';
+  const priorityBg = p => p==='critical'?'#FCEBEB':p==='high'?'#FAEEDA':'#E6F1FB';
+
+  // Build print-friendly HTML
+  const printHTML = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Post Update Brief — ${data.postTitle}</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a18;font-size:13px;line-height:1.5;margin:0;padding:0}
+  .page{max-width:800px;margin:0 auto;padding:32px}
+  h1{font-size:20px;font-weight:600;margin:0 0 4px}
+  .meta{font-size:11px;color:#6b6b67;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid #ddd}
+  .meta a{color:#378ADD}
+  .section-header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#6b6b67;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #eee}
+  .task{display:flex;gap:10px;padding:10px 12px;border:1px solid #eee;border-left:3px solid #ccc;border-radius:6px;margin-bottom:6px;break-inside:avoid}
+  .task-body{flex:1}
+  .badge{display:inline-block;font-size:9px;padding:1px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-right:4px}
+  .task-text{font-size:12px;font-weight:500;margin:4px 0 2px}
+  .task-action{font-size:11px;color:#6b6b67;margin-bottom:4px}
+  .task-suggested{font-size:11px;color:#3B6D11;background:#EAF3DE;padding:6px 8px;border-radius:4px;margin-top:4px}
+  .task-note{font-size:11px;color:#185FA5;background:#E6F1FB;padding:6px 8px;border-radius:4px;margin-top:4px;font-style:italic}
+  .checkbox{width:16px;height:16px;border:2px solid #ccc;border-radius:3px;flex-shrink:0;margin-top:3px;display:flex;align-items:center;justify-content:center;font-size:10px}
+  .summary-box{background:#f5f4f0;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#6b6b67;line-height:1.6}
+  .footer{margin-top:32px;padding-top:12px;border-top:1px solid #eee;font-size:10px;color:#9b9b97;text-align:center}
+  @media print{body{font-size:11px}.page{padding:20px}h1{font-size:16px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>${data.postTitle}</h1>
+  <div class="meta">
+    <a href="${data.postUrl}" target="_blank">${data.postUrl}</a><br>
+    Published: ${data.publishDate||'—'} &nbsp;·&nbsp; Modified: ${data.modifiedDate||'—'} &nbsp;·&nbsp; Est. update time: ${r?.estimatedUpdateTime||'—'} &nbsp;·&nbsp; Link issues: ${data.brokenLinksCount||0}
+    &nbsp;·&nbsp; Brief generated: ${new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}
+  </div>
+  
+  ${r?.summary ? `<div class="summary-box">${r.summary}</div>` : ''}
+
+  ${(() => {
+    let html = '';
+    let currentSection = '';
+    checkedItems.forEach(item => {
+      if(item.section !== currentSection) {
+        currentSection = item.section;
+        html += `<div class="section-header">${item.section}</div>`;
+      }
+      html += `
+        <div class="task" style="border-left-color:${priorityColor(item.priority)}">
+          <div class="checkbox" style="border-color:${priorityColor(item.priority)};background:${priorityBg(item.priority)};color:${priorityColor(item.priority)}">✓</div>
+          <div class="task-body">
+            <div>
+              <span class="badge" style="background:${priorityBg(item.priority)};color:${priorityColor(item.priority)}">${item.type}</span>
+              <span style="font-size:10px;color:${priorityColor(item.priority)};font-weight:600">${item.priority}</span>
+            </div>
+            <div class="task-text">${item.text}</div>
+            ${item.action ? `<div class="task-action">${item.action}</div>` : ''}
+            ${item.suggested ? `<div class="task-suggested"><strong>Suggested text:</strong> ${item.suggested}</div>` : ''}
+            ${item.note ? `<div class="task-note">📝 Note: ${item.note}</div>` : ''}
+          </div>
+        </div>`;
+    });
+    return html;
+  })()}
+
+  ${customTasks.length > 0 ? `
+    <div class="section-header">Additional tasks</div>
+    ${customTasks.map(t=>`
+      <div class="task" style="border-left-color:#639922">
+        <div class="checkbox" style="border-color:#639922;background:#EAF3DE;color:#3B6D11">✓</div>
+        <div class="task-body"><div class="task-text">${t}</div></div>
+      </div>`).join('')}
+  ` : ''}
+
+  <div class="footer">Generated by Bloopi · ${data.postUrl}</div>
+</div>
+</body>
+</html>`;
+
+  // Open print dialog
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(printHTML);
+  printWindow.document.close();
+  printWindow.addEventListener('load', () => {
+    setTimeout(() => printWindow.print(), 500);
+  });
+}
 </script>
 </body>
 </html>
