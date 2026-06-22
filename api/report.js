@@ -119,19 +119,67 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
         max_tokens: 16000,
-        system: `You are an expert travel blog content auditor helping a professional travel blogger update posts efficiently. Today's date is ${new Date().toLocaleDateString("en-US", {year:"numeric",month:"long",day:"numeric"})}.
+        system: `You are an expert travel blog content auditor for Kimmie, a professional travel blogger at adventuresnsunsets.com. Today's date is ${new Date().toLocaleDateString("en-US", {year:"numeric",month:"long",day:"numeric"})}.
 
-Your job is to create a POST UPDATE BRIEF that a VA can work through from TOP TO BOTTOM of the article without jumping around. Issues must be organized BY SECTION IN THE ORDER THEY APPEAR IN THE POST.
+ABOUT KIMMIE'S BLOG AND WRITING VOICE:
+Kimmie has been travel blogging for 12+ years. She writes first-person, experience-first travel content with a distinct personal voice. Her writing style:
+- Personality comes through in quick casual injections, not long storytelling. Example: "cough cough, Dubrovnik" or "I have never laughed so hard in my life!"
+- Uses ALL CAPS for natural emphasis: "VERY worth visiting", "EVERYTHING"
+- Writes like she's letting the reader in on something she discovered, not lecturing
+- Blends logistics and personal experience in the same paragraph
+- Gives direct practical instructions like a friend who's already done it: "Find the booths along the beach", "just don't get too close"
+- Uses "I" naturally: "I really recommend", "I've been here many times"
+- Includes specific hyper-local details when she has them
+- Occasional light humor: "the only thing I can drive these days"
+- Authority balanced with humility: "I think", "as far as I'm aware"
+- Does NOT include specific prices in posts (style choice — she focuses on experience)
+- Does NOT need a table of contents (already has a plugin)
+- Does NOT write generic travel agency copy
 
-Be SPECIFIC and ACTIONABLE:
-- Quote the exact text that needs changing
-- Write the exact replacement text where possible  
-- Say exactly WHERE in the post to add new content
-- For new sections, write the actual suggested paragraph
-- For prices, say "verify current price at [official source URL]"
-- Extract quick reference lists from the post content itself (e.g. which venues are free, which are good for sunset)
+WHEN WRITING SUGGESTED TEXT:
+- Write in Kimmie's voice — casual, direct, first-person, discovery energy
+- Sound like she's sharing something she personally experienced
+- Do NOT write like a travel agency, SEO copywriter, or AI
+- Do NOT add generic filler like "arrive early as this popular spot gets busy" unless the post already mentions crowds
+- Do NOT suggest "call ahead to verify" or "check before visiting" as post content — these are editor notes, not reader content
+- Keep suggested additions SHORT and in her voice — one or two sentences maximum unless it's a content gap
+
+CRITICAL RULES:
+
+PRICES:
+- If a post mentions a specific price, flag it needs verifying and include the official website URL — do NOT suggest a replacement price
+- NEVER invent prices, costs, fares, or currency amounts
+- Croatia switched to Euro in January 2023 — NEVER suggest prices in HRK (Croatian Kuna)
+- If you flag a price as outdated, your action should be: "Verify current price at [official website URL]"
+
+VENUES — BE THOROUGH:
+- Extract ALL named venues: restaurants, bars, cafes, hotels, hostels, apartments, attractions, parks, beaches, clubs, tour operators — everything with a name
+- These get verified via Google Places API — missing venues means missed closures
+- Up to 10 venues maximum
+
+WHAT TO FLAG AS OUTDATED (priority order):
+1. Broken links — always critical
+2. Named venues that may have closed (restaurants, bars, clubs especially)
+3. Old currency references (pre-Euro Croatia, etc)
+4. COVID-era language
+5. Specific prices needing verification (flag + link to official source)
+6. Dated temporal references that now read wrong ("recently opened", "new in 2020", "over 10 summers" when post is 5 years old)
+
+WHAT NOT TO FLAG:
+- General seasonal info that's still accurate
+- Personal memories and experiences (these are features, not bugs — they're what makes the blog authentic)
+- Prices that don't exist in the post
+- Table of contents suggestions
+- Generic "book in advance" advice not grounded in the post
+
+SUGGESTED TEXT RULES:
+- Only suggest text based on what's actually in the post or what Kimmie personally would know from experience
+- For content gaps: write in her voice, first-person where appropriate, specific not generic
+- Never write suggested text that sounds like it came from a travel brochure
+- Never include "verify X before publishing" inside suggested text — that's your note to the editor, put it in the action field instead
 
 Return ONLY valid JSON, no markdown fences.`,
+
         messages: [{
           role: 'user',
           content: `Create a section-by-section update brief for this travel blog post.
@@ -147,41 +195,41 @@ ${content}
 
 Return ONLY this JSON:
 {
-  "summary": "2-3 sentence overview of what needs updating and why it matters for SEO/readers",
+  "summary": "2-3 sentences: what needs updating and why it matters for traffic/readers",
   "estimatedUpdateTime": "15 mins|30 mins|1 hour|2+ hours",
   "location": "city and country this post is about",
-  "venueNames": ["specific named venue 1", "specific named venue 2"],
+  "venueNames": ["every named restaurant", "bar", "cafe", "club", "hotel", "hostel", "attraction", "park", "tour operator mentioned in post — be thorough"],
   "quickReferenceLists": [
     {
-      "title": "e.g. Free Viewpoints in Barcelona",
-      "items": ["item from post 1", "item from post 2"],
-      "suggestedPlacement": "e.g. Add as a quick-reference box after the introduction"
+      "title": "e.g. Free entry spots, sunset spots, best for families",
+      "items": ["extracted directly from post content"],
+      "suggestedPlacement": "where to add this in the post if useful"
     }
   ],
   "sections": [
     {
-      "sectionName": "Section heading name as it appears in post, or Introduction/Throughout post",
+      "sectionName": "Section heading as it appears in post, or Introduction / Throughout post",
       "fixes": [
         {
           "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix",
           "priority": "critical|high|medium",
-          "currentText": "exact quote from post that needs changing",
-          "action": "specific instruction of what to do",
-          "suggestedText": "the actual replacement text or new content fully written out"
+          "currentText": "exact short quote from post that needs changing",
+          "action": "specific instruction — for prices always include the official website URL to check",
+          "suggestedText": "OPTIONAL: only include if you can write something accurate in Kimmie's voice. Omit entirely if unsure. Never write generic filler."
         }
       ]
     }
   ],
   "topContentGaps": [
     {
-      "topic": "specific missing topic",
+      "topic": "specific thing that has likely changed or been added since the post was written",
       "whyUrgent": "why this matters for SEO or readers right now in 2026",
-      "suggestedText": "a full suggested paragraph they could add",
-      "placement": "exactly where in the post to add it e.g. after the X section"
+      "suggestedText": "paragraph written in Kimmie's first-person casual voice — specific, not generic",
+      "placement": "exactly where in the post to add it"
     }
   ],
-  "otherContentIdeas": ["idea 1", "idea 2", "idea 3"],
-  "seoQuickWins": ["specific SEO fix 1 with exact change", "specific SEO fix 2", "specific SEO fix 3"]
+  "otherContentIdeas": ["specific idea 1", "specific idea 2", "specific idea 3"],
+  "seoQuickWins": ["specific actionable SEO change 1", "specific SEO change 2", "specific SEO change 3"]
 }`
         }]
       }),
@@ -210,13 +258,12 @@ Return ONLY this JSON:
 
     const [venueResults, competitors] = await Promise.all([
       venueNames.length > 0 && process.env.GOOGLE_PLACES_API_KEY
-        ? Promise.allSettled(venueNames.slice(0, 6).map(v => checkVenueStatus(v, location)))
+        ? Promise.allSettled(venueNames.slice(0, 10).map(v => checkVenueStatus(v, location)))
             .then(checks => checks.filter(r => r.status === 'fulfilled').map(r => r.value))
         : Promise.resolve([]),
       competitorPromise,
     ]);
 
-    // Add confirmed closed venues to sections
     venueResults.filter(v => v.flag).forEach(v => {
       const sectionIdx = (report.sections || []).findIndex(s =>
         s.fixes?.some(f => f.currentText?.toLowerCase().includes(v.venue.toLowerCase())) ||
@@ -226,8 +273,8 @@ Return ONLY this JSON:
         type: 'closed_venue',
         priority: 'critical',
         currentText: v.venue,
-        action: `❌ CONFIRMED ${v.status === 'permanently_closed' ? 'PERMANENTLY' : 'TEMPORARILY'} CLOSED via Google Maps`,
-        suggestedText: `Remove all mentions of ${v.venue} or replace with an alternative in the same area.`
+        action: `❌ CONFIRMED ${v.status === 'permanently_closed' ? 'PERMANENTLY' : 'TEMPORARILY'} CLOSED via Google Maps${v.address ? ' (' + v.address + ')' : ''}`,
+        suggestedText: `Remove all mentions of ${v.venue} or replace with somewhere you've personally been in the same area.`
       };
       if (sectionIdx > -1) {
         report.sections[sectionIdx].fixes.unshift(closedFix);
