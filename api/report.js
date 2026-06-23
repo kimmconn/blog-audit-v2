@@ -137,6 +137,11 @@ PRICES:
 - Croatia switched to Euro January 2023 — never suggest HRK prices
 - For outdated prices in the post: flag them and put the official verification URL in editorNote
 
+AFFILIATE LINKS:
+- When a broken tour/activity link needs replacing, editorNote should say "Find a replacement [activity type] affiliate link on GetYourGuide or Viator" — never suggest readers search these platforms themselves
+- The blogger selects the best option and links it — readers never see "search on GetYourGuide"
+- Suggested text for broken affiliate links should rewrite the sentence naturally without mentioning the search process
+
 YEAR REFERENCES:
 - Do NOT suggest adding the current year throughout the post body
 - Only suggest year in the title ONCE if relevant for SEO
