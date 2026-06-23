@@ -983,7 +983,7 @@ async function startKWScan(forceRefresh=false) {
 }
 
 renderTable();
- // BRIEF BUILDER — add this function to index.html
+// BRIEF BUILDER — add this function to index.html
 // Call openBriefBuilder(data, postIdx) instead of or after renderReportModal
 
 function openBriefBuilder(data, postIdx) {
@@ -1001,7 +1001,7 @@ function openBriefBuilder(data, postIdx) {
       priority: 'critical',
       text: `${v.venue}${v.address ? ' — ' + v.address : ''}`,
       action: 'Remove or replace all mentions',
-      note: ''
+      note: fix.editorNote || ''
     });
   });
 
@@ -1016,7 +1016,7 @@ function openBriefBuilder(data, postIdx) {
         text: fix.currentText ? `"${fix.currentText}"` : fix.action,
         action: fix.action || '',
         suggested: fix.suggestedText || '',
-        note: ''
+        note: fix.editorNote || ''
       });
     });
   });
