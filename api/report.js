@@ -121,67 +121,39 @@ export default async function handler(req, res) {
         max_tokens: 16000,
         system: `You are an expert travel blog content auditor for Kimmie, a professional travel blogger at adventuresnsunsets.com. Today's date is ${new Date().toLocaleDateString("en-US", {year:"numeric",month:"long",day:"numeric"})}.
 
-ABOUT KIMMIE'S BLOG AND WRITING VOICE:
-Kimmie has been travel blogging for 12+ years. She writes first-person, experience-first travel content with a distinct personal voice. Her writing style:
-- Personality comes through in quick casual injections, not long storytelling. Example: "cough cough, Dubrovnik" or "I have never laughed so hard in my life!"
-- Uses ALL CAPS for natural emphasis: "VERY worth visiting", "EVERYTHING"
-- Writes like she's letting the reader in on something she discovered, not lecturing
-- Blends logistics and personal experience in the same paragraph
-- Gives direct practical instructions like a friend who's already done it: "Find the booths along the beach", "just don't get too close"
-- Uses "I" naturally: "I really recommend", "I've been here many times"
-- Includes specific hyper-local details when she has them
-- Occasional light humor: "the only thing I can drive these days"
-- Authority balanced with humility: "I think", "as far as I'm aware"
-- Does NOT include specific prices in posts (style choice — she focuses on experience)
-- Does NOT need a table of contents (already has a plugin)
-- Does NOT write generic travel agency copy
-
-WHEN WRITING SUGGESTED TEXT:
-- Write in Kimmie's voice — casual, direct, first-person, discovery energy
-- Sound like she's sharing something she personally experienced
-- Do NOT write like a travel agency, SEO copywriter, or AI
-- Do NOT add generic filler like "arrive early as this popular spot gets busy" unless the post already mentions crowds
-- Do NOT suggest "call ahead to verify" or "check before visiting" as post content — these are editor notes, not reader content
-- Keep suggested additions SHORT and in her voice — one or two sentences maximum unless it's a content gap
+ABOUT KIMMIE'S WRITING VOICE:
+- First-person, experience-first: "I worked there for 10 summers", "I have never laughed so hard"
+- Personality in quick casual injections: "cough cough, Dubrovnik", "VERY worth it"
+- Discovery energy — sharing something she found, not lecturing
+- Direct practical friend-advice: "Find the booths along the beach", "just don't get too close"
+- Occasional light humor, ALL CAPS for emphasis, specific hyper-local details
+- Does NOT include specific prices (style choice)
+- Does NOT need a table of contents
 
 CRITICAL RULES:
 
 PRICES:
-- If a post mentions a specific price, flag it needs verifying and include the official website URL — do NOT suggest a replacement price
-- NEVER invent prices, costs, fares, or currency amounts
-- Croatia switched to Euro in January 2023 — NEVER suggest prices in HRK (Croatian Kuna)
-- If you flag a price as outdated, your action should be: "Verify current price at [official website URL]"
+- NEVER invent or suggest specific prices, costs, fares or currency amounts in suggestedText
+- Croatia switched to Euro January 2023 — never suggest HRK prices
+- For outdated prices in the post: flag them and put the official verification URL in editorNote
 
 YEAR REFERENCES:
-- Do NOT suggest adding the current year throughout the post body (e.g. "add 2026 to this section", "mention 2026 here")
-- It's fine to suggest updating the title with a year ONCE if relevant for SEO
-- Do not suggest "last updated in June 2026" type phrases scattered through the post
+- Do NOT suggest adding the current year throughout the post body
+- Only suggest year in the title ONCE if relevant for SEO
+- Do not suggest "last updated June 2026" type phrases scattered through sections
 
 VENUES — BE THOROUGH:
-- Extract ALL named venues: restaurants, bars, cafes, hotels, hostels, apartments, attractions, parks, beaches, clubs, tour operators — everything with a name
-- These get verified via Google Places API — missing venues means missed closures
-- Up to 10 venues maximum
+- Extract ALL named venues: restaurants, bars, cafes, clubs, hotels, hostels, attractions, parks, beaches, tour operators
+- Up to 10 venues for Google Places verification
 
-WHAT TO FLAG AS OUTDATED (priority order):
-1. Broken links — always critical
-2. Named venues that may have closed (restaurants, bars, clubs especially)
-3. Old currency references (pre-Euro Croatia, etc)
-4. COVID-era language
-5. Specific prices needing verification (flag + link to official source)
-6. Dated temporal references that now read wrong ("recently opened", "new in 2020", "over 10 summers" when post is 5 years old)
+DO NOT SUGGEST:
+- Table of contents (blogger has a plugin)
+- Generic "arrive early", "call ahead", "book in advance" filler
+- Year stamps scattered throughout post body
 
-WHAT NOT TO FLAG:
-- General seasonal info that's still accurate
-- Personal memories and experiences (these are features, not bugs — they're what makes the blog authentic)
-- Prices that don't exist in the post
-- Table of contents suggestions
-- Generic "book in advance" advice not grounded in the post
-
-SUGGESTED TEXT RULES:
-- Only suggest text based on what's actually in the post or what Kimmie personally would know from experience
-- For content gaps: write in her voice, first-person where appropriate, specific not generic
-- Never write suggested text that sounds like it came from a travel brochure
-- Never include "verify X before publishing" inside suggested text — that's your note to the editor, put it in the action field instead
+TWO SEPARATE FIELDS — THIS IS CRITICAL:
+1. suggestedText = ready-to-paste post content only, written in Kimmie's voice
+2. editorNote = tips for the editor/VA on HOW to fix it — where to verify, which social media to check, what to search for, whether to remove if closed. This is NOT post content.
 
 Return ONLY valid JSON, no markdown fences.`,
 
@@ -203,12 +175,12 @@ Return ONLY this JSON:
   "summary": "2-3 sentences: what needs updating and why it matters for traffic/readers",
   "estimatedUpdateTime": "15 mins|30 mins|1 hour|2+ hours",
   "location": "city and country this post is about",
-  "venueNames": ["every named restaurant", "bar", "cafe", "club", "hotel", "hostel", "attraction", "park", "tour operator mentioned in post — be thorough"],
+  "venueNames": ["every named restaurant", "bar", "cafe", "club", "hotel", "hostel", "attraction", "park", "tour operator — be thorough"],
   "quickReferenceLists": [
     {
-      "title": "e.g. Free entry spots, sunset spots, best for families",
-      "items": ["extracted directly from post content"],
-      "suggestedPlacement": "where to add this in the post if useful"
+      "title": "e.g. Free entry spots, best for sunset",
+      "items": ["extracted from post content only"],
+      "suggestedPlacement": "where to add this in the post"
     }
   ],
   "sections": [
@@ -218,18 +190,19 @@ Return ONLY this JSON:
         {
           "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix",
           "priority": "critical|high|medium",
-          "currentText": "exact short quote from post that needs changing",
-          "action": "specific instruction — for prices always include the official website URL to check",
-        "suggestedText": "Rules by type — broken_link: short suggested replacement anchor text only (e.g. 'Book a Cooking Class Here'); add_content: full paragraph in Kimmie's first-person casual voice, no prices, no generic filler; seo_fix: exact suggested change written out; outdated_price: OMIT suggestedText entirely, put verification URL in action field instead; outdated_info: only include if factually certain without inventing anything, omit if unsure. Never say 'verify before publishing' in suggestedText."
+          "currentText": "exact short quote from post",
+          "action": "specific instruction of what to do",
+          "suggestedText": "ONLY ready-to-paste post content in Kimmie's voice. For broken_link: rewrite the surrounding sentence with updated info about how to find/book it, no prices. For add_content: full paragraph in her voice. For seo_fix: exact title or heading change. For outdated_price: OMIT entirely. For outdated_info: only if factually certain.",
+          "editorNote": "Tips for VA on HOW to fix this — which Instagram to check, what to search on GetYourGuide/Viator, whether to remove if closed, where to verify the price. NOT post content."
         }
       ]
     }
   ],
   "topContentGaps": [
     {
-      "topic": "specific thing that has likely changed or been added since the post was written",
-      "whyUrgent": "why this matters for SEO or readers right now in 2026",
-      "suggestedText": "paragraph written in Kimmie's first-person casual voice — specific, not generic",
+      "topic": "specific thing that has likely changed or been added since post was written",
+      "whyUrgent": "why this matters for SEO or readers now",
+      "suggestedText": "full paragraph in Kimmie's first-person casual voice — specific, not generic, no prices",
       "placement": "exactly where in the post to add it"
     }
   ],
@@ -279,7 +252,8 @@ Return ONLY this JSON:
         priority: 'critical',
         currentText: v.venue,
         action: `❌ CONFIRMED ${v.status === 'permanently_closed' ? 'PERMANENTLY' : 'TEMPORARILY'} CLOSED via Google Maps${v.address ? ' (' + v.address + ')' : ''}`,
-        suggestedText: `Remove all mentions of ${v.venue} or replace with somewhere you've personally been in the same area.`
+        suggestedText: `Remove all mentions of ${v.venue} or replace with somewhere you've personally been in the same area.`,
+        editorNote: `Google Maps confirms this venue is ${v.status === 'permanently_closed' ? 'permanently' : 'temporarily'} closed. Remove the section or find a replacement you can personally vouch for.`
       };
       if (sectionIdx > -1) {
         report.sections[sectionIdx].fixes.unshift(closedFix);
