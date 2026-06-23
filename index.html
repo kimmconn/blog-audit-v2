@@ -993,16 +993,17 @@ function openBriefBuilder(data, postIdx) {
   let items = [];
   let itemId = 0;
   
-  // Add venue issues first
-  (data.venueChecks||[]).filter(v=>v.flag).forEach(v => {
+// Add all venue checks
+  (data.venueChecks||[]).forEach(v => {
     items.push({
-      id: itemId++, checked: true, section: '📍 Venue',
-      type: v.status === 'permanently_closed' ? '❌ PERMANENTLY CLOSED' : '⚠️ TEMPORARILY CLOSED',
-      priority: 'critical',
+      id: itemId++, checked: v.flag, section: '📍 Venue verification',
+      type: v.flag ? (v.status === 'permanently_closed' ? '❌ permanently closed' : '⚠️ temporarily closed') : '✓ verified open',
+      priority: v.flag ? 'critical' : 'medium',
       text: `${v.venue}${v.address ? ' — ' + v.address : ''}`,
-      action: 'Remove or replace all mentions',
-      note: fix.editorNote || ''
+      action: v.flag ? 'Remove or replace all mentions' : 'Confirmed open via Google Maps — no action needed',
+      note: v.editorNote || ''
     });
+  });
   });
 
   // Add section fixes
