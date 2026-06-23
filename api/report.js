@@ -57,6 +57,18 @@ async function searchCompetitors(postTitle) {
   }
 }
 
+function extractInternalLinks(html, siteUrl) {
+  const matches = html.match(/href="([^"]+)"/g) || [];
+  const domain = siteUrl.replace(/https?:\/\//, '').replace(/www\./, '').split('/')[0];
+  const internal = matches
+    .map(m => m.replace('href="', '').replace('"', ''))
+    .filter(url => url.includes(domain) && !url.includes('#') && url.length > 20)
+    .map(url => url.split('?')[0].replace(/\/$/, ''))
+    .filter((url, i, arr) => arr.indexOf(url) === i)
+    .slice(0, 50);
+  return internal;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -89,6 +101,10 @@ export default async function handler(req, res) {
 
     const wpData = await wpRes.json();
     const rawHtml = wpData?.content?.rendered || '';
+
+    // Extract existing internal links before stripping HTML
+    const existingInternalLinks = extractInternalLinks(rawHtml, siteUrl);
+
     const content = rawHtml
       .replace(/<h[1-6][^>]*>/gi, '\n## ').replace(/<\/h[1-6]>/gi, '\n')
       .replace(/<li[^>]*>/gi, '\n- ').replace(/<p[^>]*>/gi, '\n')
@@ -106,6 +122,10 @@ export default async function handler(req, res) {
     const linksContext = brokenLinks?.length > 0
       ? `${brokenLinks.length} potential broken links:\n${brokenLinks.slice(0,10).map(l=>`- ${l.url} (${l.status||'timeout'})`).join('\n')}`
       : 'No broken links detected';
+
+    const existingLinksContext = existingInternalLinks.length > 0
+      ? `\nEXISTING INTERNAL LINKS ALREADY IN THIS POST (do NOT suggest these):\n${existingInternalLinks.join('\n')}`
+      : '';
 
     const competitorPromise = searchCompetitors(postTitle);
 
@@ -138,14 +158,19 @@ PRICES:
 - For outdated prices in the post: flag them and put the official verification URL in editorNote
 
 AFFILIATE LINKS:
-- When a broken tour/activity link needs replacing, editorNote should say "Find a replacement [activity type] affiliate link on GetYourGuide or Viator" — never suggest readers search these platforms themselves
-- The blogger selects the best option and links it — readers never see "search on GetYourGuide"
-- Suggested text for broken affiliate links should rewrite the sentence naturally without mentioning the search process
+- When a broken tour/activity/booking link needs replacing, editorNote should say "Find a replacement [activity type] affiliate link on GetYourGuide or Viator"
+- NEVER suggest readers search on GetYourGuide or Viator themselves — the blogger picks the best option and links it
+- suggestedText for broken affiliate links should rewrite the sentence naturally without any mention of searching
+
+INTERNAL LINKS:
+- Only suggest internal links to pages NOT already linked in this post (existing links provided below)
+- Suggest specific post topics that would add value for readers at that point in the article
+- Format suggestion as: "Add internal link to your [topic] guide at this mention of [keyword]"
 
 YEAR REFERENCES:
 - Do NOT suggest adding the current year throughout the post body
 - Only suggest year in the title ONCE if relevant for SEO
-- Do not suggest "last updated June 2026" type phrases scattered through sections
+- Do not suggest "last updated" phrases scattered through sections
 
 VENUES — BE THOROUGH:
 - Extract ALL named venues: restaurants, bars, cafes, clubs, hotels, hostels, attractions, parks, beaches, tour operators
@@ -154,11 +179,11 @@ VENUES — BE THOROUGH:
 DO NOT SUGGEST:
 - Table of contents (blogger has a plugin)
 - Generic "arrive early", "call ahead", "book in advance" filler
-- Year stamps scattered throughout post body
+- Readers searching on booking platforms themselves
 
-TWO SEPARATE FIELDS — THIS IS CRITICAL:
-1. suggestedText = ready-to-paste post content only, written in Kimmie's voice
-2. editorNote = tips for the editor/VA on HOW to fix it — where to verify, which social media to check, what to search for, whether to remove if closed. This is NOT post content.
+TWO SEPARATE FIELDS — CRITICAL:
+1. suggestedText = ready-to-paste post content in Kimmie's voice only
+2. editorNote = tips for VA: where to verify, which social to check, what affiliate link to find. NOT post content.
 
 Return ONLY valid JSON, no markdown fences.`,
 
@@ -171,6 +196,7 @@ URL: ${postUrl}
 Published: ${publishDate} | Last modified: ${modifiedDate}
 ${gscContext}
 ${linksContext}
+${existingLinksContext}
 
 POST CONTENT:
 ${content}
@@ -193,12 +219,12 @@ Return ONLY this JSON:
       "sectionName": "Section heading as it appears in post, or Introduction / Throughout post",
       "fixes": [
         {
-          "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix",
+          "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix|internal_link",
           "priority": "critical|high|medium",
           "currentText": "exact short quote from post",
           "action": "specific instruction of what to do",
-          "suggestedText": "ONLY ready-to-paste post content in Kimmie's voice. For broken_link: rewrite the surrounding sentence with updated info about how to find/book it, no prices. For add_content: full paragraph in her voice. For seo_fix: exact title or heading change. For outdated_price: OMIT entirely. For outdated_info: only if factually certain.",
-          "editorNote": "Tips for VA on HOW to fix this — which Instagram to check, what to search on GetYourGuide/Viator, whether to remove if closed, where to verify the price. NOT post content."
+          "suggestedText": "ONLY ready-to-paste post content in Kimmie's voice. For broken_link: rewrite sentence naturally. For add_content: full paragraph. For seo_fix: exact change. For outdated_price: OMIT. For internal_link: OMIT.",
+          "editorNote": "Tips for VA: which Instagram/website to check, what affiliate link to find on GetYourGuide/Viator, whether to remove if closed, where to verify info. NOT post content."
         }
       ]
     }
@@ -212,7 +238,13 @@ Return ONLY this JSON:
     }
   ],
   "otherContentIdeas": ["specific idea 1", "specific idea 2", "specific idea 3"],
-  "seoQuickWins": ["specific actionable SEO change 1", "specific SEO change 2", "specific SEO change 3"]
+  "seoQuickWins": [
+    {
+      "idea": "specific actionable SEO change",
+      "type": "title|heading|internal_link|schema|table|meta|image",
+      "canGenerate": true or false
+    }
+  ]
 }`
         }]
       }),
@@ -258,7 +290,7 @@ Return ONLY this JSON:
         currentText: v.venue,
         action: `❌ CONFIRMED ${v.status === 'permanently_closed' ? 'PERMANENTLY' : 'TEMPORARILY'} CLOSED via Google Maps${v.address ? ' (' + v.address + ')' : ''}`,
         suggestedText: `Remove all mentions of ${v.venue} or replace with somewhere you've personally been in the same area.`,
-        editorNote: `Google Maps confirms this venue is ${v.status === 'permanently_closed' ? 'permanently' : 'temporarily'} closed. Remove the section or find a replacement you can personally vouch for.`
+        editorNote: `Google Maps confirms ${v.status === 'permanently_closed' ? 'permanently' : 'temporarily'} closed. Remove section or find a replacement you can personally vouch for.`
       };
       if (sectionIdx > -1) {
         report.sections[sectionIdx].fixes.unshift(closedFix);
@@ -272,6 +304,7 @@ Return ONLY this JSON:
       brokenLinksCount: brokenLinks?.length || 0,
       venueChecks: venueResults,
       competitors,
+      existingInternalLinks,
       generatedAt: new Date().toISOString(),
       report,
       fromCache: false,
