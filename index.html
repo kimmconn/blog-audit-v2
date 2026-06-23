@@ -463,7 +463,7 @@ function renderReportModal(data,postIdx){
   if(r.seoQuickWins?.length){
     html+=`<div class="report-section"><div class="report-section-title">📈 SEO quick wins</div><ul class="quick-wins">`;
     r.seoQuickWins.forEach((win)=>{
-      const idea=typeof win==='string'?win:win.idea;
+      const idea=typeof win==='string'?win:(win?.idea||JSON.stringify(win));
       const canGenerate=typeof win==='object'&&win.canGenerate;
       html+=`<li class="quick-win" style="background:var(--blue-bg);color:var(--blue-text);justify-content:space-between;align-items:center">
         <span style="display:flex;gap:8px;align-items:flex-start"><span>→</span><span>${idea}</span></span>
