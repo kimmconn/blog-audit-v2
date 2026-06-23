@@ -93,7 +93,6 @@
   .gsc-connected{background:var(--green-bg);border-color:var(--green);color:var(--green-text)}
   .scan-banner{display:flex;align-items:center;gap:12px;background:var(--amber-bg);border:0.5px solid var(--amber);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--amber-text);flex-wrap:wrap}
   .scan-complete{background:var(--green-bg);border-color:var(--green);color:var(--green-text)}
-  /* Modal */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:1rem}
   .modal{background:var(--bg);border-radius:var(--radius-lg);width:100%;max-width:780px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
   .modal-header{padding:1.25rem 1.5rem;border-bottom:0.5px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:sticky;top:0;background:var(--bg);z-index:1}
@@ -139,7 +138,6 @@
     <button class="tab" onclick="switchTab('settings',this)">Scoring weights</button>
     <button class="tab" onclick="switchTab('indexing',this)">🔍 Indexing</button>
   </div>
-
   <div id="tabCatalog">
     <div class="panel">
       <div class="panel-title">Crawl your blog <span class="tag" id="crawlStatus">not started</span></div>
@@ -198,7 +196,6 @@
       </div>
     </div>
   </div>
-
   <div id="tabConnect" style="display:none">
     <div class="panel">
       <div class="panel-title">Data source integrations</div>
@@ -209,14 +206,13 @@
           <div class="int-desc">Clicks, impressions, position, and traffic health per post.</div>
           <div id="gscStatus"><button class="btn btn-google btn-sm" onclick="connectGSC()"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Connect Google Search Console</button></div>
         </div>
-       <div class="int-card"><div class="int-name">Google Maps / Places</div><div class="int-desc">Venue verification runs automatically inside each ✨ Report — confirmed closed venues appear at the top.</div><span class="tag tag-ok">✓ Active in reports</span></div>
+        <div class="int-card"><div class="int-name">Google Maps / Places</div><div class="int-desc">Venue verification runs automatically inside each ✨ Report — confirmed closed venues appear at the top.</div><span class="tag tag-ok">✓ Active in reports</span></div>
         <div class="int-card"><div class="int-name">Link issue scanner</div><div class="int-desc">Scans all outbound links and flags potential 4xx/5xx issues. Runs in background.</div><div id="linkScanStatus"><button class="btn btn-sm btn-primary" onclick="startLinkScan()">Scan all posts for link issues</button></div></div>
         <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume for your top ranking keywords via DataForSEO. Boosts urgency score for high-volume page 2 opportunities.</div><div id="kwScanStatus"><button class="btn btn-sm btn-primary" onclick="startKWScan()">Scan keyword volumes</button><div style="font-size:11px;color:var(--text2);margin-top:6px">~$0.01 for 500 posts · cached 30 days</div></div></div>
         <div class="int-card"><div class="int-name">AI content scan</div><div class="int-desc">Claude scans every post for outdated prices, closed venues, old currency, COVID refs, and more. Updates urgency scores automatically.</div><div id="aiScanStatus"><button class="btn btn-sm btn-primary" onclick="startAIScan()">Scan all posts with AI</button><div style="font-size:11px;color:var(--text2);margin-top:6px">Uses Claude Haiku — ~$0.50-1.00 for 500 posts</div></div></div>
       </div>
     </div>
   </div>
-
   <div id="tabIndexing" style="display:none">
     <div class="panel">
       <div class="panel-title">Posts not appearing in Google Search Console <span class="tag" id="indexingCount"></span></div>
@@ -236,7 +232,6 @@
       </div>
     </div>
   </div>
-
   <div id="tabSettings" style="display:none">
     <div class="panel">
       <div class="panel-title">Urgency scoring weights</div>
@@ -287,7 +282,6 @@
     </div>
   </div>
 </div>
-
 <!-- REPORT MODAL -->
 <div id="reportModal" class="modal-overlay" style="display:none" onclick="closeModalOutside(event)">
   <div class="modal">
@@ -303,7 +297,6 @@
     </div>
   </div>
 </div>
-
 <script>
 const PROXY_URL='/api/crawl';
 const GSC_URL='/api/gsc';
@@ -317,17 +310,7 @@ let posts=[],page=1,gscToken=null,gscData={};
 const PER_PAGE=25;
 let weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};
 const wLabels={age:'Post age',trafficHealth:'Traffic health (peak vs recent)',fallenOffMap:'Fallen off map (had traffic, lost it)',positionOpportunity:'Position 11–20 opportunity',brokenLinks:'Link issues',venueIssues:'Outdated/closed venues',ctrGap:'High impressions, low CTR'};
-
-function getThresholds(){return{
-  peakedPct:parseInt(document.getElementById('tPeakedPct')?.value||50),
-  offmapClicks:parseInt(document.getElementById('tOffmapClicks')?.value||50),
-  offmapImpr:parseInt(document.getElementById('tOffmapImpr')?.value||500),
-  hotImpr:parseInt(document.getElementById('tHotImpr')?.value||5000),
-  hotCtr:parseFloat(document.getElementById('tHotCtr')?.value||2)/100,
-  kwHigh:parseInt(document.getElementById('tKwHigh')?.value||1000),
-  kwMed:parseInt(document.getElementById('tKwMed')?.value||300),
-};}
-
+function getThresholds(){return{peakedPct:parseInt(document.getElementById('tPeakedPct')?.value||50),offmapClicks:parseInt(document.getElementById('tOffmapClicks')?.value||50),offmapImpr:parseInt(document.getElementById('tOffmapImpr')?.value||500),hotImpr:parseInt(document.getElementById('tHotImpr')?.value||5000),hotCtr:parseFloat(document.getElementById('tHotCtr')?.value||2)/100,kwHigh:parseInt(document.getElementById('tKwHigh')?.value||1000),kwMed:parseInt(document.getElementById('tKwMed')?.value||300)};}
 window.addEventListener('load',()=>{
   const params=new URLSearchParams(window.location.search);
   const token=params.get('gsc_token'),error=params.get('gsc_error');
@@ -335,12 +318,10 @@ window.addEventListener('load',()=>{
   else if(error){alert('GSC error: '+error);window.history.replaceState({},'',window.location.pathname);}
   else{const s=localStorage.getItem('gsc_token');if(s){gscToken=s;updateGSCUI(true);showGSCBanner(true);}}
 });
-
 function connectGSC(){window.location.href=AUTH_URL+'?action=login';}
 function disconnectGSC(){gscToken=null;localStorage.removeItem('gsc_token');gscData={};updateGSCUI(false);showGSCBanner(false);posts.forEach(p=>{p.traffic=0;p.impressions=0;p.ctr=0;p.position=0;p.trafficDeclinePct=0;p.recentClicks=0;p.olderClicks=0;p.recentImpressions=0;p.olderImpressions=0;const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
 function updateGSCUI(connected){const el=document.getElementById('gscStatus');if(connected){el.innerHTML=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="tag tag-ok">✓ Connected</span><button class="btn btn-sm" onclick="loadGSCData()">Refresh GSC data</button><button class="btn btn-sm btn-disconnect" onclick="disconnectGSC()">Disconnect</button></div>`;}else{el.innerHTML=`<button class="btn btn-google btn-sm" onclick="connectGSC()"><svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Connect Google Search Console</button>`;}}
 function showGSCBanner(connected){const b=document.getElementById('gscBanner');if(connected){b.className='gsc-banner gsc-connected';b.style.display='flex';b.innerHTML=`<span>✓ Google Search Console connected</span><button class="btn btn-sm" style="margin-left:auto" onclick="loadGSCData()">Load traffic data →</button>`;}else{b.style.display='none';}}
-
 async function loadGSCData(){
   if(!gscToken||posts.length===0)return;
   const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
@@ -365,31 +346,16 @@ async function loadGSCData(){
       const nu=p.url.replace(/\/$/,'');
       const recent=recentMap[p.url]||recentMap[p.url+'/']||recentMap[nu]||null;
       const older=olderMap[p.url]||olderMap[p.url+'/']||olderMap[nu]||null;
-      p.gscChecked = true; // mark that we checked GSC for this post
+      p.gscChecked=true;
       if(recent||older){
         p.traffic=recent?Math.round(recent.clicks):0;p.impressions=recent?Math.round(recent.impressions):0;
         p.ctr=recent?recent.ctr:0;p.position=recent?recent.position:0;
         p.recentClicks=recent?recent.clicks:0;p.olderClicks=older?older.clicks:0;
         p.recentImpressions=recent?recent.impressions:0;p.olderImpressions=older?older.impressions:0;
         p.trafficDeclinePct=p.olderClicks>10?Math.max(0,Math.round(((p.olderClicks-p.recentClicks)/p.olderClicks)*100)):0;
-        // Store top keywords from GSC keyword data
-        // Try all URL variations for keyword matching
-        const urlVariants = [
-          p.url,
-          p.url.replace(/\/$/, ''),
-          p.url.endsWith('/') ? p.url : p.url + '/',
-          p.url.replace('https://www.', 'https://'),
-          p.url.replace('https://', 'https://www.'),
-          p.url.replace('https://www.', 'https://').replace(/\/$/, ''),
-          p.url.replace('https://', 'https://www.').replace(/\/$/, ''),
-        ];
-        p.gscKeywords = [];
-        for(const variant of urlVariants) {
-          if(recentData.keywordsByPage?.[variant]?.length > 0) {
-            p.gscKeywords = recentData.keywordsByPage[variant];
-            break;
-          }
-        }
+        const urlVariants=[p.url,p.url.replace(/\/$/,''),p.url.endsWith('/')?p.url:p.url+'/',p.url.replace('https://www.','https://'),p.url.replace('https://','https://www.'),p.url.replace('https://www.','https://').replace(/\/$/,''),p.url.replace('https://','https://www.').replace(/\/$/,'')];
+        p.gscKeywords=[];
+        for(const variant of urlVariants){if(recentData.keywordsByPage?.[variant]?.length>0){p.gscKeywords=recentData.keywordsByPage[variant];break;}}
         matched++;
       }
       const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;
@@ -397,166 +363,79 @@ async function loadGSCData(){
     posts.sort((a,b)=>b.score-a.score);
     banner.className='gsc-banner gsc-connected';
     banner.innerHTML=`<span>✓ GSC data loaded — ${matched} of ${posts.length} posts matched</span><button class="btn btn-sm" style="margin-left:auto" onclick="loadGSCData()">Refresh →</button>`;
-    // Mark ALL posts as gscChecked — posts not in GSC get zero values but are still checked
-    posts.forEach(p => { p.gscChecked = true; });
+    posts.forEach(p=>{p.gscChecked=true;});
     updateMetrics();renderTable();renderIndexingTab();
   }catch(e){banner.innerHTML=`<span style="color:var(--red-text)">Error: ${e.message}</span>`;}
 }
-
 function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.value||10),vc:parseInt(document.getElementById('fVenueCrit')?.value||2),bb:parseInt(document.getElementById('fBrokenBoost')?.value||20),vb:parseInt(document.getElementById('fVenueBoost')?.value||15)};}
-
 function calcScore(p){
   const f=floors(),t=getThresholds();
   let s=0;const flags=[];
   s+=Math.min((p.ageMonths/12)/3,1)*weights.age;
   const hasGSC=(p.recentClicks>0||p.olderClicks>0||p.impressions>0);
-  if(hasGSC&&p.trafficDeclinePct>0){
-    s+=Math.min(p.trafficDeclinePct/100,1)*weights.trafficHealth;
-    if(p.trafficDeclinePct>=t.peakedPct)flags.push({type:'peaked',label:'📉 Traffic peaked'});
-  }
-  if(hasGSC&&p.ageMonths>=12){
-    const ti=(p.recentImpressions||0)+(p.olderImpressions||0),tc=(p.recentClicks||0)+(p.olderClicks||0);
-    if(ti>t.offmapImpr&&tc<t.offmapClicks){s+=weights.fallenOffMap;flags.push({type:'offmap',label:'🔴 Fallen off map'});}
-    else if(ti<50&&p.ageMonths>12)flags.push({type:'neverranked',label:'⚪ Never ranked'});
-  }
-  if(p.position>10&&p.position<=20&&p.impressions>200){s+=weights.positionOpportunity;flags.push({type:'opportunity',label:'🟣 Page 2 opp.'});}
-  else if(p.position>3&&p.position<=10&&p.impressions>500)s+=weights.positionOpportunity*0.4;
-  // Keyword volume opportunity signal
-  if(p.topKeywordVolume > 0 && p.position > 10 && p.position <= 20) {
-    const kwHigh = parseInt(document.getElementById('tKwHigh')?.value || 1000);
-    const kwMed = parseInt(document.getElementById('tKwMed')?.value || 300);
-    if(p.topKeywordVolume >= kwHigh) s += 20; // huge opportunity
-    else if(p.topKeywordVolume >= kwMed) s += 10; // medium opportunity
-    else s += 3; // small opportunity
-  }
-
-  // 🔥 High impressions gap flag
+  if(hasGSC&&p.trafficDeclinePct>0){s+=Math.min(p.trafficDeclinePct/100,1)*weights.trafficHealth;if(p.trafficDeclinePct>=t.peakedPct)flags.push({type:'peaked',label:'📉 Traffic peaked'});}
+  if(hasGSC&&p.ageMonths>=12){const ti=(p.recentImpressions||0)+(p.olderImpressions||0),tc=(p.recentClicks||0)+(p.olderClicks||0);if(ti>t.offmapImpr&&tc<t.offmapClicks){s+=weights.fallenOffMap;flags.push({type:'offmap',label:'🔴 Fallen off map'});}else if(ti<50&&p.ageMonths>12)flags.push({type:'neverranked',label:'⚪ Never ranked'});}
+  if(p.position>10&&p.position<=20&&p.impressions>200){s+=weights.positionOpportunity;flags.push({type:'opportunity',label:'🟣 Page 2 opp.'});}else if(p.position>3&&p.position<=10&&p.impressions>500)s+=weights.positionOpportunity*0.4;
+  if(p.topKeywordVolume>0&&p.position>10&&p.position<=20){const kwHigh=parseInt(document.getElementById('tKwHigh')?.value||1000),kwMed=parseInt(document.getElementById('tKwMed')?.value||300);if(p.topKeywordVolume>=kwHigh)s+=20;else if(p.topKeywordVolume>=kwMed)s+=10;else s+=3;}
   if(p.impressions>=t.hotImpr&&p.ctr<t.hotCtr)flags.push({type:'hotimpr',label:'🔥 Impression gap'});
-  // 🔍 Not indexed — flag only, no score manipulation (handled in separate Indexing tab)
   const hasAnyGSC=(p.recentImpressions>0||p.olderImpressions>0||p.recentClicks>0||p.olderClicks>0);
-  if(p.gscChecked&&!hasAnyGSC&&p.ageMonths>=3){
-    flags.push({type:'notindexed',label:'🔍 Not in GSC'});
-  }
-  // Potential venue issues from batch AI scan
-  if(p.aiScanned&&p.venueIssues>0&&!p.venueConfirmed){
-    flags.push({type:'potential',label:`⚠️ ${p.venueIssues} potential venue`});
-  }
+  if(p.gscChecked&&!hasAnyGSC&&p.ageMonths>=3)flags.push({type:'notindexed',label:'🔍 Not in GSC'});
+  if(p.aiScanned&&p.venueIssues>0&&!p.venueConfirmed)flags.push({type:'potential',label:`⚠️ ${p.venueIssues} potential venue`});
   if(p.brokenLinks>0){const linkFactor=Math.min(Math.log(p.brokenLinks+1)/Math.log(10),1);s+=linkFactor*weights.brokenLinks;s=Math.max(s,Math.min(s+f.bb,99));}
-  // AI scan bonus: outdated content adds to score
-  if(p.outdatedCount>0) s+=Math.min(p.outdatedCount/5,1)*weights.venueIssues*0.5;
-  if(p.hasOldCurrency) s+=5;
-  if(p.hasCovid) s+=3;
+  if(p.outdatedCount>0)s+=Math.min(p.outdatedCount/5,1)*weights.venueIssues*0.5;
+  if(p.hasOldCurrency)s+=5;if(p.hasCovid)s+=3;
   if(p.venueIssues>0){s+=Math.min(p.venueIssues/2,1)*weights.venueIssues;s=Math.max(s,Math.min(s+f.vb,99));}
-  if(p.impressions>1000&&p.ctr<0.02)s+=weights.ctrGap;
-  else if(p.impressions>500&&p.ctr<0.01)s+=weights.ctrGap*0.5;
-  // Hard floor — just marks the post visually, doesn't artificially inflate score
+  if(p.impressions>1000&&p.ctr<0.02)s+=weights.ctrGap;else if(p.impressions>500&&p.ctr<0.01)s+=weights.ctrGap*0.5;
   let hardFloor=false;
-  if(p.brokenLinks>=f.bc||p.venueIssues>=f.vc){hardFloor=true;}
+  if(p.brokenLinks>=f.bc||p.venueIssues>=f.vc)hardFloor=true;
   s=Math.min(Math.round(s),150);
   const urgency=s>=90?'critical':s>=60?'high':s>=30?'medium':'low';
   return{score:s,urgency,hardFloor,flags};
 }
-
 // ===== REPORT MODAL =====
-async function generateReport(postIdx, forceRefresh=false){
+async function generateReport(postIdx,forceRefresh=false){
   const post=posts[postIdx];
   if(!post)return;
   const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
   document.getElementById('modalTitle').textContent=post.title;
-  document.getElementById('modalSubtitle').textContent=`${post.url}`;
-  document.getElementById('modalBody').innerHTML=`<div class="report-loading">⏳ ${forceRefresh?'Regenerating':'Analyzing'} with Claude AI...<br><span style="font-size:11px;margin-top:8px;display:block">This takes about 15–20 seconds</span></div>`;
+  document.getElementById('modalSubtitle').textContent=post.url;
+  document.getElementById('modalBody').innerHTML=`<div class="report-loading">⏳ ${forceRefresh?'Regenerating':'Analyzing'} with Claude AI...<br><span style="font-size:11px;margin-top:8px;display:block">This takes 1-3 minutes for a full report</span></div>`;
   document.getElementById('reportModal').style.display='flex';
   try{
-    // Fetch keyword volumes from DataForSEO if post has GSC data
-    let keywordVolumes = {};
-    if(post.gscKeywords && post.gscKeywords.length > 0) {
-      try {
-        const kwRes = await fetch(KEYWORDS_URL, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ keywords: post.gscKeywords.slice(0, 20) })
-        });
-        if(kwRes.ok) {
-          const kwData = await kwRes.json();
-          keywordVolumes = kwData.volumeMap || {};
-        }
-      } catch(e) {}
-    }
-
-    const res=await fetch(REPORT_URL,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        postId:post.id,postUrl:post.url,postTitle:post.title,siteUrl,
-        gscData:{recentClicks:post.recentClicks,olderClicks:post.olderClicks,recentImpressions:post.recentImpressions,olderImpressions:post.olderImpressions,trafficDeclinePct:post.trafficDeclinePct,position:post.position},
-        brokenLinks:post.brokenLinkUrls||[],
-        forceRefresh,
-      })
-    });
+    const res=await fetch(REPORT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({postId:post.id,postUrl:post.url,postTitle:post.title,siteUrl,gscData:{recentClicks:post.recentClicks,olderClicks:post.olderClicks,recentImpressions:post.recentImpressions,olderImpressions:post.olderImpressions,trafficDeclinePct:post.trafficDeclinePct,position:post.position},brokenLinks:post.brokenLinkUrls||[],forceRefresh})});
     const data=await res.json();
     if(data.error){document.getElementById('modalBody').innerHTML=`<div class="report-error">❌ ${data.error}</div>`;return;}
     renderReportModal(data,postIdx);
-  }catch(e){
-    document.getElementById('modalBody').innerHTML=`<div class="report-error">❌ ${e.message}</div>`;
-  }
+  }catch(e){document.getElementById('modalBody').innerHTML=`<div class="report-error">❌ ${e.message}</div>`;}
 }
-
 function renderReportModal(data,postIdx){
   const r=data.report;
   const cached=data.fromCache?`<span class="tag" style="font-size:10px">cached ${new Date(data.generatedAt).toLocaleDateString()}</span>`:'<span class="tag tag-ok" style="font-size:10px">fresh</span>';
-  let html=`
-    <div class="report-meta">
-      <span>Published: ${data.publishDate||'—'}</span>
-      <span>Modified: ${data.modifiedDate||'—'}</span>
-      <span>Link issues: ${data.brokenLinksCount||0}</span>
-      <span>Est. update time: ${r.estimatedUpdateTime||'—'}</span>
-      ${cached}
-      <button class="btn btn-sm" style="margin-left:auto" onclick="generateReport(${postIdx},true)">↺ Regenerate</button>
-    </div>`;
-
-  // Summary
-  if(r.summary) html+=`<div class="report-section"><div class="report-section-title">📋 Summary</div><div class="report-summary">${r.summary}</div></div>`;
-
-  // Venue verification
-  if(data.venueChecks && data.venueChecks.length > 0) {
-    const flagged=data.venueChecks.filter(v=>v.flag);
-    const ok=data.venueChecks.filter(v=>!v.flag);
+  let html=`<div class="report-meta"><span>Published: ${data.publishDate||'—'}</span><span>Modified: ${data.modifiedDate||'—'}</span><span>Link issues: ${data.brokenLinksCount||0}</span><span>Est. update time: ${r.estimatedUpdateTime||'—'}</span>${cached}<button class="btn btn-sm" style="margin-left:auto" onclick="generateReport(${postIdx},true)">↺ Regenerate</button></div>`;
+  if(r.summary)html+=`<div class="report-section"><div class="report-section-title">📋 Summary</div><div class="report-summary">${r.summary}</div></div>`;
+  if(data.venueChecks&&data.venueChecks.length>0){
+    const flagged=data.venueChecks.filter(v=>v.flag),ok=data.venueChecks.filter(v=>!v.flag);
     html+=`<div class="report-section"><div class="report-section-title">📍 Venue verification (${data.venueChecks.length} checked)</div><div>`;
     flagged.forEach(v=>{html+=`<div class="report-item" style="border-color:var(--red)"><div class="report-item-type" style="background:var(--red-bg);color:var(--red-text)">${v.status==='permanently_closed'?'❌ permanently closed':'⚠️ temporarily closed'}</div><div style="font-weight:500">${v.venue}</div>${v.address?`<div style="font-size:11px;color:var(--text2)">${v.address}</div>`:''}</div>`;});
     ok.forEach(v=>{html+=`<div style="font-size:11px;color:var(--green-text);padding:3px 0">✓ ${v.venue} — appears open</div>`;});
     html+=`</div></div>`;
   }
-
-  // Quick reference lists (free entry, sunset spots, etc)
-  if(r.quickReferenceLists?.length) {
+  if(r.quickReferenceLists?.length){
     html+=`<div class="report-section"><div class="report-section-title">📌 Quick reference lists</div>`;
-    r.quickReferenceLists.forEach(list=>{
-      html+=`<div style="margin-bottom:12px">
-        <div style="font-weight:500;font-size:12px;margin-bottom:4px">${list.title}</div>
-        <div style="font-size:11px;color:var(--text2);margin-bottom:4px">${list.items.join(' · ')}</div>
-        ${list.suggestedPlacement?`<div style="font-size:11px;color:var(--blue-text)">💡 ${list.suggestedPlacement}</div>`:''}
-      </div>`;
-    });
+    r.quickReferenceLists.forEach(list=>{html+=`<div style="margin-bottom:12px"><div style="font-weight:500;font-size:12px;margin-bottom:4px">${list.title}</div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">${list.items.join(' · ')}</div>${list.suggestedPlacement?`<div style="font-size:11px;color:var(--blue-text)">💡 ${list.suggestedPlacement}</div>`:''}</div>`;});
     html+=`</div>`;
   }
-
-  // SECTION BY SECTION — the main update checklist
-  if(r.sections?.length) {
+  if(r.sections?.length){
     html+=`<div class="report-section"><div class="report-section-title">📝 Update checklist — work through in order</div>`;
     r.sections.forEach(section=>{
-      if(!section.fixes?.length) return;
-      html+=`<div style="margin-bottom:16px">
-        <div style="font-size:12px;font-weight:600;color:var(--text);background:var(--bg2);padding:6px 10px;border-radius:var(--radius);margin-bottom:6px;border-left:3px solid var(--border2)">${section.sectionName}</div>`;
+      if(!section.fixes?.length)return;
+      html+=`<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:var(--text);background:var(--bg2);padding:6px 10px;border-radius:var(--radius);margin-bottom:6px;border-left:3px solid var(--border2)">${section.sectionName}</div>`;
       section.fixes.forEach(fix=>{
-        const priorityColor=fix.priority==='critical'?'var(--red)':fix.priority==='high'?'var(--amber)':'var(--blue)';
-        const priorityBg=fix.priority==='critical'?'var(--red-bg)':fix.priority==='high'?'var(--amber-bg)':'var(--blue-bg)';
-        const priorityText=fix.priority==='critical'?'var(--red-text)':fix.priority==='high'?'var(--amber-text)':'var(--blue-text)';
-        const typeLabel=fix.type?.replace(/_/g,' ')||'fix';
-        html+=`<div class="report-item" style="margin-left:8px;border-left:3px solid ${priorityColor}">
-          <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">
-            <span class="report-item-type" style="background:${priorityBg};color:${priorityText}">${typeLabel}</span>
-            <span style="font-size:10px;color:${priorityText};font-weight:500">${fix.priority}</span>
-          </div>
+        const pc=fix.priority==='critical'?'var(--red)':fix.priority==='high'?'var(--amber)':'var(--blue)';
+        const pb=fix.priority==='critical'?'var(--red-bg)':fix.priority==='high'?'var(--amber-bg)':'var(--blue-bg)';
+        const pt=fix.priority==='critical'?'var(--red-text)':fix.priority==='high'?'var(--amber-text)':'var(--blue-text)';
+        html+=`<div class="report-item" style="margin-left:8px;border-left:3px solid ${pc}">
+          <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><span class="report-item-type" style="background:${pb};color:${pt}">${(fix.type||'fix').replace(/_/g,' ')}</span><span style="font-size:10px;color:${pt};font-weight:500">${fix.priority}</span></div>
           ${fix.currentText?`<div class="report-item-quote">"${fix.currentText}"</div>`:''}
           <div class="report-item-issue" style="margin-bottom:6px">${fix.action||''}</div>
           ${fix.suggestedText?`<div style="background:var(--green-bg);border-radius:var(--radius);padding:8px;font-size:11px;color:var(--green-text);margin-top:4px"><strong>Suggested:</strong> ${fix.suggestedText}</div>`:''}
@@ -567,9 +446,7 @@ function renderReportModal(data,postIdx){
     });
     html+=`</div>`;
   }
-
-  // Top 2 content gaps with suggested text
-  if(r.topContentGaps?.length) {
+  if(r.topContentGaps?.length){
     html+=`<div class="report-section"><div class="report-section-title">🎯 Top content gaps to add</div>`;
     r.topContentGaps.slice(0,2).forEach((gap,i)=>{
       html+=`<div class="report-item" style="margin-bottom:10px;border-color:var(--purple)">
@@ -582,45 +459,62 @@ function renderReportModal(data,postIdx){
     });
     html+=`</div>`;
   }
-
-  // SEO quick wins
-  if(r.seoQuickWins?.length) {
+  // SEO quick wins with Generate buttons
+  if(r.seoQuickWins?.length){
     html+=`<div class="report-section"><div class="report-section-title">📈 SEO quick wins</div><ul class="quick-wins">`;
-    r.seoQuickWins.forEach(w=>{html+=`<li class="quick-win" style="background:var(--blue-bg);color:var(--blue-text)"><span>→</span><span>${w}</span></li>`;});
+    r.seoQuickWins.forEach((win)=>{
+      const idea=typeof win==='string'?win:win.idea;
+      const canGenerate=typeof win==='object'&&win.canGenerate;
+      html+=`<li class="quick-win" style="background:var(--blue-bg);color:var(--blue-text);justify-content:space-between;align-items:center">
+        <span style="display:flex;gap:8px;align-items:flex-start"><span>→</span><span>${idea}</span></span>
+        ${canGenerate?`<button class="btn btn-sm" style="flex-shrink:0;margin-left:8px" onclick="generateSEOContent(${JSON.stringify(idea)},window._lastReportData)">✨ Generate</button>`:''}
+      </li>`;
+    });
     html+=`</ul></div>`;
   }
-
-  // Other content ideas (collapsed/minimal)
-  if(r.otherContentIdeas?.length) {
-    html+=`<div class="report-section"><div class="report-section-title" style="color:var(--text2)">💡 Other ideas (optional)</div>
-    <div style="font-size:11px;color:var(--text2);display:flex;flex-wrap:wrap;gap:6px">`;
-    r.otherContentIdeas.forEach(idea=>{
-      html+=`<span style="background:var(--bg2);padding:3px 8px;border-radius:20px">${idea}</span>`;
-    });
+  if(r.otherContentIdeas?.length){
+    html+=`<div class="report-section"><div class="report-section-title" style="color:var(--text2)">💡 Other ideas (optional)</div><div style="font-size:11px;color:var(--text2);display:flex;flex-wrap:wrap;gap:6px">`;
+    r.otherContentIdeas.forEach(idea=>{html+=`<span style="background:var(--bg2);padding:3px 8px;border-radius:20px">${idea}</span>`;});
     html+=`</div></div>`;
   }
-
-  // Competitors if found
-  if(data.competitors?.titles?.length) {
-    html+=`<div class="report-section"><div class="report-section-title" style="color:var(--text2)">🔍 Competing results (2026 search)</div>
-    <div style="font-size:11px;color:var(--text2)">`;
+  if(data.competitors?.titles?.length){
+    html+=`<div class="report-section"><div class="report-section-title" style="color:var(--text2)">🔍 Competing results (2026 search)</div><div style="font-size:11px;color:var(--text2)">`;
     data.competitors.titles.forEach(t=>{html+=`<div style="padding:3px 0;border-bottom:0.5px solid var(--border)">${t}</div>`;});
     html+=`</div></div>`;
   }
-
- html+=`<div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+  html+=`<div style="margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-primary btn-sm" onclick="openBriefBuilder(window._lastReportData,${postIdx})">📋 Build Brief & Download PDF</button>
     <a href="${data.postUrl}" target="_blank" class="btn btn-sm">Open post ↗</a>
     <button class="btn btn-sm" onclick="closeModal()">Close</button>
   </div>`;
-  window._lastReportData = data;
+  window._lastReportData=data;
+  window._lastReportHTML=html;
   document.getElementById('modalBody').innerHTML=html;
 }
-
 function closeModal(){document.getElementById('reportModal').style.display='none';}
 function closeModalOutside(e){if(e.target===document.getElementById('reportModal'))closeModal();}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
-
+// ===== GENERATE SEO CONTENT =====
+async function generateSEOContent(idea,data){
+  if(!data)return;
+  const modal=document.getElementById('modalBody');
+  modal.innerHTML=`<div class="report-loading">✨ Generating: "${idea}"...<br><span style="font-size:11px;margin-top:8px;display:block">About 15-20 seconds</span></div>`;
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`You are helping a travel blogger named Kimmie update her post titled "${data.postTitle}" at ${data.postUrl}.\n\nHer writing voice: casual first-person, discovery energy, quick humor injections, direct practical advice, no generic filler, no prices.\n\nSEO task: ${idea}\n\nPost context: ${data.report?.summary||''}\n\nGenerate the requested content (table, FAQ, schema, heading, etc.) ready to copy-paste into WordPress. For tables use simple HTML. For FAQ use H3 headings with paragraph answers in Kimmie's voice. For schema markup provide the JSON-LD script tag. Keep it concise and useful.`}]})});
+    const json=await res.json();
+    const generated=json.content?.[0]?.text||'Could not generate content.';
+    modal.innerHTML=`
+      <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div style="font-size:13px;font-weight:500">✨ ${idea}</div>
+        <button class="btn btn-sm" onclick="document.getElementById('modalBody').innerHTML=window._lastReportHTML">← Back to report</button>
+      </div>
+      <div style="background:var(--bg2);border-radius:var(--radius);padding:16px;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-x:auto;max-height:400px;overflow-y:auto">${generated.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText(${JSON.stringify(generated)}).then(()=>{this.textContent='✓ Copied!';setTimeout(()=>this.textContent='📋 Copy to clipboard',2000)})">📋 Copy to clipboard</button>
+        <button class="btn btn-sm" onclick="document.getElementById('modalBody').innerHTML=window._lastReportHTML">← Back to report</button>
+      </div>`;
+  }catch(e){modal.innerHTML=`<div class="report-error">❌ ${e.message}</div><button class="btn btn-sm" onclick="document.getElementById('modalBody').innerHTML=window._lastReportHTML" style="margin-top:12px">← Back</button>`;}
+}
 // ===== BROKEN LINK SCANNER =====
 let scanRunning=false;
 async function startLinkScan(){
@@ -638,16 +532,8 @@ async function startLinkScan(){
     const batch=postsToScan.slice(i,i+CONCURRENT);
     banner.innerHTML=`<span>🔍 Scanning for link issues — ${scanned} of ${postsToScan.length} posts checked, ${totalBroken} potential issues found...</span>`;
     await Promise.allSettled(batch.map(async(post)=>{
-      try{
-        const res=await fetch(LINKS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({postUrl:post.url,postId:post.id,siteUrl})});
-        if(res.ok){
-          const data=await res.json();
-          post.brokenLinks=data.brokenCount||0;
-          post.brokenLinkUrls=data.brokenLinks||[];
-          if(data.brokenCount>0){const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;totalBroken+=data.brokenCount;}
-          post.linksScanned=true;
-        }
-      }catch(e){}
+      try{const res=await fetch(LINKS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({postUrl:post.url,postId:post.id,siteUrl})});
+      if(res.ok){const data=await res.json();post.brokenLinks=data.brokenCount||0;post.brokenLinkUrls=data.brokenLinks||[];if(data.brokenCount>0){const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;totalBroken+=data.brokenCount;}post.linksScanned=true;}}catch(e){}
       scanned++;
     }));
     posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
@@ -658,8 +544,6 @@ async function startLinkScan(){
   statusEl.innerHTML=`<span class="tag tag-ok">✓ ${totalBroken} potential issues found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startLinkScan()">Rescan</button>`;
   posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
 }
-
-function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.value||10),vc:parseInt(document.getElementById('fVenueCrit')?.value||2),bb:parseInt(document.getElementById('fBrokenBoost')?.value||20),vb:parseInt(document.getElementById('fVenueBoost')?.value||15)};}
 function monthsAgo(d){return d?Math.round((Date.now()-new Date(d))/(1000*60*60*24*30)):36}
 function fmtAge(m){if(m<1)return'This month';if(m<12)return m+'mo ago';const y=Math.floor(m/12),r=m%12;return y+'y'+(r>0?' '+r+'mo':'')+' ago'}
 function classify(t){t=t.toLowerCase();if(/festival/.test(t))return'festival';if(/cafe|restaurant|eat|food|bar|hotel|stay|places|things.*do|where.*go|best.*in|hidden gem|itinerary|road trip|guide|tips|how to|what to|when to|budget|cost|packing/.test(t))return'guide';return'story'}
@@ -667,16 +551,18 @@ function scoreColor(s){return s>=90?'#E24B4A':s>=60?'#BA7517':s>=30?'#378ADD':'#
 function healthColor(pct){return pct>=70?'#E24B4A':pct>=40?'#BA7517':pct>=20?'#378ADD':'#639922'}
 function fmtNum(n){if(!n)return'—';if(n>=10000)return Math.round(n/1000)+'k';if(n>=1000)return(n/1000).toFixed(1)+'k';return n}
 function fmtPos(p){if(!p||p===0)return'—';return p.toFixed(1)}
-function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings'].forEach(id=>{document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1)).style.display='none'});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings')renderWeights();}
+function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing'].forEach(id=>{const el=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(el)el.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings')renderWeights();}
 function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('');}
 function resetWeights(){weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};renderWeights();}
 function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value);});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
-function updateMetrics(){document.getElementById('mTotal').textContent=posts.length;document.getElementById('mCritical').textContent=posts.filter(p=>p.urgency==='critical').length;document.getElementById('mStale').textContent=posts.filter(p=>p.ageMonths>=12).length;document.getElementById('mOpportunity').textContent=posts.filter(p=>p.flags&&p.flags.some(f=>f.type==='opportunity')).length;
+function updateMetrics(){
+  document.getElementById('mTotal').textContent=posts.length;
+  document.getElementById('mCritical').textContent=posts.filter(p=>p.urgency==='critical').length;
+  document.getElementById('mStale').textContent=posts.filter(p=>p.ageMonths>=12).length;
+  document.getElementById('mOpportunity').textContent=posts.filter(p=>p.flags&&p.flags.some(f=>f.type==='opportunity')).length;
   const notIndexed=posts.filter(p=>p.flags&&p.flags.some(f=>f.type==='notindexed')).length;
-  if(notIndexed>0){
-    const el=document.getElementById('mStale');
-    el.nextElementSibling.textContent=`not updated recently • ${notIndexed} not in GSC`;
-  }}
+  if(notIndexed>0){const el=document.getElementById('mStale');if(el)el.nextElementSibling.textContent=`not updated recently • ${notIndexed} not in GSC`;}
+}
 function getFiltered(){
   const s=document.getElementById('searchInput').value.toLowerCase(),u=document.getElementById('fUrgency').value,t=document.getElementById('fType').value,a=document.getElementById('fAge').value,fl=document.getElementById('fFlag').value,so=document.getElementById('fSort').value;
   let r=posts.filter(p=>{
@@ -701,27 +587,17 @@ function renderIndexingTab(){
   const countEl=document.getElementById('indexingCount');
   const emptyEl=document.getElementById('indexingEmpty');
   const tbody=document.getElementById('indexingTableBody');
-  if(!countEl||!tbody) return;
+  if(!countEl||!tbody)return;
   countEl.textContent=unindexed.length+' posts';
   countEl.className=unindexed.length>0?'tag tag-err':'tag tag-ok';
   if(unindexed.length===0){emptyEl.style.display='block';tbody.innerHTML='';return;}
   emptyEl.style.display='none';
   tbody.innerHTML=unindexed.sort((a,b)=>b.ageMonths-a.ageMonths).map(p=>{
-    const gscInspect=`https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(siteUrl+'/') }&id=${encodeURIComponent(p.url)}`;
+    const gscInspect=`https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(siteUrl+'/')}&id=${encodeURIComponent(p.url)}`;
     const ageCol=p.ageMonths>=24?'var(--red-text)':p.ageMonths>=12?'var(--amber-text)':'var(--text2)';
-    return`<tr>
-      <td title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,50)}${p.title.length>50?'…':''}</a></td>
-      <td style="font-size:11px;color:${ageCol}">${fmtAge(p.ageMonths)}</td>
-      <td><span class="type-pill">${p.type}</span></td>
-      <td style="font-size:11px;color:var(--text2)">${p.lastModified?new Date(p.lastModified).toLocaleDateString():'—'}</td>
-      <td style="display:flex;gap:6px;flex-wrap:wrap">
-        <a href="${gscInspect}" target="_blank" class="btn btn-sm">🔍 Inspect in GSC</a>
-        <a href="${p.url}" target="_blank" class="btn btn-sm">Open post ↗</a>
-      </td>
-    </tr>`;
+    return`<tr><td title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,50)}${p.title.length>50?'…':''}</a></td><td style="font-size:11px;color:${ageCol}">${fmtAge(p.ageMonths)}</td><td><span class="type-pill">${p.type}</span></td><td style="font-size:11px;color:var(--text2)">${p.lastModified?new Date(p.lastModified).toLocaleDateString():'—'}</td><td style="display:flex;gap:6px;flex-wrap:wrap"><a href="${gscInspect}" target="_blank" class="btn btn-sm">🔍 Inspect in GSC</a><a href="${p.url}" target="_blank" class="btn btn-sm">Open post ↗</a></td></tr>`;
   }).join('');
 }
-
 function renderTable(){
   const filtered=getFiltered(),start=(page-1)*PER_PAGE,slice=filtered.slice(start,start+PER_PAGE);
   const tbody=document.getElementById('tableBody'),empty=document.getElementById('emptyState'),pag=document.getElementById('pagRow');
@@ -731,46 +607,39 @@ function renderTable(){
   pag.style.display=filtered.length>PER_PAGE?'flex':'none';
   document.getElementById('pageInfo').textContent=`Page ${page} of ${tp}`;
   document.getElementById('totalCount').textContent=`${filtered.length} posts`;
-  tbody.innerHTML=slice.map((p,i)=>{
+  const t=getThresholds();
+  tbody.innerHTML=slice.map((p)=>{
     const postIdx=posts.indexOf(p);
     const linkIssues=p.brokenLinks>0?`<span class="dot dot-red"></span>${p.brokenLinks} links`:(p.linksScanned?'<span style="color:var(--green-text);font-size:10px">✓ links ok</span>':'');
     const aiIssues=p.aiScanned?(p.venueIssues>0||p.outdatedCount>0?`<span class="dot dot-amber"></span>${p.venueIssues+p.outdatedCount} AI`:'<span style="color:var(--green-text);font-size:10px">✓ AI ok</span>'):'';
     const issues=[linkIssues,aiIssues].filter(Boolean).join(' ')||'<span style="color:var(--text3)">not scanned</span>';
     const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
     const gscInspectUrl=`https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(siteUrl)}&id=${encodeURIComponent(p.url)}`;
-    const flagsHtml=(p.flags&&p.flags.length>0)?p.flags.map(f=>{
-      if(f.type==='notindexed') return `<a href="${gscInspectUrl}" target="_blank" title="Check in GSC URL inspection"><span class="flag flag-${f.type}">${f.label} ↗</span></a>`;
-      return `<span class="flag flag-${f.type}">${f.label}</span>`;
-    }).join(''):'<span style="color:var(--text3);font-size:11px">—</span>';
+    const flagsHtml=(p.flags&&p.flags.length>0)?p.flags.map(f=>{if(f.type==='notindexed')return`<a href="${gscInspectUrl}" target="_blank" title="Check in GSC URL inspection"><span class="flag flag-${f.type}">${f.label} ↗</span></a>`;return`<span class="flag flag-${f.type}">${f.label}</span>`;}).join(''):'<span style="color:var(--text3);font-size:11px">—</span>';
     const ageCol=p.ageMonths>=24?'var(--red-text)':p.ageMonths>=12?'var(--amber-text)':'var(--text2)';
     const sc=scoreColor(p.score);
     const hasTraffic=p.traffic>0||p.impressions>0;
     const healthPct=p.trafficDeclinePct||0;
     const healthHtml=hasTraffic?`<div style="font-size:10px;color:${healthColor(healthPct)}">${healthPct>0?healthPct+'% decline':'stable'}</div><div class="health-bar"><div class="health-fill" style="width:${healthPct}%;background:${healthColor(healthPct)}"></div></div>`:'<span style="color:var(--text3);font-size:11px">no data</span>';
-    // 🔥 flag next to impressions if high gap
-    const t=getThresholds();
     const imprHot=p.impressions>=t.hotImpr&&p.ctr<t.hotCtr;
-    const imprDisplay=`${fmtNum(p.impressions)}${imprHot?' 🔥':''}`;
     return`<tr>
       <td class="col-title" title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,40)}${p.title.length>40?'…':''}</a></td>
       <td class="col-age" style="font-size:11px;color:${ageCol}">${fmtAge(p.ageMonths)}</td>
       <td class="col-type"><span class="type-pill">${p.type}</span></td>
       <td class="col-traffic" style="font-size:11px;color:${hasTraffic?'var(--text)':'var(--text3)'}">${fmtNum(p.traffic)}</td>
-      <td class="col-impr" style="font-size:11px;color:${hasTraffic?'var(--text)':'var(--text3)'}">${imprDisplay}</td>
+      <td class="col-impr" style="font-size:11px;color:${hasTraffic?'var(--text)':'var(--text3)'}">${fmtNum(p.impressions)}${imprHot?' 🔥':''}</td>
       <td class="col-pos" style="font-size:11px;color:${p.position>10&&p.position<=20?'var(--purple-text)':p.position>0?'var(--text)':'var(--text3)'}">${fmtPos(p.position)}</td>
       <td class="col-health">${healthHtml}</td>
       <td class="col-issues" style="font-size:11px">${issues}</td>
-      <td class="col-kw" style="font-size:11px;color:${p.topKeywordVolume >= (t.kwHigh||1000) ? 'var(--purple-text)' : p.topKeywordVolume > 0 ? 'var(--text)' : 'var(--text3)'}">
-        ${p.topKeywordVolume >= 1000 ? (p.topKeywordVolume/1000).toFixed(1)+'k' : p.topKeywordVolume > 0 ? p.topKeywordVolume : '—'}
+      <td class="col-kw" style="font-size:11px;color:${p.topKeywordVolume>=(t.kwHigh||1000)?'var(--purple-text)':p.topKeywordVolume>0?'var(--text)':'var(--text3)'}">
+        ${p.topKeywordVolume>=1000?(p.topKeywordVolume/1000).toFixed(1)+'k':p.topKeywordVolume>0?p.topKeywordVolume:'—'}
       </td>
       <td class="col-flags" style="white-space:normal;line-height:1.6">${flagsHtml}</td>
       <td class="col-score">
         <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${Math.min(p.score/150*100,100)}%;background:${sc}"></div></div><span class="score-num" style="color:${sc}">${p.score}</span></div>
         <div style="margin-top:3px">${p.hardFloor?'<span class="floor-pill">forced</span>':'<span class="pill u-'+p.urgency+'">'+p.urgency+'</span>'}</div>
       </td>
-      <td class="col-action" style="white-space:normal">
-        <button class="report-btn" onclick="generateReport(${postIdx})">✨ Report</button>
-      </td>
+      <td class="col-action" style="white-space:normal"><button class="report-btn" onclick="generateReport(${postIdx})">✨ Report</button></td>
     </tr>`;
   }).join('');
 }
@@ -795,32 +664,20 @@ async function startCrawl(){
     if(!r1.ok){const e=await r1.json().catch(()=>({}));throw new Error(e.error||`HTTP ${r1.status}`);}
     const total=parseInt(r1.headers.get('X-WP-Total')||'0'),totalPages=parseInt(r1.headers.get('X-WP-TotalPages')||'1');
     processBatch(await r1.json());setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);
-    for(let p=2;p<=Math.min(totalPages,10);p++){
-      const r=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=${p}&perPage=100`);
-      if(!r.ok)break;processBatch(await r.json());setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);
-    }
+    for(let p=2;p<=Math.min(totalPages,10);p++){const r=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=${p}&perPage=100`);if(!r.ok)break;processBatch(await r.json());setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);}
     posts.sort((a,b)=>b.score-a.score);
     setProgress(posts.length,posts.length,`Done! ${posts.length} posts cataloged.`);
     document.getElementById('crawlStatus').textContent=`${posts.length} posts crawled`;
     document.getElementById('crawlStatus').className='tag tag-ok';
     page=1;updateMetrics();renderTable();
-    if(gscToken){showGSCBanner(true);loadGSCData();} // auto-reload GSC after crawl finishes
-  }catch(e){
-    document.getElementById('statusMsg').textContent='Error: '+e.message;
-    document.getElementById('crawlStatus').textContent='error';
-    document.getElementById('crawlStatus').className='tag tag-err';
-  }
+    if(gscToken){showGSCBanner(true);loadGSCData();}
+  }catch(e){document.getElementById('statusMsg').textContent='Error: '+e.message;document.getElementById('crawlStatus').textContent='error';document.getElementById('crawlStatus').className='tag tag-err';}
 }
 function processBatch(batch){batch.forEach(p=>{const title=(p.title?.rendered||p.slug||'Untitled').replace(/<[^>]+>/g,'');const ageMonths=monthsAgo(p.modified||p.date);const post={id:p.id,title,url:p.link,ageMonths,lastModified:p.modified||p.date,type:classify(title),traffic:0,impressions:0,ctr:0,position:0,recentClicks:0,olderClicks:0,recentImpressions:0,olderImpressions:0,trafficDeclinePct:0,brokenLinks:0,venueIssues:0,outdatedCount:0,brokenLinkUrls:[],linksScanned:false,aiScanned:false,venueConfirmed:false,gscChecked:false,flags:[]};const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;posts.push(post);});}
 function setProgress(done,total,msg){const pct=total>0?Math.round((done/total)*100):50;document.getElementById('progressFill').style.width=pct+'%';document.getElementById('statusMsg').textContent=msg;}
 function loadDemo(){
   const data=[{t:"Best Cafes in Canggu Bali",age:36,bl:2,vi:3,rc:280,oc:3200,ri:18000,oi:45000,pos:14.2},{t:"Sailing Croatia Complete Guide",age:30,bl:1,vi:0,rc:5100,oc:5400,ri:36000,oi:38000,pos:3.2},{t:"Hidden Gems in Central Italy",age:12,bl:9,vi:1,rc:180,oc:420,ri:24000,oi:31000,pos:17.4},{t:"Top Beaches in Bali",age:28,bl:1,vi:2,rc:1100,oc:4300,ri:22000,oi:41000,pos:12.6},{t:"Nusa Lembongan Complete Guide",age:48,bl:2,vi:3,rc:120,oc:3600,ri:8000,oi:39000,pos:24.1},{t:"Best Restaurants in Seminyak",age:16,bl:1,vi:4,rc:2100,oc:2800,ri:15000,oi:19000,pos:5.4},{t:"Burning Man Survival Guide",age:24,bl:10,vi:0,rc:210,oc:430,ri:9000,oi:15000,pos:18.3},{t:"Tulum Travel Guide",age:36,bl:2,vi:2,rc:2800,oc:5100,ri:38000,oi:61000,pos:7.2},{t:"50 Epic Places Melbourne",age:36,bl:35,vi:0,rc:8,oc:3600,ri:11000,oi:39000,pos:17.9},{t:"Digital Nomad Guide Bali",age:18,bl:0,vi:1,rc:1400,oc:1600,ri:28000,oi:33000,pos:4.9},{t:"Things That Surprised Me Istanbul",age:8,bl:0,vi:0,rc:3800,oc:2100,ri:44000,oi:31000,pos:3.8},{t:"My Week in Ubud",age:30,bl:0,vi:0,rc:12,oc:18,ri:40,oi:60,pos:31.0}];
-  posts=data.map((d,i)=>{
-    const declinePct=d.oc>10?Math.max(0,Math.round(((d.oc-d.rc)/d.oc)*100)):0;
-    const p={id:i+1,title:d.t,url:`https://www.adventuresnsunsets.com/${d.t.toLowerCase().replace(/\s+/g,'-')}`,ageMonths:d.age,lastModified:new Date(Date.now()-d.age*30*24*60*60*1000).toISOString(),type:classify(d.t),traffic:d.rc,impressions:d.ri,ctr:d.ri>0?d.rc/d.ri:0,position:d.pos,recentClicks:d.rc,olderClicks:d.oc,recentImpressions:d.ri,olderImpressions:d.oi,trafficDeclinePct:declinePct,brokenLinks:d.bl,venueIssues:d.vi,brokenLinkUrls:[],linksScanned:d.bl>0,flags:[]};
-    const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;
-    return p;
-  });
+  posts=data.map((d,i)=>{const declinePct=d.oc>10?Math.max(0,Math.round(((d.oc-d.rc)/d.oc)*100)):0;const p={id:i+1,title:d.t,url:`https://www.adventuresnsunsets.com/${d.t.toLowerCase().replace(/\s+/g,'-')}`,ageMonths:d.age,lastModified:new Date(Date.now()-d.age*30*24*60*60*1000).toISOString(),type:classify(d.t),traffic:d.rc,impressions:d.ri,ctr:d.ri>0?d.rc/d.ri:0,position:d.pos,recentClicks:d.rc,olderClicks:d.oc,recentImpressions:d.ri,olderImpressions:d.oi,trafficDeclinePct:declinePct,brokenLinks:d.bl,venueIssues:d.vi,brokenLinkUrls:[],linksScanned:d.bl>0,flags:[]};const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;return p;});
   posts.sort((a,b)=>b.score-a.score);
   document.getElementById('crawlStatus').textContent='demo loaded';
   document.getElementById('crawlStatus').className='tag tag-ok';
@@ -828,442 +685,155 @@ function loadDemo(){
   page=1;updateMetrics();renderTable();
 }
 // ===== BATCH AI SCANNER =====
-async function startAIScan(forceRefresh=false) {
-  if (posts.length === 0) { alert('Please crawl your blog first!'); return; }
-  const siteUrl = document.getElementById('urlInput').value.trim().replace(/\/$/, '');
-  const banner = document.getElementById('aiScanBanner');
-  const statusEl = document.getElementById('aiScanStatus');
-  banner.className = 'scan-banner';
-  banner.style.display = 'flex';
-  statusEl.innerHTML = '<span class="tag">AI scanning...</span>';
-
-  let scanned = 0, totalVenue = 0, totalOutdated = 0;
-  const postsToScan = [...posts];
-  const CONCURRENT = 3; // smaller batches — Claude calls take longer
-
-  for (let i = 0; i < postsToScan.length; i += CONCURRENT) {
-    const batch = postsToScan.slice(i, i + CONCURRENT);
-    banner.innerHTML = `<span>🤖 AI scanning posts — ${scanned} of ${postsToScan.length} done, ${totalVenue} venue issues + ${totalOutdated} outdated items found...</span>`;
-
-    await Promise.allSettled(batch.map(async (post) => {
-      try {
-        const res = await fetch(BATCH_SCAN_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ postId: post.id, postUrl: post.url, postTitle: post.title, siteUrl, forceRefresh }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (!data.error) {
-            post.venueIssues = data.venueIssues || 0;
-            post.outdatedCount = data.outdatedCount || 0;
-            post.hasOldCurrency = data.hasOldCurrency || false;
-            post.hasCovid = data.hasCovid || false;
-            post.hasOldPrices = data.hasOldPrices || false;
-            post.aiScanned = true;
-            if (data.venueIssues > 0 || data.outdatedCount > 0) {
-              const r = calcScore(post);
-              post.score = r.score; post.urgency = r.urgency; post.hardFloor = r.hardFloor; post.flags = r.flags;
-              totalVenue += data.venueIssues;
-              totalOutdated += data.outdatedCount;
-            }
-          }
-        }
-      } catch(e) {}
+async function startAIScan(forceRefresh=false){
+  if(posts.length===0){alert('Please crawl your blog first!');return;}
+  const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
+  const banner=document.getElementById('aiScanBanner');
+  const statusEl=document.getElementById('aiScanStatus');
+  banner.className='scan-banner';banner.style.display='flex';
+  statusEl.innerHTML='<span class="tag">AI scanning...</span>';
+  let scanned=0,totalVenue=0,totalOutdated=0;
+  const postsToScan=[...posts],CONCURRENT=3;
+  for(let i=0;i<postsToScan.length;i+=CONCURRENT){
+    const batch=postsToScan.slice(i,i+CONCURRENT);
+    banner.innerHTML=`<span>🤖 AI scanning posts — ${scanned} of ${postsToScan.length} done, ${totalVenue} venue issues + ${totalOutdated} outdated items found...</span>`;
+    await Promise.allSettled(batch.map(async(post)=>{
+      try{const res=await fetch(BATCH_SCAN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({postId:post.id,postUrl:post.url,postTitle:post.title,siteUrl,forceRefresh})});
+      if(res.ok){const data=await res.json();if(!data.error){post.venueIssues=data.venueIssues||0;post.outdatedCount=data.outdatedCount||0;post.hasOldCurrency=data.hasOldCurrency||false;post.hasCovid=data.hasCovid||false;post.hasOldPrices=data.hasOldPrices||false;post.aiScanned=true;if(data.venueIssues>0||data.outdatedCount>0){const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;totalVenue+=data.venueIssues;totalOutdated+=data.outdatedCount;}}}}catch(e){}
       scanned++;
     }));
-
-    // Update every batch
-    posts.sort((a,b) => b.score - a.score);
-    updateMetrics();
-    renderTable();
+    posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
   }
-
-  banner.className = 'scan-banner scan-complete';
-  banner.innerHTML = `<span>✓ AI scan complete — ${scanned} posts scanned, ${totalVenue} venue issues + ${totalOutdated} outdated items found</span><button class="btn btn-sm" style="margin-left:auto" onclick="startAIScan(true)">↺ Force rescan</button>`;
-  statusEl.innerHTML = `<span class="tag tag-ok">✓ ${totalVenue} venue + ${totalOutdated} outdated items found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startAIScan(false)">Load cached</button><button class="btn btn-sm" style="margin-left:4px" onclick="startAIScan(true)">Force rescan</button>`;
-  posts.sort((a,b) => b.score - a.score);
-  updateMetrics();
-  renderTable();
+  banner.className='scan-banner scan-complete';
+  banner.innerHTML=`<span>✓ AI scan complete — ${scanned} posts scanned, ${totalVenue} venue issues + ${totalOutdated} outdated items found</span><button class="btn btn-sm" style="margin-left:auto" onclick="startAIScan(true)">↺ Force rescan</button>`;
+  statusEl.innerHTML=`<span class="tag tag-ok">✓ ${totalVenue} venue + ${totalOutdated} outdated items found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startAIScan(false)">Load cached</button><button class="btn btn-sm" style="margin-left:4px" onclick="startAIScan(true)">Force rescan</button>`;
+  posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
 }
-
 // ===== BATCH KEYWORD SCANNER =====
-function extractTitleKeyword(title) {
-  const stopWords = new Set(['a','an','the','and','or','but','in','on','at','to','for','of','with','by','from','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','must','can','that','this','these','those','i','my','your','his','her','its','our','their','what','which','who','how','why','when','where','all','both','each','more','most','other','some','no','not','only','same','so','than','too','very','just','about','after','before','up','down','out','over','here','there','any','every','much','many','also','back','new','old','first','last','long','big','high','low','next','fun','best','unique','amazing','incredible','ultimate','complete','easy','quick','top','things','places','ways','tips','guide','review','list','must','cannot','miss','dont','travel','updated','hidden','gems']);
-  const clean = title.toLowerCase()
-    .replace(/\d+\+?\s*/g,'').replace(/[!?:,\-\u2013\u2014+]/g,' ')
-    .replace(/\b(you cannot miss|don't miss|must see|must visit|complete guide|travel guide|updated \d{4}|in \d{4}|for beginners|everything you need to know)\b/gi,'')
-    .replace(/\s+/g,' ').trim();
-  const words = clean.split(' ').filter(w => w.length > 2 && !stopWords.has(w));
+function extractTitleKeyword(title){
+  const stopWords=new Set(['a','an','the','and','or','but','in','on','at','to','for','of','with','by','from','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','must','can','that','this','these','those','i','my','your','his','her','its','our','their','what','which','who','how','why','when','where','all','both','each','more','most','other','some','no','not','only','same','so','than','too','very','just','about','after','before','up','down','out','over','here','there','any','every','much','many','also','back','new','old','first','last','long','big','high','low','next','fun','best','unique','amazing','incredible','ultimate','complete','easy','quick','top','things','places','ways','tips','guide','review','list','must','cannot','miss','dont','travel','updated','hidden','gems']);
+  const clean=title.toLowerCase().replace(/\d+\+?\s*/g,'').replace(/[!?:,\-\u2013\u2014+]/g,' ').replace(/\b(you cannot miss|don't miss|must see|must visit|complete guide|travel guide|updated \d{4}|in \d{4}|for beginners|everything you need to know)\b/gi,'').replace(/\s+/g,' ').trim();
+  const words=clean.split(' ').filter(w=>w.length>2&&!stopWords.has(w));
   return words.slice(0,5).join(' ');
 }
-
-async function startKWScan(forceRefresh=false) {
-  if(posts.length === 0) { alert('Please crawl your blog and load GSC data first!'); return; }
-  const postsWithKeywords = posts.filter(p => p.gscKeywords && p.gscKeywords.length > 0);
-  if(postsWithKeywords.length === 0) { alert('No keyword data found. Please load GSC data first.'); return; }
-
-  const banner = document.getElementById('kwScanBanner');
-  const statusEl = document.getElementById('kwScanStatus');
-  banner.className = 'scan-banner';
-  banner.style.display = 'flex';
-  banner.innerHTML = '<span>🔍 Looking up keyword volumes...</span>';
-  statusEl.innerHTML = '<span class="tag">Scanning...</span>';
-
-  try {
-    // Process in batches of 50 to avoid Vercel timeout
-    const BATCH_SIZE = 50;
-    const allPostData = postsWithKeywords.map(p => ({
-      postId: p.id,
-      url: p.url,
-      titleKeyword: extractTitleKeyword(p.title),
-      keywords: p.gscKeywords.slice(0, 5)
-    }));
-
-    let totalUpdated = 0, totalCached = 0, totalFresh = 0;
-
-    // Build full volume map by sending keywords in small batches of 10
-    const masterVolumeMap = {};
-    const allKws = new Set();
-    allPostData.forEach(p => {
-      (p.keywords||[]).forEach(k => allKws.add(k));
-      if(p.titleKeyword) allKws.add(p.titleKeyword);
-    });
-    const kwArray = [...allKws];
-    const KW_BATCH = 10;
-    for(let k = 0; k < kwArray.length; k += KW_BATCH) {
-      const kwChunk = kwArray.slice(k, k + KW_BATCH);
-      const progress = Math.round((k / kwArray.length) * 100);
-      banner.innerHTML = `<span>🔍 Looking up keyword volumes... ${progress}% (${k}/${kwArray.length} keywords)</span>`;
-      try {
-        const res = await fetch(KEYWORDS_URL, {
-          method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ keywords: kwChunk })
-        });
-        if(res.ok) {
-          const data = await res.json();
-          Object.assign(masterVolumeMap, data.volumeMap || {});
-        }
-      } catch(e) {}
+async function startKWScan(forceRefresh=false){
+  if(posts.length===0){alert('Please crawl your blog and load GSC data first!');return;}
+  const postsWithKeywords=posts.filter(p=>p.gscKeywords&&p.gscKeywords.length>0);
+  if(postsWithKeywords.length===0){alert('No keyword data found. Please load GSC data first.');return;}
+  const banner=document.getElementById('kwScanBanner');
+  const statusEl=document.getElementById('kwScanStatus');
+  banner.className='scan-banner';banner.style.display='flex';
+  banner.innerHTML='<span>🔍 Looking up keyword volumes...</span>';
+  statusEl.innerHTML='<span class="tag">Scanning...</span>';
+  try{
+    const allPostData=postsWithKeywords.map(p=>({postId:p.id,url:p.url,titleKeyword:extractTitleKeyword(p.title),keywords:p.gscKeywords.slice(0,5)}));
+    let totalUpdated=0;
+    const masterVolumeMap={};
+    const allKws=new Set();
+    allPostData.forEach(p=>{(p.keywords||[]).forEach(k=>allKws.add(k));if(p.titleKeyword)allKws.add(p.titleKeyword);});
+    const kwArray=[...allKws];
+    const KW_BATCH=10;
+    for(let k=0;k<kwArray.length;k+=KW_BATCH){
+      const kwChunk=kwArray.slice(k,k+KW_BATCH);
+      const progress=Math.round((k/kwArray.length)*100);
+      banner.innerHTML=`<span>🔍 Looking up keyword volumes... ${progress}% (${k}/${kwArray.length} keywords)</span>`;
+      try{const res=await fetch(KEYWORDS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keywords:kwChunk})});if(res.ok){const data=await res.json();Object.assign(masterVolumeMap,data.volumeMap||{});}}catch(e){}
     }
-
-    // Apply volumes to posts
-    allPostData.forEach(chunkPost => {
-      const p = posts.find(x => x.id === chunkPost.postId);
-      if(!p) return;
-      let topVolume = 0, topKeyword = '';
-      if(chunkPost.titleKeyword && masterVolumeMap[chunkPost.titleKeyword]?.volume > 0) {
-        topVolume = masterVolumeMap[chunkPost.titleKeyword].volume;
-        topKeyword = chunkPost.titleKeyword;
-      }
-      (chunkPost.keywords||[]).forEach(kw => {
-        const vol = masterVolumeMap[kw]?.volume || 0;
-        if(vol > topVolume) { topVolume = vol; topKeyword = kw; }
-      });
-      p.topKeyword = topKeyword;
-      p.topKeywordVolume = topVolume;
-      const r = calcScore(p);
-      p.score = r.score; p.urgency = r.urgency; p.hardFloor = r.hardFloor; p.flags = r.flags;
-      if(topVolume > 0) totalUpdated++;
+    allPostData.forEach(chunkPost=>{
+      const p=posts.find(x=>x.id===chunkPost.postId);if(!p)return;
+      let topVolume=0,topKeyword='';
+      if(chunkPost.titleKeyword&&masterVolumeMap[chunkPost.titleKeyword]?.volume>0){topVolume=masterVolumeMap[chunkPost.titleKeyword].volume;topKeyword=chunkPost.titleKeyword;}
+      (chunkPost.keywords||[]).forEach(kw=>{const vol=masterVolumeMap[kw]?.volume||0;if(vol>topVolume){topVolume=vol;topKeyword=kw;}});
+      p.topKeyword=topKeyword;p.topKeywordVolume=topVolume;
+      const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;
+      if(topVolume>0)totalUpdated++;
     });
-    totalFresh = allPostData.length;
-
-    posts.sort((a,b) => b.score - a.score);
-    updateMetrics();
-    renderTable();
-
-    banner.className = 'scan-banner scan-complete';
-    banner.innerHTML = `<span>✓ Keyword volumes loaded — ${totalUpdated} posts updated (${totalCached} from cache, ${totalFresh} fresh)</span>`;
-    statusEl.innerHTML = `<span class="tag tag-ok">✓ ${totalUpdated} posts have keyword data</span><button class="btn btn-sm" style="margin-left:8px" onclick="startKWScan(true)">Force rescan</button>`;
-
-  } catch(e) {
-    banner.innerHTML = `<span style="color:var(--red-text)">❌ ${e.message}</span>`;
-    statusEl.innerHTML = '<button class="btn btn-sm btn-primary" onclick="startKWScan()">Retry</button>';
-  }
+    posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
+    banner.className='scan-banner scan-complete';
+    banner.innerHTML=`<span>✓ Keyword volumes loaded — ${totalUpdated} posts updated</span>`;
+    statusEl.innerHTML=`<span class="tag tag-ok">✓ ${totalUpdated} posts have keyword data</span><button class="btn btn-sm" style="margin-left:8px" onclick="startKWScan(true)">Force rescan</button>`;
+  }catch(e){banner.innerHTML=`<span style="color:var(--red-text)">❌ ${e.message}</span>`;statusEl.innerHTML='<button class="btn btn-sm btn-primary" onclick="startKWScan()">Retry</button>';}
 }
-
 renderTable();
-// BRIEF BUILDER — add this function to index.html
-// Call openBriefBuilder(data, postIdx) instead of or after renderReportModal
-
-function openBriefBuilder(data, postIdx) {
-  const r = data.report;
-  
-  // Build editable items list from sections
-  let items = [];
-  let itemId = 0;
-  
-// Add all venue checks
-  (data.venueChecks||[]).forEach(v => {
-    items.push({
-      id: itemId++, checked: v.flag, section: '📍 Venue verification',
-      type: v.flag ? (v.status === 'permanently_closed' ? '❌ permanently closed' : '⚠️ temporarily closed') : '✓ verified open',
-      priority: v.flag ? 'critical' : 'medium',
-      text: `${v.venue}${v.address ? ' — ' + v.address : ''}`,
-      action: v.flag ? 'Remove or replace all mentions' : 'Confirmed open via Google Maps — no action needed',
-      note: v.editorNote || ''
-    });
+// ===== BRIEF BUILDER =====
+function openBriefBuilder(data,postIdx){
+  const r=data.report;
+  let items=[],itemId=0;
+  // Add all venue checks
+  (data.venueChecks||[]).forEach(v=>{
+    items.push({id:itemId++,checked:v.flag,section:'📍 Venue verification',
+      type:v.flag?(v.status==='permanently_closed'?'❌ permanently closed':'⚠️ temporarily closed'):'✓ verified open',
+      priority:v.flag?'critical':'medium',
+      text:`${v.venue}${v.address?' — '+v.address:''}`,
+      action:v.flag?'Remove or replace all mentions':'Confirmed open via Google Maps — no action needed',
+      suggested:'',note:v.editorNote||''});
   });
-  });
-
   // Add section fixes
-  (r.sections||[]).forEach(section => {
-    (section.fixes||[]).forEach(fix => {
-      items.push({
-        id: itemId++, checked: fix.priority === 'critical' || fix.priority === 'high',
-        section: section.sectionName,
-        type: (fix.type||'fix').replace(/_/g,' '),
-        priority: fix.priority || 'medium',
-        text: fix.currentText ? `"${fix.currentText}"` : fix.action,
-        action: fix.action || '',
-        suggested: fix.suggestedText || '',
-        note: fix.editorNote || ''
-      });
+  (r.sections||[]).forEach(section=>{
+    (section.fixes||[]).forEach(fix=>{
+      items.push({id:itemId++,checked:fix.priority==='critical'||fix.priority==='high',
+        section:section.sectionName,type:(fix.type||'fix').replace(/_/g,' '),priority:fix.priority||'medium',
+        text:fix.currentText?`"${fix.currentText}"`:fix.action,action:fix.action||'',
+        suggested:fix.suggestedText||'',note:fix.editorNote||''});
     });
   });
-
   // Add top content gaps
-  (r.topContentGaps||[]).slice(0,2).forEach((gap, i) => {
-    items.push({
-      id: itemId++, checked: true,
-      section: '🎯 Content Gap #' + (i+1),
-      type: 'add content',
-      priority: 'high',
-      text: gap.topic,
-      action: gap.whyUrgent + (gap.placement ? '\n📍 ' + gap.placement : ''),
-      suggested: gap.suggestedText || '',
-      note: ''
-    });
+  (r.topContentGaps||[]).slice(0,2).forEach((gap,i)=>{
+    items.push({id:itemId++,checked:true,section:'🎯 Content Gap #'+(i+1),type:'add content',priority:'high',
+      text:gap.topic,action:gap.whyUrgent+(gap.placement?'\n📍 '+gap.placement:''),
+      suggested:gap.suggestedText||'',note:gap.editorNote||''});
   });
-
   // Add SEO quick wins
-  (r.seoQuickWins||[]).forEach(win => {
-    items.push({
-      id: itemId++, checked: false,
-      section: '📈 SEO',
-      type: 'seo fix',
-      priority: 'medium',
-      text: win,
-      action: '', suggested: '', note: ''
-    });
+  (r.seoQuickWins||[]).forEach(win=>{
+    const idea=typeof win==='string'?win:win.idea;
+    items.push({id:itemId++,checked:false,section:'📈 SEO',type:'seo fix',priority:'medium',text:idea,action:'',suggested:'',note:''});
   });
-
-  // Store items globally for PDF generation
-  window._briefItems = items;
-  window._briefData = data;
-  window._briefPostIdx = postIdx;
-
-  // Render the brief builder modal
-  const priorityColor = p => p==='critical'?'var(--red)':p==='high'?'var(--amber)':'var(--blue)';
-  const priorityBg = p => p==='critical'?'var(--red-bg)':p==='high'?'var(--amber-bg)':'var(--blue-bg)';
-  const priorityText = p => p==='critical'?'var(--red-text)':p==='high'?'var(--amber-text)':'var(--blue-text)';
-
-  let html = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-      <div>
-        <div style="font-size:13px;font-weight:500">📋 Build Post Update Brief</div>
-        <div style="font-size:11px;color:var(--text2)">${data.postTitle} — check what to include, add notes, then download</div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-sm" onclick="briefCheckAll(true)">Check all</button>
-        <button class="btn btn-sm" onclick="briefCheckAll(false)">Uncheck all</button>
-        <button class="btn btn-primary btn-sm" onclick="downloadBriefPDF()">⬇ Download PDF</button>
-      </div>
-    </div>
-    
-    <div style="font-size:11px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:var(--radius)">
-      ✅ Checked items = included in PDF for your VA &nbsp;·&nbsp; 📝 Add notes to any item &nbsp;·&nbsp; ➕ Add your own tasks at the bottom
-    </div>`;
-
-  let currentSection = '';
-  items.forEach(item => {
-    if(item.section !== currentSection) {
-      currentSection = item.section;
-      html += `<div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 6px;padding-bottom:4px;border-bottom:0.5px solid var(--border)">${item.section}</div>`;
-    }
-    html += `
-      <div id="brief-item-${item.id}" style="display:flex;gap:8px;padding:8px;border:0.5px solid var(--border);border-left:3px solid ${priorityColor(item.priority)};border-radius:var(--radius);margin-bottom:6px;background:${item.checked?'var(--bg)':'var(--bg2)'}">
-        <input type="checkbox" ${item.checked?'checked':''} onchange="briefToggle(${item.id},this.checked)" style="margin-top:3px;flex-shrink:0">
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
-            <span style="font-size:10px;padding:1px 6px;border-radius:var(--radius);background:${priorityBg(item.priority)};color:${priorityText(item.priority)};text-transform:uppercase">${item.type}</span>
-            <span style="font-size:10px;color:${priorityText(item.priority)};font-weight:500">${item.priority}</span>
-          </div>
-          <div style="font-size:12px;color:var(--text);margin-bottom:3px">${item.text}</div>
-          ${item.action ? `<div style="font-size:11px;color:var(--text2);margin-bottom:4px">${item.action}</div>` : ''}
-          ${item.suggested ? `<div style="font-size:11px;color:var(--green-text);background:var(--green-bg);padding:6px 8px;border-radius:var(--radius);margin-bottom:4px"><strong>Suggested:</strong> ${item.suggested}</div>` : ''}
-          <textarea 
-            placeholder="Add a note for your VA (optional)..."
-            onchange="briefNote(${item.id},this.value)"
-            style="width:100%;font-size:11px;padding:4px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;min-height:28px;margin-top:4px;font-family:inherit"
-            rows="1">${item.note}</textarea>
-        </div>
-      </div>`;
-  });
-
-  // Custom task area
-  html += `
-    <div style="margin-top:16px;padding-top:12px;border-top:0.5px solid var(--border)">
-      <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px">➕ ADD YOUR OWN TASKS</div>
-      <div id="customTasks"></div>
-      <button class="btn btn-sm" onclick="briefAddCustomTask()" style="margin-top:6px">+ Add task</button>
-    </div>
-    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-primary btn-sm" onclick="downloadBriefPDF()">⬇ Download Brief PDF</button>
-      <button class="btn btn-sm" onclick="showReportView()">← Back to report</button>
-    </div>`;
-
-  document.getElementById('modalBody').innerHTML = html;
-}
-
-function briefToggle(id, checked) {
-  const item = window._briefItems.find(i=>i.id===id);
-  if(item) {
-    item.checked = checked;
-    const el = document.getElementById('brief-item-'+id);
-    if(el) el.style.background = checked ? 'var(--bg)' : 'var(--bg2)';
-  }
-}
-
-function briefNote(id, note) {
-  const item = window._briefItems.find(i=>i.id===id);
-  if(item) item.note = note;
-}
-
-function briefCheckAll(checked) {
-  window._briefItems.forEach(item => {
-    item.checked = checked;
-    const el = document.getElementById('brief-item-'+item.id);
-    if(el) {
-      el.querySelector('input[type=checkbox]').checked = checked;
-      el.style.background = checked ? 'var(--bg)' : 'var(--bg2)';
-    }
-  });
-}
-
-let customTaskCount = 0;
-function briefAddCustomTask() {
-  const id = 'custom-' + customTaskCount++;
-  const div = document.createElement('div');
-  div.id = id;
-  div.style.cssText = 'display:flex;gap:8px;margin-bottom:6px;align-items:flex-start';
-  div.innerHTML = `
-    <input type="checkbox" checked style="margin-top:8px;flex-shrink:0" onchange="this.parentElement.style.opacity=this.checked?'1':'0.5'">
-    <textarea placeholder="Describe the task for your VA..." 
-      style="flex:1;font-size:12px;padding:6px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;font-family:inherit"
-      rows="2" id="${id}-text"></textarea>
-    <button onclick="document.getElementById('${id}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:6px;font-size:16px;flex-shrink:0">×</button>`;
-  document.getElementById('customTasks').appendChild(div);
-}
-
-function showReportView() {
-  if(window._briefData && window._briefPostIdx !== undefined) {
-    renderReportModal(window._briefData, window._briefPostIdx);
-  }
-}
-
-function downloadBriefPDF() {
-  const data = window._briefData;
-  const r = data?.report;
-  if(!data) return;
-
-  const checkedItems = (window._briefItems||[]).filter(i=>i.checked);
-  
-  // Gather custom tasks
-  const customTasks = [];
-  document.querySelectorAll('[id^="custom-"]').forEach(el => {
-    const cb = el.querySelector('input[type=checkbox]');
-    const ta = el.querySelector('textarea');
-    if(cb?.checked && ta?.value.trim()) customTasks.push(ta.value.trim());
-  });
-
-  const priorityColor = p => p==='critical'?'#A32D2D':p==='high'?'#854F0B':'#185FA5';
-  const priorityBg = p => p==='critical'?'#FCEBEB':p==='high'?'#FAEEDA':'#E6F1FB';
-
-  // Build print-friendly HTML
-  const printHTML = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Post Update Brief — ${data.postTitle}</title>
-<style>
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a18;font-size:13px;line-height:1.5;margin:0;padding:0}
-  .page{max-width:800px;margin:0 auto;padding:32px}
-  h1{font-size:20px;font-weight:600;margin:0 0 4px}
-  .meta{font-size:11px;color:#6b6b67;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid #ddd}
-  .meta a{color:#378ADD}
-  .section-header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#6b6b67;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #eee}
-  .task{display:flex;gap:10px;padding:10px 12px;border:1px solid #eee;border-left:3px solid #ccc;border-radius:6px;margin-bottom:6px;break-inside:avoid}
-  .task-body{flex:1}
-  .badge{display:inline-block;font-size:9px;padding:1px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-right:4px}
-  .task-text{font-size:12px;font-weight:500;margin:4px 0 2px}
-  .task-action{font-size:11px;color:#6b6b67;margin-bottom:4px}
-  .task-suggested{font-size:11px;color:#3B6D11;background:#EAF3DE;padding:6px 8px;border-radius:4px;margin-top:4px}
-  .task-note{font-size:11px;color:#185FA5;background:#E6F1FB;padding:6px 8px;border-radius:4px;margin-top:4px;font-style:italic}
-  .checkbox{width:16px;height:16px;border:2px solid #ccc;border-radius:3px;flex-shrink:0;margin-top:3px;display:flex;align-items:center;justify-content:center;font-size:10px}
-  .summary-box{background:#f5f4f0;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#6b6b67;line-height:1.6}
-  .footer{margin-top:32px;padding-top:12px;border-top:1px solid #eee;font-size:10px;color:#9b9b97;text-align:center}
-  @media print{body{font-size:11px}.page{padding:20px}h1{font-size:16px}}
-</style>
-</head>
-<body>
-<div class="page">
-  <h1>${data.postTitle}</h1>
-  <div class="meta">
-    <a href="${data.postUrl}" target="_blank">${data.postUrl}</a><br>
-    Published: ${data.publishDate||'—'} &nbsp;·&nbsp; Modified: ${data.modifiedDate||'—'} &nbsp;·&nbsp; Est. update time: ${r?.estimatedUpdateTime||'—'} &nbsp;·&nbsp; Link issues: ${data.brokenLinksCount||0}
-    &nbsp;·&nbsp; Brief generated: ${new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}
+  window._briefItems=items;window._briefData=data;window._briefPostIdx=postIdx;
+  const pc=p=>p==='critical'?'var(--red)':p==='high'?'var(--amber)':'var(--blue)';
+  const pb=p=>p==='critical'?'var(--red-bg)':p==='high'?'var(--amber-bg)':'var(--blue-bg)';
+  const pt=p=>p==='critical'?'var(--red-text)':p==='high'?'var(--amber-text)':'var(--blue-text)';
+  let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <div><div style="font-size:13px;font-weight:500">📋 Build Post Update Brief</div><div style="font-size:11px;color:var(--text2)">${data.postTitle} — check what to include, add notes, then download</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="briefCheckAll(true)">Check all</button><button class="btn btn-sm" onclick="briefCheckAll(false)">Uncheck all</button><button class="btn btn-primary btn-sm" onclick="downloadBriefPDF()">⬇ Download PDF</button></div>
   </div>
-  
-  ${r?.summary ? `<div class="summary-box">${r.summary}</div>` : ''}
-
-  ${(() => {
-    let html = '';
-    let currentSection = '';
-    checkedItems.forEach(item => {
-      if(item.section !== currentSection) {
-        currentSection = item.section;
-        html += `<div class="section-header">${item.section}</div>`;
-      }
-      html += `
-        <div class="task" style="border-left-color:${priorityColor(item.priority)}">
-          <div class="checkbox" style="border-color:${priorityColor(item.priority)};background:${priorityBg(item.priority)};color:${priorityColor(item.priority)}">✓</div>
-          <div class="task-body">
-            <div>
-              <span class="badge" style="background:${priorityBg(item.priority)};color:${priorityColor(item.priority)}">${item.type}</span>
-              <span style="font-size:10px;color:${priorityColor(item.priority)};font-weight:600">${item.priority}</span>
-            </div>
-            <div class="task-text">${item.text}</div>
-            ${item.action ? `<div class="task-action">${item.action}</div>` : ''}
-            ${item.suggested ? `<div class="task-suggested"><strong>Suggested text:</strong> ${item.suggested}</div>` : ''}
-            ${item.note ? `<div class="task-note">📝 Note: ${item.note}</div>` : ''}
-          </div>
-        </div>`;
-    });
-    return html;
-  })()}
-
-  ${customTasks.length > 0 ? `
-    <div class="section-header">Additional tasks</div>
-    ${customTasks.map(t=>`
-      <div class="task" style="border-left-color:#639922">
-        <div class="checkbox" style="border-color:#639922;background:#EAF3DE;color:#3B6D11">✓</div>
-        <div class="task-body"><div class="task-text">${t}</div></div>
-      </div>`).join('')}
-  ` : ''}
-
-  <div class="footer">Generated by Bloopi · ${data.postUrl}</div>
-</div>
-</body>
-</html>`;
-
-  // Open print dialog
-  const printWindow = window.open('', '_blank');
+  <div style="font-size:11px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:var(--radius)">✅ Checked items = included in PDF for your VA &nbsp;·&nbsp; 📝 Add notes to any item &nbsp;·&nbsp; ➕ Add your own tasks at the bottom</div>`;
+  let currentSection='';
+  items.forEach(item=>{
+    if(item.section!==currentSection){currentSection=item.section;html+=`<div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 6px;padding-bottom:4px;border-bottom:0.5px solid var(--border)">${item.section}</div>`;}
+    html+=`<div id="brief-item-${item.id}" style="display:flex;gap:8px;padding:8px;border:0.5px solid var(--border);border-left:3px solid ${pc(item.priority)};border-radius:var(--radius);margin-bottom:6px;background:${item.checked?'var(--bg)':'var(--bg2)'}">
+      <input type="checkbox" ${item.checked?'checked':''} onchange="briefToggle(${item.id},this.checked)" style="margin-top:3px;flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap"><span style="font-size:10px;padding:1px 6px;border-radius:var(--radius);background:${pb(item.priority)};color:${pt(item.priority)};text-transform:uppercase">${item.type}</span><span style="font-size:10px;color:${pt(item.priority)};font-weight:500">${item.priority}</span></div>
+        <div style="font-size:12px;color:var(--text);margin-bottom:3px">${item.text}</div>
+        ${item.action?`<div style="font-size:11px;color:var(--text2);margin-bottom:4px">${item.action}</div>`:''}
+        ${item.suggested?`<div style="font-size:11px;color:var(--green-text);background:var(--green-bg);padding:6px 8px;border-radius:var(--radius);margin-bottom:4px"><strong>Suggested:</strong> ${item.suggested}</div>`:''}
+        <textarea placeholder="Add a note for your VA (optional)..." onchange="briefNote(${item.id},this.value)" style="width:100%;font-size:11px;padding:4px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;min-height:28px;margin-top:4px;font-family:inherit" rows="1">${item.note}</textarea>
+      </div>
+    </div>`;
+  });
+  html+=`<div style="margin-top:16px;padding-top:12px;border-top:0.5px solid var(--border)"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px">➕ ADD YOUR OWN TASKS</div><div id="customTasks"></div><button class="btn btn-sm" onclick="briefAddCustomTask()" style="margin-top:6px">+ Add task</button></div>
+  <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" onclick="downloadBriefPDF()">⬇ Download Brief PDF</button><button class="btn btn-sm" onclick="showReportView()">← Back to report</button></div>`;
+  document.getElementById('modalBody').innerHTML=html;
+}
+function briefToggle(id,checked){const item=window._briefItems.find(i=>i.id===id);if(item){item.checked=checked;const el=document.getElementById('brief-item-'+id);if(el)el.style.background=checked?'var(--bg)':'var(--bg2)';}}
+function briefNote(id,note){const item=window._briefItems.find(i=>i.id===id);if(item)item.note=note;}
+function briefCheckAll(checked){window._briefItems.forEach(item=>{item.checked=checked;const el=document.getElementById('brief-item-'+item.id);if(el){el.querySelector('input[type=checkbox]').checked=checked;el.style.background=checked?'var(--bg)':'var(--bg2)';}});}
+let customTaskCount=0;
+function briefAddCustomTask(){const id='custom-'+customTaskCount++;const div=document.createElement('div');div.id=id;div.style.cssText='display:flex;gap:8px;margin-bottom:6px;align-items:flex-start';div.innerHTML=`<input type="checkbox" checked style="margin-top:8px;flex-shrink:0" onchange="this.parentElement.style.opacity=this.checked?'1':'0.5'"><textarea placeholder="Describe the task for your VA..." style="flex:1;font-size:12px;padding:6px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;font-family:inherit" rows="2" id="${id}-text"></textarea><button onclick="document.getElementById('${id}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:6px;font-size:16px;flex-shrink:0">×</button>`;document.getElementById('customTasks').appendChild(div);}
+function showReportView(){if(window._briefData&&window._briefPostIdx!==undefined)renderReportModal(window._briefData,window._briefPostIdx);}
+function downloadBriefPDF(){
+  const data=window._briefData,r=data?.report;
+  if(!data)return;
+  const checkedItems=(window._briefItems||[]).filter(i=>i.checked);
+  const customTasks=[];
+  document.querySelectorAll('[id^="custom-"]').forEach(el=>{const cb=el.querySelector('input[type=checkbox]');const ta=el.querySelector('textarea');if(cb?.checked&&ta?.value.trim())customTasks.push(ta.value.trim());});
+  const pColor=p=>p==='critical'?'#A32D2D':p==='high'?'#854F0B':'#185FA5';
+  const pBg=p=>p==='critical'?'#FCEBEB':p==='high'?'#FAEEDA':'#E6F1FB';
+  const printHTML=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Post Update Brief — ${data.postTitle}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a18;font-size:13px;line-height:1.5;margin:0;padding:0}.page{max-width:800px;margin:0 auto;padding:32px}h1{font-size:20px;font-weight:600;margin:0 0 4px}.meta{font-size:11px;color:#6b6b67;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid #ddd}.meta a{color:#378ADD}.section-header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#6b6b67;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #eee}.task{display:flex;gap:10px;padding:10px 12px;border:1px solid #eee;border-left:3px solid #ccc;border-radius:6px;margin-bottom:6px;break-inside:avoid}.task-body{flex:1}.badge{display:inline-block;font-size:9px;padding:1px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-right:4px}.task-text{font-size:12px;font-weight:500;margin:4px 0 2px}.task-action{font-size:11px;color:#6b6b67;margin-bottom:4px}.task-suggested{font-size:11px;color:#3B6D11;background:#EAF3DE;padding:6px 8px;border-radius:4px;margin-top:4px}.task-note{font-size:11px;color:#185FA5;background:#E6F1FB;padding:6px 8px;border-radius:4px;margin-top:4px;font-style:italic}.checkbox{width:16px;height:16px;border:2px solid #ccc;border-radius:3px;flex-shrink:0;margin-top:3px;display:flex;align-items:center;justify-content:center;font-size:10px}.summary-box{background:#f5f4f0;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#6b6b67;line-height:1.6}.footer{margin-top:32px;padding-top:12px;border-top:1px solid #eee;font-size:10px;color:#9b9b97;text-align:center}@media print{body{font-size:11px}.page{padding:20px}h1{font-size:16px}}</style></head><body><div class="page"><h1>${data.postTitle}</h1><div class="meta"><a href="${data.postUrl}" target="_blank">${data.postUrl}</a><br>Published: ${data.publishDate||'—'} &nbsp;·&nbsp; Modified: ${data.modifiedDate||'—'} &nbsp;·&nbsp; Est. update time: ${r?.estimatedUpdateTime||'—'} &nbsp;·&nbsp; Link issues: ${data.brokenLinksCount||0} &nbsp;·&nbsp; Brief generated: ${new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</div>${r?.summary?`<div class="summary-box">${r.summary}</div>`:''}${(()=>{let html='',cs='';checkedItems.forEach(item=>{if(item.section!==cs){cs=item.section;html+=`<div class="section-header">${item.section}</div>`;}html+=`<div class="task" style="border-left-color:${pColor(item.priority)}"><div class="checkbox" style="border-color:${pColor(item.priority)};background:${pBg(item.priority)};color:${pColor(item.priority)}">✓</div><div class="task-body"><div><span class="badge" style="background:${pBg(item.priority)};color:${pColor(item.priority)}">${item.type}</span><span style="font-size:10px;color:${pColor(item.priority)};font-weight:600">${item.priority}</span></div><div class="task-text">${item.text}</div>${item.action?`<div class="task-action">${item.action}</div>`:''} ${item.suggested?`<div class="task-suggested"><strong>Suggested text:</strong> ${item.suggested}</div>`:''} ${item.note?`<div class="task-note">📝 Note: ${item.note}</div>`:''}</div></div>`;});return html;})()}${customTasks.length>0?`<div class="section-header">Additional tasks</div>${customTasks.map(t=>`<div class="task" style="border-left-color:#639922"><div class="checkbox" style="border-color:#639922;background:#EAF3DE;color:#3B6D11">✓</div><div class="task-body"><div class="task-text">${t}</div></div></div>`).join('')}`:''}  <div class="footer">Generated by Bloopi · ${data.postUrl}</div></div></body></html>`;
+  const printWindow=window.open('','_blank');
   printWindow.document.write(printHTML);
   printWindow.document.close();
-  printWindow.addEventListener('load', () => {
-    setTimeout(() => printWindow.print(), 500);
-  });
+  printWindow.addEventListener('load',()=>{setTimeout(()=>printWindow.print(),500);});
 }
 </script>
 </body>
