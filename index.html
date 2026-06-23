@@ -503,9 +503,9 @@ async function generateSEOContent(idea,data){
   const modal=document.getElementById('modalBody');
   modal.innerHTML=`<div class="report-loading">✨ Generating: "${idea}"...<br><span style="font-size:11px;margin-top:8px;display:block">About 15-20 seconds</span></div>`;
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`You are helping a travel blogger named Kimmie update her post titled "${data.postTitle}" at ${data.postUrl}.\n\nHer writing voice: casual first-person, discovery energy, quick humor injections, direct practical advice, no generic filler, no prices.\n\nSEO task: ${idea}\n\nPost context: ${data.report?.summary||''}\n\nGenerate the requested content (table, FAQ, schema, heading, etc.) ready to copy-paste into WordPress. For tables use simple HTML. For FAQ use H3 headings with paragraph answers in Kimmie's voice. For schema markup provide the JSON-LD script tag. Keep it concise and useful.`}]})});
-    const json=await res.json();
-    const generated=json.content?.[0]?.text||'Could not generate content.';
+const res=await fetch('/api/generate-seo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea,postTitle:data.postTitle,postUrl:data.postUrl,summary:data.report?.summary})});
+const json=await res.json();
+const generated=json.generated||json.error||'Could not generate content.';
     modal.innerHTML=`
       <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div style="font-size:13px;font-weight:500">✨ ${idea}</div>
