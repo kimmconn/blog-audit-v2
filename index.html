@@ -467,7 +467,7 @@ function renderReportModal(data,postIdx){
       const canGenerate=typeof win==='object'&&win.canGenerate;
       html+=`<li class="quick-win" style="background:var(--blue-bg);color:var(--blue-text);justify-content:space-between;align-items:center">
         <span style="display:flex;gap:8px;align-items:flex-start"><span>→</span><span>${idea}</span></span>
-        ${canGenerate?`<button class="btn btn-sm" style="flex-shrink:0;margin-left:8px" onclick="generateSEOContent(${JSON.stringify(idea)},window._lastReportData)">✨ Generate</button>`:''}
+        ${canGenerate?`<button class="btn btn-sm" style="flex-shrink:0;margin-left:8px" onclick="generateSEOContent(this.dataset.idea,window._lastReportData)" data-idea="${idea.replace(/"/g,'&quot;')}">✨ Generate</button>`:''}
       </li>`;
     });
     html+=`</ul></div>`;
