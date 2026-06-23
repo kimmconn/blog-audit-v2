@@ -459,15 +459,18 @@ function renderReportModal(data,postIdx){
     });
     html+=`</div>`;
   }
-// SEO quick wins with Generate buttons
+  // SEO quick wins with Generate buttons
   if(r.seoQuickWins?.length){
     html+=`<div class="report-section"><div class="report-section-title">📈 SEO quick wins</div><ul class="quick-wins">`;
-    r.seoQuickWins.forEach((win)=>{
+    r.seoQuickWins.forEach((win,_wi)=>{
       const idea=typeof win==='string'?win:(win&&win.idea?win.idea:'SEO improvement');
       const canGenerate=typeof win==='object'&&win.canGenerate;
+      const safeId='seowin_'+_wi;
+      window._seoIdeas=window._seoIdeas||{};
+      window._seoIdeas[safeId]=idea;
       html+=`<li class="quick-win" style="background:var(--blue-bg);color:var(--blue-text);justify-content:space-between;align-items:center">
         <span style="display:flex;gap:8px;align-items:flex-start"><span>→</span><span>${idea}</span></span>
-        ${canGenerate?`<button class="btn btn-sm" style="flex-shrink:0;margin-left:8px" onclick="generateSEOContent(this.dataset.idea,window._lastReportData)" data-idea="${idea.replace(/"/g,'&quot;')}">✨ Generate</button>`:''}
+        ${canGenerate?`<button class="btn btn-sm" style="flex-shrink:0;margin-left:8px" onclick="generateSEOContent(window._seoIdeas['${safeId}'],window._lastReportData)">✨ Generate</button>`:''}
       </li>`;
     });
     html+=`</ul></div>`;
