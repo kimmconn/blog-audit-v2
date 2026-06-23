@@ -560,6 +560,7 @@ function renderReportModal(data,postIdx){
           ${fix.currentText?`<div class="report-item-quote">"${fix.currentText}"</div>`:''}
           <div class="report-item-issue" style="margin-bottom:6px">${fix.action||''}</div>
           ${fix.suggestedText?`<div style="background:var(--green-bg);border-radius:var(--radius);padding:8px;font-size:11px;color:var(--green-text);margin-top:4px"><strong>Suggested:</strong> ${fix.suggestedText}</div>`:''}
+          ${fix.editorNote?`<div style="background:var(--blue-bg);border-radius:var(--radius);padding:8px;font-size:11px;color:var(--blue-text);margin-top:4px"><strong>📝 Editor note:</strong> ${fix.editorNote}</div>`:''}
         </div>`;
       });
       html+=`</div>`;
