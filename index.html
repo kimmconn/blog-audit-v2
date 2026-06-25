@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bloopi</title>
+<title>Blog Audit Dashboard</title>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   :root{--bg:#fff;--bg2:#f5f4f0;--bg3:#eeede9;--text:#1a1a18;--text2:#6b6b67;--text3:#9b9b97;--border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.2);--radius:8px;--radius-lg:12px;--red:#E24B4A;--red-bg:#FCEBEB;--red-text:#A32D2D;--amber:#BA7517;--amber-bg:#FAEEDA;--amber-text:#854F0B;--blue:#378ADD;--blue-bg:#E6F1FB;--blue-text:#185FA5;--green:#639922;--green-bg:#EAF3DE;--green-text:#3B6D11;--purple:#7C3AED;--purple-bg:#F3EEFF;--purple-text:#5B21B6}
@@ -503,9 +503,9 @@ async function generateSEOContent(idea,data){
   const modal=document.getElementById('modalBody');
   modal.innerHTML=`<div class="report-loading">✨ Generating: "${idea}"...<br><span style="font-size:11px;margin-top:8px;display:block">About 15-20 seconds</span></div>`;
   try{
-const res=await fetch('/api/generate-seo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea,postTitle:data.postTitle,postUrl:data.postUrl,summary:data.report?.summary})});
-const json=await res.json();
-const generated=json.generated||json.error||'Could not generate content.';
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:`You are helping a travel blogger named Kimmie update her post titled "${data.postTitle}" at ${data.postUrl}.\n\nHer writing voice: casual first-person, discovery energy, quick humor injections, direct practical advice, no generic filler, no prices.\n\nSEO task: ${idea}\n\nPost context: ${data.report?.summary||''}\n\nGenerate the requested content (table, FAQ, schema, heading, etc.) ready to copy-paste into WordPress. For tables use simple HTML. For FAQ use H3 headings with paragraph answers in Kimmie's voice. For schema markup provide the JSON-LD script tag. Keep it concise and useful.`}]})});
+    const json=await res.json();
+    const generated=json.content?.[0]?.text||'Could not generate content.';
     modal.innerHTML=`
       <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div style="font-size:13px;font-weight:500">✨ ${idea}</div>
@@ -762,15 +762,17 @@ renderTable();
 function openBriefBuilder(data,postIdx){
   const r=data.report;
   let items=[],itemId=0;
-  // Add all venue checks
-  (data.venueChecks||[]).forEach(v=>{
-    items.push({id:itemId++,checked:v.flag,section:'📍 Venue verification',
-      type:v.flag?(v.status==='permanently_closed'?'❌ permanently closed':'⚠️ temporarily closed'):'✓ verified open',
-      priority:v.flag?'critical':'medium',
+  // Add closed venues as checkable tasks
+  (data.venueChecks||[]).filter(v=>v.flag).forEach(v=>{
+    items.push({id:itemId++,checked:true,section:'📍 Venue verification',
+      type:v.status==='permanently_closed'?'❌ permanently closed':'⚠️ temporarily closed',
+      priority:'critical',
       text:`${v.venue}${v.address?' — '+v.address:''}`,
-      action:v.flag?'Remove or replace all mentions':'Confirmed open via Google Maps — no action needed',
-      suggested:'',note:v.editorNote||''});
+      action:'Remove or replace all mentions',
+      suggested:v.suggestedText||'',note:v.editorNote||''});
   });
+  // Store open venues separately for display (not as tasks)
+  window._openVenues=(data.venueChecks||[]).filter(v=>!v.flag).map(v=>v.venue);
   // Add section fixes
   (r.sections||[]).forEach(section=>{
     (section.fixes||[]).forEach(fix=>{
@@ -795,11 +797,13 @@ function openBriefBuilder(data,postIdx){
   const pc=p=>p==='critical'?'var(--red)':p==='high'?'var(--amber)':'var(--blue)';
   const pb=p=>p==='critical'?'var(--red-bg)':p==='high'?'var(--amber-bg)':'var(--blue-bg)';
   const pt=p=>p==='critical'?'var(--red-text)':p==='high'?'var(--amber-text)':'var(--blue-text)';
+  const openVenues=window._openVenues||[];
   let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
     <div><div style="font-size:13px;font-weight:500">📋 Build Post Update Brief</div><div style="font-size:11px;color:var(--text2)">${data.postTitle} — check what to include, add notes, then download</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="briefCheckAll(true)">Check all</button><button class="btn btn-sm" onclick="briefCheckAll(false)">Uncheck all</button><button class="btn btn-primary btn-sm" onclick="downloadBriefPDF()">⬇ Download PDF</button></div>
   </div>
-  <div style="font-size:11px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:var(--radius)">✅ Checked items = included in PDF for your VA &nbsp;·&nbsp; 📝 Add notes to any item &nbsp;·&nbsp; ➕ Add your own tasks at the bottom</div>`;
+  <div style="font-size:11px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:var(--radius)">✅ Checked items = included in PDF for your VA &nbsp;·&nbsp; 📝 Add notes to any item &nbsp;·&nbsp; ➕ Add your own tasks at the bottom</div>
+  ${openVenues.length>0?`<div style="margin-bottom:12px;padding:8px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:11px;color:var(--green-text)"><strong>✓ Verified open via Google Maps:</strong> ${openVenues.join(' · ')}</div>`:''}\`;
   let currentSection='';
   items.forEach(item=>{
     if(item.section!==currentSection){currentSection=item.section;html+=`<div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 6px;padding-bottom:4px;border-bottom:0.5px solid var(--border)">${item.section}</div>`;}
@@ -810,7 +814,8 @@ function openBriefBuilder(data,postIdx){
         <div style="font-size:12px;color:var(--text);margin-bottom:3px">${item.text}</div>
         ${item.action?`<div style="font-size:11px;color:var(--text2);margin-bottom:4px">${item.action}</div>`:''}
         ${item.suggested?`<div style="font-size:11px;color:var(--green-text);background:var(--green-bg);padding:6px 8px;border-radius:var(--radius);margin-bottom:4px"><strong>Suggested:</strong> ${item.suggested}</div>`:''}
-        <textarea placeholder="Add a note for your VA (optional)..." onchange="briefNote(${item.id},this.value)" style="width:100%;font-size:11px;padding:4px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;min-height:28px;margin-top:4px;font-family:inherit" rows="1">${item.note}</textarea>
+        ${item.note?`<div style="font-size:11px;color:var(--blue-text);background:var(--blue-bg);padding:6px 8px;border-radius:var(--radius);margin-bottom:4px"><strong>📝 Note:</strong> ${item.note}</div>`:''}
+        <textarea placeholder="Add your own note..." onchange="briefNote(${item.id},this.value)" style="width:100%;font-size:11px;padding:4px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;min-height:28px;margin-top:4px;font-family:inherit" rows="1"></textarea>
       </div>
     </div>`;
   });
@@ -832,7 +837,7 @@ function downloadBriefPDF(){
   document.querySelectorAll('[id^="custom-"]').forEach(el=>{const cb=el.querySelector('input[type=checkbox]');const ta=el.querySelector('textarea');if(cb?.checked&&ta?.value.trim())customTasks.push(ta.value.trim());});
   const pColor=p=>p==='critical'?'#A32D2D':p==='high'?'#854F0B':'#185FA5';
   const pBg=p=>p==='critical'?'#FCEBEB':p==='high'?'#FAEEDA':'#E6F1FB';
-  const printHTML=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Post Update Brief — ${data.postTitle}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a18;font-size:13px;line-height:1.5;margin:0;padding:0}.page{max-width:800px;margin:0 auto;padding:32px}h1{font-size:20px;font-weight:600;margin:0 0 4px}.meta{font-size:11px;color:#6b6b67;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid #ddd}.meta a{color:#378ADD}.section-header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#6b6b67;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #eee}.task{display:flex;gap:10px;padding:10px 12px;border:1px solid #eee;border-left:3px solid #ccc;border-radius:6px;margin-bottom:6px;break-inside:avoid}.task-body{flex:1}.badge{display:inline-block;font-size:9px;padding:1px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-right:4px}.task-text{font-size:12px;font-weight:500;margin:4px 0 2px}.task-action{font-size:11px;color:#6b6b67;margin-bottom:4px}.task-suggested{font-size:11px;color:#3B6D11;background:#EAF3DE;padding:6px 8px;border-radius:4px;margin-top:4px}.task-note{font-size:11px;color:#185FA5;background:#E6F1FB;padding:6px 8px;border-radius:4px;margin-top:4px;font-style:italic}.checkbox{width:16px;height:16px;border:2px solid #ccc;border-radius:3px;flex-shrink:0;margin-top:3px;display:flex;align-items:center;justify-content:center;font-size:10px}.summary-box{background:#f5f4f0;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#6b6b67;line-height:1.6}.footer{margin-top:32px;padding-top:12px;border-top:1px solid #eee;font-size:10px;color:#9b9b97;text-align:center}@media print{body{font-size:11px}.page{padding:20px}h1{font-size:16px}}</style></head><body><div class="page"><h1>${data.postTitle}</h1><div class="meta"><a href="${data.postUrl}" target="_blank">${data.postUrl}</a><br>Published: ${data.publishDate||'—'} &nbsp;·&nbsp; Modified: ${data.modifiedDate||'—'} &nbsp;·&nbsp; Est. update time: ${r?.estimatedUpdateTime||'—'} &nbsp;·&nbsp; Link issues: ${data.brokenLinksCount||0} &nbsp;·&nbsp; Brief generated: ${new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</div>${r?.summary?`<div class="summary-box">${r.summary}</div>`:''}${(()=>{let html='',cs='';checkedItems.forEach(item=>{if(item.section!==cs){cs=item.section;html+=`<div class="section-header">${item.section}</div>`;}html+=`<div class="task" style="border-left-color:${pColor(item.priority)}"><div class="checkbox" style="border-color:${pColor(item.priority)};background:${pBg(item.priority)};color:${pColor(item.priority)}">✓</div><div class="task-body"><div><span class="badge" style="background:${pBg(item.priority)};color:${pColor(item.priority)}">${item.type}</span><span style="font-size:10px;color:${pColor(item.priority)};font-weight:600">${item.priority}</span></div><div class="task-text">${item.text}</div>${item.action?`<div class="task-action">${item.action}</div>`:''} ${item.suggested?`<div class="task-suggested"><strong>Suggested text:</strong> ${item.suggested}</div>`:''} ${item.note?`<div class="task-note">📝 Note: ${item.note}</div>`:''}</div></div>`;});return html;})()}${customTasks.length>0?`<div class="section-header">Additional tasks</div>${customTasks.map(t=>`<div class="task" style="border-left-color:#639922"><div class="checkbox" style="border-color:#639922;background:#EAF3DE;color:#3B6D11">✓</div><div class="task-body"><div class="task-text">${t}</div></div></div>`).join('')}`:''}  <div class="footer">Generated by Bloopi · ${data.postUrl}</div></div></body></html>`;
+  const printHTML=`<!DOCTYPE html><html dir="ltr"><head><meta charset="UTF-8"><title>Post Update Brief — ${data.postTitle}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a18;font-size:13px;line-height:1.5;margin:0;padding:0}.page{max-width:800px;margin:0 auto;padding:32px}h1{font-size:20px;font-weight:600;margin:0 0 4px}.meta{font-size:11px;color:#6b6b67;margin-bottom:24px;padding-bottom:12px;border-bottom:1px solid #ddd}.meta a{color:#378ADD}.section-header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#6b6b67;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #eee}.task{display:flex;gap:10px;padding:10px 12px;border:1px solid #eee;border-left:3px solid #ccc;border-radius:6px;margin-bottom:6px;break-inside:avoid}.task-body{flex:1}.badge{display:inline-block;font-size:9px;padding:1px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-right:4px}.task-text{font-size:12px;font-weight:500;margin:4px 0 2px}.task-action{font-size:11px;color:#6b6b67;margin-bottom:4px}.task-suggested{font-size:11px;color:#3B6D11;background:#EAF3DE;padding:6px 8px;border-radius:4px;margin-top:4px}.task-note{font-size:11px;color:#185FA5;background:#E6F1FB;padding:6px 8px;border-radius:4px;margin-top:4px;font-style:italic}.checkbox{width:16px;height:16px;border:2px solid #ccc;border-radius:3px;flex-shrink:0;margin-top:3px;display:flex;align-items:center;justify-content:center;font-size:10px}.summary-box{background:#f5f4f0;border-radius:8px;padding:12px;margin-bottom:16px;font-size:12px;color:#6b6b67;line-height:1.6}.footer{margin-top:32px;padding-top:12px;border-top:1px solid #eee;font-size:10px;color:#9b9b97;text-align:center}@media print{body{font-size:11px}.page{padding:20px}h1{font-size:16px}}</style></head><body><div class="page"><h1>${data.postTitle}</h1><div class="meta"><a href="${data.postUrl}" target="_blank">${data.postUrl}</a><br>Published: ${data.publishDate||'—'} &nbsp;·&nbsp; Modified: ${data.modifiedDate||'—'} &nbsp;·&nbsp; Est. update time: ${r?.estimatedUpdateTime||'—'} &nbsp;·&nbsp; Link issues: ${data.brokenLinksCount||0} &nbsp;·&nbsp; Brief generated: ${new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</div>${r?.summary?`<div class="summary-box">${r.summary}</div>`:''}${(()=>{let html='',cs='';checkedItems.forEach(item=>{if(item.section!==cs){cs=item.section;html+=`<div class="section-header">${item.section}</div>`;}html+=`<div class="task" style="border-left-color:${pColor(item.priority)}"><div class="checkbox" style="border-color:${pColor(item.priority)};background:${pBg(item.priority)};color:${pColor(item.priority)}">✓</div><div class="task-body"><div><span class="badge" style="background:${pBg(item.priority)};color:${pColor(item.priority)}">${item.type}</span><span style="font-size:10px;color:${pColor(item.priority)};font-weight:600">${item.priority}</span></div><div class="task-text">${item.text}</div>${item.action?`<div class="task-action">${item.action}</div>`:''} ${item.suggested?`<div class="task-suggested"><strong>Suggested text:</strong> ${item.suggested}</div>`:''} ${item.note?`<div class="task-note"><strong>📝 Editor note:</strong> ${item.note}</div>`:''}</div></div>`;});return html;})()}${customTasks.length>0?`<div class="section-header">Additional tasks</div>${customTasks.map(t=>`<div class="task" style="border-left-color:#639922"><div class="checkbox" style="border-color:#639922;background:#EAF3DE;color:#3B6D11">✓</div><div class="task-body"><div class="task-text">${t}</div></div></div>`).join('')}`:''}  <div class="footer">Generated by Bloopi · ${data.postUrl}</div></div></body></html>`;
   const printWindow=window.open('','_blank');
   printWindow.document.write(printHTML);
   printWindow.document.close();
