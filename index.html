@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Blog Audit Dashboard</title>
+<title>Bloopi</title>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   :root{--bg:#fff;--bg2:#f5f4f0;--bg3:#eeede9;--text:#1a1a18;--text2:#6b6b67;--text3:#9b9b97;--border:rgba(0,0,0,0.12);--border2:rgba(0,0,0,0.2);--radius:8px;--radius-lg:12px;--red:#E24B4A;--red-bg:#FCEBEB;--red-text:#A32D2D;--amber:#BA7517;--amber-bg:#FAEEDA;--amber-text:#854F0B;--blue:#378ADD;--blue-bg:#E6F1FB;--blue-text:#185FA5;--green:#639922;--green-bg:#EAF3DE;--green-text:#3B6D11;--purple:#7C3AED;--purple-bg:#F3EEFF;--purple-text:#5B21B6}
@@ -803,7 +803,7 @@ function openBriefBuilder(data,postIdx){
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" onclick="briefCheckAll(true)">Check all</button><button class="btn btn-sm" onclick="briefCheckAll(false)">Uncheck all</button><button class="btn btn-primary btn-sm" onclick="downloadBriefPDF()">⬇ Download PDF</button></div>
   </div>
   <div style="font-size:11px;color:var(--text2);margin-bottom:12px;padding:8px;background:var(--bg2);border-radius:var(--radius)">✅ Checked items = included in PDF for your VA &nbsp;·&nbsp; 📝 Add notes to any item &nbsp;·&nbsp; ➕ Add your own tasks at the bottom</div>
-  ${openVenues.length>0?`<div style="margin-bottom:12px;padding:8px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:11px;color:var(--green-text)"><strong>✓ Verified open via Google Maps:</strong> ${openVenues.join(' · ')}</div>`:''}\`;
+  ${openVenues.length>0?`<div style="margin-bottom:12px;padding:8px 12px;background:var(--green-bg);border-radius:var(--radius);font-size:11px;color:var(--green-text)"><strong>✓ Verified open via Google Maps:</strong> ${openVenues.join(' · ')}</div>`:''}`;
   let currentSection='';
   items.forEach(item=>{
     if(item.section!==currentSection){currentSection=item.section;html+=`<div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin:14px 0 6px;padding-bottom:4px;border-bottom:0.5px solid var(--border)">${item.section}</div>`;}
