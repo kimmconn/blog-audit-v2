@@ -396,12 +396,12 @@ async function generateReport(postIdx,forceRefresh=false){
   document.getElementById('modalBody').innerHTML=`<div class="report-loading">⏳ ${forceRefresh?'Regenerating':'Analyzing'} with Claude AI...<br><span style="font-size:11px;margin-top:8px;display:block">This takes 1-3 minutes for a full report</span></div>`;
   document.getElementById('reportModal').style.display='flex';
   try{
-    // Build structured keyword data from GSC
+    // Build structured keyword data from GSC - keywords are stored as plain strings
     const gscKeywords = (post.gscKeywords||[]).slice(0,10).map(k=>({
-      keyword: typeof k==='string'?k:k.keyword||k,
-      impressions: typeof k==='object'?k.impressions||0:0,
-      clicks: typeof k==='object'?k.clicks||0:0
-    }));
+      keyword: typeof k==='string'?k:(k.keyword||k.keys?.[0]||String(k)),
+      impressions: typeof k==='object'&&k.impressions?k.impressions:0,
+      clicks: typeof k==='object'&&k.clicks?k.clicks:0
+    })).filter(k=>k.keyword);
     const res=await fetch(REPORT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       postId:post.id,postUrl:post.url,postTitle:post.title,siteUrl,
       gscData:{recentClicks:post.recentClicks,olderClicks:post.olderClicks,recentImpressions:post.recentImpressions,olderImpressions:post.olderImpressions,trafficDeclinePct:post.trafficDeclinePct,position:post.position},
@@ -420,6 +420,16 @@ function renderReportModal(data,postIdx){
   const r=data.report;
   const cached=data.fromCache?`<span class="tag" style="font-size:10px">cached ${new Date(data.generatedAt).toLocaleDateString()}</span>`:'<span class="tag tag-ok" style="font-size:10px">fresh</span>';
   let html=`<div class="report-meta"><span>Published: ${data.publishDate||'—'}</span><span>Modified: ${data.modifiedDate||'—'}</span><span>Link issues: ${data.brokenLinksCount||0}</span><span>Est. update time: ${r.estimatedUpdateTime||'—'}</span>${cached}<button class="btn btn-sm" style="margin-left:auto" onclick="generateReport(${postIdx},true)">↺ Regenerate</button></div>`;
+  // Top keywords in report view
+  const reportKws=(data.topGscKeywords||[]).filter(k=>k.keyword);
+  if(reportKws.length>0){
+    html+=`<div style="margin-bottom:1rem;padding:10px 12px;background:var(--purple-bg);border-radius:var(--radius);font-size:11px;color:var(--purple-text)">
+      <strong>🔑 Top keywords to weave in (${reportKws.length}):</strong>
+      <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">
+        ${reportKws.map(k=>`<span style="background:rgba(124,58,237,0.1);padding:2px 8px;border-radius:20px;font-size:10px">${k.keyword}</span>`).join('')}
+      </div>
+    </div>`;
+  }
   if(r.summary)html+=`<div class="report-section"><div class="report-section-title">📋 Summary</div><div class="report-summary">${r.summary}</div></div>`;
   // Venue verification
   if(data.venueChecks&&data.venueChecks.length>0){
@@ -538,6 +548,7 @@ async function generateSEOContent(idea,data){
       <div style="background:var(--bg2);border-radius:var(--radius);padding:16px;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-x:auto;max-height:400px;overflow-y:auto">${generated.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText(${JSON.stringify(generated)}).then(()=>{this.textContent='✓ Copied!';setTimeout(()=>this.textContent='📋 Copy to clipboard',2000)})">📋 Copy to clipboard</button>
+        <button class="btn btn-sm" style="background:var(--green-bg);color:var(--green-text);border-color:var(--green)" onclick="addGeneratedToBrief(${JSON.stringify(idea)},${JSON.stringify(generated)})">+ Add to VA brief</button>
         <button class="btn btn-sm" onclick="document.getElementById('modalBody').innerHTML=window._lastReportHTML">← Back to report</button>
       </div>`;
   }catch(e){modal.innerHTML=`<div class="report-error">❌ ${e.message}</div><button class="btn btn-sm" onclick="document.getElementById('modalBody').innerHTML=window._lastReportHTML" style="margin-top:12px">← Back</button>`;}
@@ -786,6 +797,26 @@ async function startKWScan(forceRefresh=false){
     statusEl.innerHTML=`<span class="tag tag-ok">✓ ${totalUpdated} posts have keyword data</span><button class="btn btn-sm" style="margin-left:8px" onclick="startKWScan(true)">Force rescan</button>`;
   }catch(e){banner.innerHTML=`<span style="color:var(--red-text)">❌ ${e.message}</span>`;statusEl.innerHTML='<button class="btn btn-sm btn-primary" onclick="startKWScan()">Retry</button>';}
 }
+function addGeneratedToBrief(idea, content){
+  // Add the generated content as a custom task in the brief
+  if(!window._briefItems){
+    alert('Open the VA brief first, then generate content to add it.');
+    return;
+  }
+  const id='generated-'+Date.now();
+  window._briefItems.push({id,checked:true,section:'✨ Generated content',type:'generated',priority:'high',
+    text:idea,action:'',suggested:content,note:''});
+  // If brief is open, rebuild the brief view
+  if(window._briefData&&window._briefPostIdx!==undefined){
+    openBriefBuilder(window._briefData,window._briefPostIdx);
+    // Show success toast
+    const toast=document.createElement('div');
+    toast.style.cssText='position:fixed;bottom:20px;right:20px;background:#1a1a18;color:white;padding:10px 16px;border-radius:8px;font-size:12px;z-index:9999';
+    toast.textContent='✓ Added to VA brief!';
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.remove(),2500);
+  }
+}
 renderTable();
 // ===== BRIEF BUILDER =====
 function openBriefBuilder(data,postIdx){
@@ -799,6 +830,12 @@ function openBriefBuilder(data,postIdx){
       action:'Remove or replace all mentions',suggested:v.suggestedText||'',note:v.editorNote||''});
   });
   window._openVenues=(data.venueChecks||[]).filter(v=>!v.flag).map(v=>v.venue);
+  // Quick reference lists
+  (r.quickReferenceLists||[]).forEach((list,i)=>{
+    items.push({id:itemId++,checked:true,section:'📌 Quick reference lists',type:'add list',priority:'medium',
+      text:list.title,action:(list.suggestedPlacement?'Add '+list.suggestedPlacement+': ':'')+list.items.join(', '),
+      suggested:'',note:''});
+  });
   // Section fixes
   (r.sections||[]).forEach(section=>{
     (section.fixes||[]).forEach(fix=>{
