@@ -69,6 +69,21 @@ function extractInternalLinks(html, siteUrl) {
   return internal;
 }
 
+function extractImagesWithoutAlt(html) {
+  const imgMatches = html.match(/<img[^>]+>/gi) || [];
+  const missing = [];
+  imgMatches.forEach(img => {
+    const altMatch = img.match(/alt="([^"]*)"/i);
+    const srcMatch = img.match(/src="([^"]+)"/i);
+    if (!altMatch || altMatch[1].trim() === '') {
+      const src = srcMatch ? srcMatch[1] : 'unknown';
+      const filename = src.split('/').pop().split('?')[0];
+      missing.push(filename);
+    }
+  });
+  return missing.slice(0, 10);
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -76,7 +91,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { postId, postUrl, postTitle, siteUrl, gscData, brokenLinks, forceRefresh } = req.body;
+  const { postId, postUrl, postTitle, siteUrl, gscData, brokenLinks, gscKeywords, forceRefresh } = req.body;
   if (!postId || !siteUrl) return res.status(400).json({ error: 'Missing postId or siteUrl' });
 
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -103,6 +118,7 @@ export default async function handler(req, res) {
     const rawHtml = wpData?.content?.rendered || '';
 
     const existingInternalLinks = extractInternalLinks(rawHtml, siteUrl);
+    const imagesWithoutAlt = extractImagesWithoutAlt(rawHtml);
 
     const content = rawHtml
       .replace(/<h[1-6][^>]*>/gi, '\n## ').replace(/<\/h[1-6]>/gi, '\n')
@@ -118,9 +134,17 @@ export default async function handler(req, res) {
       ? `GSC: ${gscData.recentClicks||0} clicks (recent 8mo), ${gscData.olderClicks||0} clicks (prior 8mo), ${gscData.trafficDeclinePct||0}% decline, position ${gscData.position?.toFixed(1)||'?'}, ${gscData.recentImpressions||0} impressions`
       : 'No GSC data available';
 
+    const topKeywordsContext = gscKeywords?.length > 0
+      ? `\nTOP GSC KEYWORDS FOR THIS POST (by impressions, last 6 months):\n${gscKeywords.slice(0,10).map((k,i) => `${i+1}. "${k.keyword}" — ${k.impressions} impressions, ${k.clicks} clicks`).join('\n')}\nNaturally weave these keywords into your update where relevant.`
+      : '';
+
     const linksContext = brokenLinks?.length > 0
       ? `${brokenLinks.length} potential broken links (NOTE: the link checker has false positives — always verify before flagging as broken):\n${brokenLinks.slice(0,10).map(l=>`- ${l.url} (${l.status||'timeout'})`).join('\n')}`
       : 'No broken links detected';
+
+    const altTextContext = imagesWithoutAlt.length > 0
+      ? `\nIMAGES MISSING ALT TEXT (${imagesWithoutAlt.length} found): ${imagesWithoutAlt.join(', ')}`
+      : '\nAll images appear to have alt text — do NOT suggest image alt text optimization.';
 
     const existingLinksContext = existingInternalLinks.length > 0
       ? `\nEXISTING INTERNAL LINKS ALREADY IN THIS POST (do NOT suggest these again):\n${existingInternalLinks.join('\n')}`
@@ -151,54 +175,43 @@ ABOUT KIMMIE'S WRITING VOICE:
 CRITICAL RULES:
 
 PRICES:
-- General price references like "less than $200 a night" or "under $50" are FINE and useful — flag them to verify accuracy, do not remove them
+- General price references like "less than $200 a night" or "under $50" are FINE — flag to verify, do not remove
 - NEVER invent specific prices — only flag existing ones to verify
 - Croatia switched to Euro January 2023 — never suggest HRK prices
 - For prices that need checking: editorNote should say "Verify this price is still accurate at [official website]"
-- Do NOT suggest removing general price ballparks — they help readers plan
 
 BROKEN LINKS:
-- The link checker has a HIGH FALSE POSITIVE RATE — many "broken" links actually work fine
-- ALWAYS start the action with: "Check if this link is actually broken first (the link checker is often wrong). If broken, [then what to do]"
-- NEVER say "replace with affiliate link" or suggest adding affiliate links — Kimmie handles all affiliate links herself
-- For tour/activity links: editorNote should say "If broken, find a replacement on GetYourGuide or Viator"
-- For hotel links: always try to find a working link on the SAME OTA first. Only suggest a different OTA if the same one doesn't have a working link. Kimmie uses regular booking links (not affiliate) for hotels
-- Do NOT suggest replacing working links
+- The link checker has a HIGH FALSE POSITIVE RATE
+- ALWAYS start the action with: "Check if this link is actually broken first (the checker is often wrong). If broken, [then what to do]"
+- NEVER say "replace with affiliate link" — Kimmie handles all affiliate links herself
+- For tour/activity links: editorNote says "If broken, find a replacement on GetYourGuide or Viator"
+- For hotel links: find working link on SAME OTA first
 
-AFFILIATE LINKS:
-- Never mention "affiliate link" anywhere in the report — Kimmie manages all affiliate links herself
-- For broken tour links: just say "find a replacement on GetYourGuide or Viator" in editorNote — not "affiliate link"
-- For broken hotel links: "find a working link on [same OTA]" — no mention of affiliate
+AFFILIATE LINKS: Never mention "affiliate link" anywhere
 
 VENUE VERIFICATION:
 - Extract ALL named venues: restaurants, bars, cafes, clubs, hotels, hostels, attractions, parks, beaches, tour operators
 - Up to 10 venues for Google Places verification
 
-YEAR REFERENCES:
-- Do NOT suggest adding the current year throughout the post body
-- Only suggest year in the title ONCE if relevant for SEO
+IMAGE ALT TEXT:
+- ONLY flag images that are actually missing alt text (list provided in context)
+- If context says "All images appear to have alt text" — do NOT suggest alt text optimization
+- If images ARE missing alt text, add specific fixes with descriptive alt text suggestions
 
-SUGGESTED TEXT:
-- Only suggest text based on what's actually in the post or what Kimmie personally would know
-- Never write "verify this is current" or "check before publishing" in suggestedText — those go in editorNote
-- Never say "as of [year]" or "currently" or "verified" in suggestedText
-- Never write generic "arrive early" or "call ahead" filler
-- Write in Kimmie's voice: casual, first-person, discovery energy
+NEW THINGS TO ADD:
+- For each post, think about what types of venues, experiences, or content have likely opened or become popular since the post was last updated
+- Suggest specific search strategies for the editor to find new things to add (e.g. "Search Google Maps for [location] + [category] and filter by 'Opened after [year]'")
+- This is one of the most valuable parts of the report — always include at least 2-3 newThingsToAdd items
 
-INTERNAL LINKS:
-- Only suggest internal links to pages NOT already in the post (existing links provided below)
-- Suggest them in the order they appear in the post (section by section)
-- Format: "Add internal link to your [topic] guide at this mention of [keyword]"
+YEAR REFERENCES: Do NOT suggest adding year throughout post body. Title only, once.
 
-DO NOT SUGGEST:
-- Table of contents
-- Generic travel tips not grounded in the post
-- Affiliate links or replacing links with affiliate versions
-- "Verified", "current", "as of [year]" language in suggested text
+SUGGESTED TEXT: Kimmie's voice only. No "verify", "current", "as of [year]". No generic filler.
 
-TWO SEPARATE FIELDS — CRITICAL:
+DO NOT SUGGEST: Table of contents, internal links, affiliate links, alt text if all images have it
+
+TWO SEPARATE FIELDS:
 1. suggestedText = ready-to-paste post content in Kimmie's voice ONLY
-2. editorNote = tips for the editor/VA: where to verify, which social media to check, whether to remove if closed. NOT post content. This is where "check if link is broken", "verify price at X", "find replacement on GetYourGuide" go.
+2. editorNote = tips for VA only. NOT post content.
 
 Return ONLY valid JSON, no markdown fences.`,
 
@@ -210,7 +223,9 @@ Title: "${postTitle}"
 URL: ${postUrl}
 Published: ${publishDate} | Last modified: ${modifiedDate}
 ${gscContext}
+${topKeywordsContext}
 ${linksContext}
+${altTextContext}
 ${existingLinksContext}
 
 POST CONTENT:
@@ -221,25 +236,32 @@ Return ONLY this JSON:
   "summary": "2-3 sentences: what needs updating and why it matters for traffic/readers",
   "estimatedUpdateTime": "15 mins|30 mins|1 hour|2+ hours",
   "location": "city and country this post is about",
-  "venueNames": ["every named restaurant", "bar", "cafe", "club", "hotel", "hostel", "attraction", "park", "tour operator — be thorough"],
+  "venueNames": ["every named restaurant", "bar", "cafe", "club", "hotel", "hostel", "attraction", "park", "tour operator"],
+  "newThingsToAdd": [
+    {
+      "category": "restaurant|bar|attraction|experience|neighbourhood|event",
+      "suggestion": "specific research task, e.g. 'Search Google Maps for [location] [category] filtered by opened after [year] to find new additions worth mentioning'",
+      "whyRelevant": "why readers in 2026 would want this info"
+    }
+  ],
   "quickReferenceLists": [
     {
-      "title": "e.g. Free entry spots, best for sunset",
+      "title": "descriptive title",
       "items": ["extracted from post content only"],
-      "suggestedPlacement": "where to add this in the post"
+      "suggestedPlacement": "where to add this"
     }
   ],
   "sections": [
     {
-      "sectionName": "Section heading as it appears in post, or Introduction / Throughout post — list sections IN ORDER they appear in the post",
+      "sectionName": "Section heading IN ORDER as it appears in post",
       "fixes": [
         {
-          "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix|internal_link",
+          "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix|missing_alt_text",
           "priority": "critical|high|medium",
-          "currentText": "exact short quote from post",
-          "action": "specific instruction — for broken links ALWAYS start with 'Check if this link is actually broken first (the checker is often wrong).'",
-          "suggestedText": "ONLY ready-to-paste post content in Kimmie's voice. For broken_link: rewrite sentence naturally if needed. For add_content: full paragraph. For seo_fix: exact change. For outdated_price: OMIT. For internal_link: OMIT. Never include 'verified', 'current', 'as of [year]'.",
-          "editorNote": "Tips for VA: where to verify, which social media to check, where to find replacement links, whether to remove if closed. For broken tour links: 'If broken, find a replacement on GetYourGuide or Viator'. For hotel links: 'If broken, find a working link on [same OTA]'. For prices: 'Verify this price is still accurate at [official website URL]'. NOT post content."
+          "currentText": "exact short quote",
+          "action": "specific instruction — broken links ALWAYS start with 'Check if this link is actually broken first (the checker is often wrong).'",
+          "suggestedText": "ready-to-paste post content in Kimmie's voice OR omit if not applicable",
+          "editorNote": "tips for VA only — verification sources, replacement links, etc. NOT post content"
         }
       ]
     }
@@ -248,7 +270,7 @@ Return ONLY this JSON:
     {
       "topic": "specific thing that has likely changed or been added since post was written",
       "whyUrgent": "why this matters for SEO or readers now",
-      "suggestedText": "full paragraph in Kimmie's first-person casual voice — specific, not generic, no prices, no 'verified/current' language",
+      "suggestedText": "full paragraph in Kimmie's voice — specific, casual, first-person, no prices",
       "placement": "exactly where in the post to add it"
     }
   ],
@@ -256,7 +278,7 @@ Return ONLY this JSON:
   "seoQuickWins": [
     {
       "idea": "specific actionable SEO change",
-      "type": "title|heading|internal_link|schema|table|meta|image",
+      "type": "title|heading|schema|table|meta|image",
       "canGenerate": true or false
     }
   ]
@@ -305,7 +327,7 @@ Return ONLY this JSON:
         currentText: v.venue,
         action: `❌ CONFIRMED ${v.status === 'permanently_closed' ? 'PERMANENTLY' : 'TEMPORARILY'} CLOSED via Google Maps${v.address ? ' (' + v.address + ')' : ''}`,
         suggestedText: `Remove all mentions of ${v.venue} or replace with somewhere you've personally been in the same area.`,
-        editorNote: `Google Maps confirms ${v.status === 'permanently_closed' ? 'permanently' : 'temporarily'} closed. Remove this section or find a replacement you can personally vouch for.`
+        editorNote: `Google Maps confirms ${v.status === 'permanently_closed' ? 'permanently' : 'temporarily'} closed. Remove or find a replacement you can personally vouch for.`
       };
       if (sectionIdx > -1) {
         report.sections[sectionIdx].fixes.unshift(closedFix);
@@ -320,6 +342,7 @@ Return ONLY this JSON:
       venueChecks: venueResults,
       competitors,
       existingInternalLinks,
+      imagesWithoutAlt,
       generatedAt: new Date().toISOString(),
       report,
       fromCache: false,
