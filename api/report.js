@@ -194,9 +194,11 @@ VENUE VERIFICATION:
 - Up to 10 venues for Google Places verification
 
 IMAGE ALT TEXT:
-- ONLY flag images that are actually missing alt text (list provided in context)
-- If context says "All images appear to have alt text" — do NOT suggest alt text optimization
-- If images ARE missing alt text, add specific fixes with descriptive alt text suggestions
+- ONLY flag images that are actually missing alt text (filenames provided in context)
+- If context says "All images appear to have alt text" — do NOT suggest alt text optimization at all
+- If images ARE missing alt text, add a missing_alt_text fix in the SECTION where that image appears in the post
+- Suggest descriptive alt text based on the surrounding post content (what the image likely shows)
+- Place these fixes in section order alongside other fixes for that section — not all bunched together
 
 NEW THINGS TO ADD:
 - For each post, think about what types of venues, experiences, or content have likely opened or become popular since the post was last updated
