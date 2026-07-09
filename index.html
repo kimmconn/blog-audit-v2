@@ -115,9 +115,50 @@
   a{color:inherit;text-decoration:none}
   a:hover{text-decoration:underline}
   @media(max-width:700px){.metrics{grid-template-columns:repeat(2,1fr)}.integrations{grid-template-columns:1fr}#urlInput{min-width:200px}}
+ .auth-gate{position:fixed;inset:0;background:var(--bg3);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem}
+.auth-gate-panel{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:2rem;max-width:360px;width:100%}
 </style>
+</style>
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
 </head>
 <body>
+ <div id="authGate" class="auth-gate">
+  <div class="auth-gate-panel">
+    <h1 style="margin-bottom:4px">Bloupi</h1>
+    <p class="subtitle" style="margin-bottom:20px">Sign in to your account</p>
+    <div id="authGateContent">
+      <input type="email" id="authEmail" placeholder="you@email.com" style="width:100%;margin-bottom:10px" />
+      <button class="btn btn-primary" style="width:100%" onclick="sendMagicLink()">Send magic link</button>
+      <div id="authMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+    </div>
+  </div>
+</div>
+<script>
+const SUPABASE_URL='https://drzpixdckjyxmimvwkmm.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_yZERXhqzljSTfePxyGuLqw_0ZkfAJ6v';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+
+async function sendMagicLink(){
+  const email=document.getElementById('authEmail').value.trim();
+  const msg=document.getElementById('authMsg');
+  if(!email){msg.textContent='Please enter your email.';return;}
+  msg.textContent='Sending...';
+  const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin}});
+  if(error){msg.textContent='Error: '+error.message;}
+  else{document.getElementById('authGateContent').innerHTML='<div style="font-size:13px">✓ Check your inbox — we sent a magic link to <strong>'+email+'</strong>.</div>';}
+}
+async function checkAuth(){
+  const{data:{session}}=await sb.auth.getSession();
+  document.getElementById('authGate').style.display=session?'none':'flex';
+  document.querySelector('.app').style.display=session?'block':'none';
+}
+checkAuth();
+sb.auth.onAuthStateChange((event,session)=>{
+  document.getElementById('authGate').style.display=session?'none':'flex';
+  document.querySelector('.app').style.display=session?'block':'none';
+});
+</script>
 <div class="app">
   <h1>Bloupi</h1>
   <p class="subtitle">Catalog, score, and prioritize your posts for updates</p>
