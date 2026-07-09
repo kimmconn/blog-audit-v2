@@ -18,7 +18,8 @@ export default async function handler(req, res) {
     .eq('code', code.trim().toUpperCase())
     .single();
 
-  if (lookupError || !inviteCode) {
+if (lookupError || !inviteCode) {
+    console.error('Lookup failed:', lookupError, 'Code searched:', code.trim().toUpperCase());
     return res.status(400).json({ error: 'Invalid invite code.' });
   }
   if (inviteCode.redeemed) {
