@@ -150,14 +150,43 @@ async function sendMagicLink(){
 }
 async function checkAuth(){
   const{data:{session}}=await sb.auth.getSession();
-  document.getElementById('authGate').style.display=session?'none':'flex';
-  document.querySelector('.app').style.display=session?'block':'none';
+  if(!session){
+    document.getElementById('authGate').style.display='flex';
+    document.querySelector('.app').style.display='none';
+    return;
+  }
+  const{data:profile}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
+  if(!profile){
+    showInviteCodeScreen(session.user.id,session.user.email);
+    return;
+  }
+  document.getElementById('authGate').style.display='none';
+  document.querySelector('.app').style.display='block';
+}
+function showInviteCodeScreen(userId,email){
+  document.getElementById('authGate').style.display='flex';
+  document.querySelector('.app').style.display='none';
+  document.getElementById('authGateContent').innerHTML=`
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">You're signed in! Enter your invite code to continue.</p>
+    <input type="text" id="inviteCodeInput" placeholder="INVITE CODE" style="width:100%;margin-bottom:10px;text-transform:uppercase" />
+    <button class="btn btn-primary" style="width:100%" onclick="redeemInviteCode('${userId}','${email}')">Unlock access</button>
+    <div id="inviteMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+  `;
+}
+async function redeemInviteCode(userId,email){
+  const code=document.getElementById('inviteCodeInput').value.trim();
+  const msg=document.getElementById('inviteMsg');
+  if(!code){msg.textContent='Please enter a code.';return;}
+  msg.textContent='Checking...';
+  try{
+    const res=await fetch('/api/redeem-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,userId,email})});
+    const data=await res.json();
+    if(!res.ok){msg.textContent=data.error||'Invalid code.';return;}
+    checkAuth();
+  }catch(e){msg.textContent='Something went wrong. Try again.';}
 }
 checkAuth();
-sb.auth.onAuthStateChange((event,session)=>{
-  document.getElementById('authGate').style.display=session?'none':'flex';
-  document.querySelector('.app').style.display=session?'block':'none';
-});
+sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
 </script>
 <div class="app">
   <h1>Bloupi</h1>
