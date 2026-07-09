@@ -5,9 +5,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { code, userId, email } = req.body || {};
+const { code, userId, email, agreedTerms } = req.body || {};
   if (!code || !userId || !email) {
     return res.status(400).json({ error: 'Missing code, userId, or email' });
+  }
+  if (!agreedTerms) {
+    return res.status(400).json({ error: 'You must agree to the terms to continue.' });
   }
 
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
@@ -35,7 +38,7 @@ if (lookupError || !inviteCode) {
     .eq('code', inviteCode.code);
   if (updateError) return res.status(500).json({ error: 'Could not redeem code, please try again.' });
 
-  const { error: profileError } = await supabase
+const { error: profileError } = await supabase
     .from('profiles')
     .upsert({ id: userId, email, tier: 'trial', trial_ends_at: trialEndsAt.toISOString() });
   if (profileError) return res.status(500).json({ error: 'Code redeemed but profile setup failed.' });
