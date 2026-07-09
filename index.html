@@ -168,10 +168,20 @@ function showInviteCodeScreen(userId,email){
   document.querySelector('.app').style.display='none';
   document.getElementById('authGateContent').innerHTML=`
     <p style="font-size:12px;color:var(--text2);margin-bottom:12px">You're signed in! Enter your invite code to continue.</p>
-    <input type="text" id="inviteCodeInput" placeholder="INVITE CODE" style="width:100%;margin-bottom:10px;text-transform:uppercase" />
-    <button class="btn btn-primary" style="width:100%" onclick="redeemInviteCode('${userId}','${email}')">Unlock access</button>
+    <input type="text" id="inviteCodeInput" placeholder="INVITE CODE" style="width:100%;margin-bottom:14px;text-transform:uppercase" />
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;font-size:11px;color:var(--text2)">
+      <label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" class="termsCheck" style="margin-top:2px" onchange="checkTermsComplete()"> I intend to update at least 10 posts during my trial month using Bloupi's generated briefs.</label>
+      <label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" class="termsCheck" style="margin-top:2px" onchange="checkTermsComplete()"> I agree to share a testimonial or feedback on my experience, including any traffic or ranking changes I see.</label>
+      <label style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" class="termsCheck" style="margin-top:2px" onchange="checkTermsComplete()"> I agree to use Bloupi solely for my own blog content, and not to copy, reverse-engineer, or use this tool or its underlying methodology to build or inform a competing product or service.</label>
+    </div>
+    <button class="btn btn-primary" style="width:100%" id="unlockBtn" disabled onclick="redeemInviteCode('${userId}','${email}')">Unlock access</button>
     <div id="inviteMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
   `;
+}
+function checkTermsComplete(){
+  const boxes=document.querySelectorAll('.termsCheck');
+  const allChecked=Array.from(boxes).every(b=>b.checked);
+  document.getElementById('unlockBtn').disabled=!allChecked;
 }
 async function redeemInviteCode(userId,email){
   const code=document.getElementById('inviteCodeInput').value.trim();
@@ -179,7 +189,7 @@ async function redeemInviteCode(userId,email){
   if(!code){msg.textContent='Please enter a code.';return;}
   msg.textContent='Checking...';
   try{
-    const res=await fetch('/api/redeem-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,userId,email})});
+    const res=await fetch('/api/redeem-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,userId,email,agreedTerms:true})});
     const data=await res.json();
     if(!res.ok){msg.textContent=data.error||'Invalid code.';return;}
     checkAuth();
