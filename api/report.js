@@ -91,8 +91,21 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { postId, postUrl, postTitle, siteUrl, gscData, brokenLinks, gscKeywords, forceRefresh } = req.body;
-  if (!postId || !siteUrl) return res.status(400).json({ error: 'Missing postId or siteUrl' });
+const { postId, postUrl, postTitle, siteUrl, gscData, brokenLinks, gscKeywords, forceRefresh, userId } = req.body;
+if (!postId || !siteUrl) return res.status(400).json({ error: 'Missing postId or siteUrl' });
+if (!userId) return res.status(400).json({ error: 'Missing userId' });
+
+const { createClient } = await import('@supabase/supabase-js');
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
+const currentMonth = new Date().toISOString().slice(0, 7);
+const { data: profile } = await supabase.from('profiles').select('reports_this_month, reports_month, tier').eq('id', userId).single();
+
+let reportsUsed = profile?.reports_this_month || 0;
+if (profile?.reports_month !== currentMonth) reportsUsed = 0;
+
+if (profile?.tier !== 'owner' && reportsUsed >= 25) {
+  return res.status(200).json({ error: "You've hit your 25 reports this month limit. It resets next month!" });
+}
 
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'Anthropic API key not configured' });
