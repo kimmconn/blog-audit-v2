@@ -495,12 +495,15 @@ async function generateReport(postIdx,forceRefresh=false){
       impressions: typeof k==='object'&&k.impressions?k.impressions:0,
       clicks: typeof k==='object'&&k.clicks?k.clicks:0
     })).filter(k=>k.keyword);
+const{data:{session}}=await sb.auth.getSession();
+    if(!session){document.getElementById('modalBody').innerHTML=`<div class="report-error">❌ Please sign in first.</div>`;return;}
     const res=await fetch(REPORT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       postId:post.id,postUrl:post.url,postTitle:post.title,siteUrl,
       gscData:{recentClicks:post.recentClicks,olderClicks:post.olderClicks,recentImpressions:post.recentImpressions,olderImpressions:post.olderImpressions,trafficDeclinePct:post.trafficDeclinePct,position:post.position},
       brokenLinks:post.brokenLinkUrls||[],
       gscKeywords,
-      forceRefresh
+      forceRefresh,
+      userId:session.user.id
     })});
     const data=await res.json();
     if(data.error){document.getElementById('modalBody').innerHTML=`<div class="report-error">❌ ${data.error}</div>`;return;}
@@ -785,17 +788,20 @@ function exportCSV(){
 async function startCrawl(){
   const url=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
   if(!url)return;
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session){alert('Please sign in first.');return;}
+  const uid=encodeURIComponent(session.user.id);
   document.getElementById('progressWrap').style.display='block';
   document.getElementById('crawlStatus').textContent='crawling...';
   document.getElementById('crawlStatus').className='tag';
   document.getElementById('emptyState').style.display='none';
   posts=[];setProgress(0,1,'Connecting to WordPress...');
   try{
-    const r1=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=1&perPage=100`);
+    const r1=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=1&perPage=100&userId=${uid}`);
     if(!r1.ok){const e=await r1.json().catch(()=>({}));throw new Error(e.error||`HTTP ${r1.status}`);}
     const total=parseInt(r1.headers.get('X-WP-Total')||'0'),totalPages=parseInt(r1.headers.get('X-WP-TotalPages')||'1');
     processBatch(await r1.json());setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);
-    for(let p=2;p<=Math.min(totalPages,10);p++){const r=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=${p}&perPage=100`);if(!r.ok)break;processBatch(await r.json());setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);}
+    for(let p=2;p<=Math.min(totalPages,10);p++){const r=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=${p}&perPage=100&userId=${uid}`);if(!r.ok)break;processBatch(await r.json());setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);}
     posts.sort((a,b)=>b.score-a.score);
     setProgress(posts.length,posts.length,`Done! ${posts.length} posts cataloged.`);
     document.getElementById('crawlStatus').textContent=`${posts.length} posts crawled`;
