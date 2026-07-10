@@ -1,11 +1,26 @@
+import { createClient } from '@supabase/supabase-js';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  const { siteUrl, page = 1, perPage = 100 } = req.query;
+  const { siteUrl, page = 1, perPage = 100, userId } = req.query;
   if (!siteUrl) return res.status(400).json({ error: 'Missing siteUrl' });
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
   const cleanUrl = siteUrl.replace(/\/$/, '');
+
+  const normalize = (u) => u.replace(/^https?:\/\//,'').replace(/^www\./,'').replace(/\/$/,'').toLowerCase();
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
+  const { data: profile } = await supabase.from('profiles').select('site_url, tier').eq('id', userId).single();
+
+  if (profile?.tier !== 'owner') {
+    if (!profile?.site_url) {
+      await supabase.from('profiles').update({ site_url: cleanUrl }).eq('id', userId);
+    } else if (normalize(profile.site_url) !== normalize(cleanUrl)) {
+      return res.status(403).json({ error: `Your account is registered to ${profile.site_url}. To manage another blog, you'll need a separate subscription.` });
+    }
+  }
   const buildUrl = (base) => `${base}/wp-json/wp/v2/posts?per_page=${perPage}&page=${page}&_fields=id,title,link,date,modified,categories,slug`;
   const urls = [cleanUrl, cleanUrl.includes('://www.') ? cleanUrl.replace('://www.','://') : cleanUrl.replace('://','://www.')];
   let lastError = null;
