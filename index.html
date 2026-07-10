@@ -834,6 +834,21 @@ function loadDemo(){
 // ===== BATCH AI SCANNER =====
 async function startAIScan(forceRefresh=false){
   if(posts.length===0){alert('Please crawl your blog first!');return;}
+  if(forceRefresh){
+    const{data:{session}}=await sb.auth.getSession();
+    if(!session){alert('Please sign in first.');return;}
+    const{data:profile}=await sb.from('profiles').select('ai_rescan_used_at,tier').eq('id',session.user.id).single();
+    if(profile?.tier!=='owner'){
+      if(profile?.ai_rescan_used_at){
+        const daysSince=(Date.now()-new Date(profile.ai_rescan_used_at))/(1000*60*60*24);
+        if(daysSince<30){
+          alert(`You can force a rescan once per month. Try again in ${Math.ceil(30-daysSince)} days.`);
+          return;
+        }
+      }
+      await sb.from('profiles').update({ai_rescan_used_at:new Date().toISOString()}).eq('id',session.user.id);
+    }
+  }
   const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
   const banner=document.getElementById('aiScanBanner');
   const statusEl=document.getElementById('aiScanStatus');
