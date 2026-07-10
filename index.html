@@ -637,6 +637,7 @@ async function generateSEOContent(idea,data){
     const res=await fetch('/api/generate-seo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea,postTitle:data.postTitle,postUrl:data.postUrl,summary:data.report?.summary,modifiedDate:data.modifiedDate})});
     const json=await res.json();
     const generated=json.generated||json.error||'Could not generate content.';
+    window._lastGenerated={idea,generated};
     modal.innerHTML=`
       <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div style="font-size:13px;font-weight:500">✨ ${idea}</div>
@@ -644,11 +645,19 @@ async function generateSEOContent(idea,data){
       </div>
       <div style="background:var(--bg2);border-radius:var(--radius);padding:16px;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-x:auto;max-height:400px;overflow-y:auto">${generated.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText(${JSON.stringify(generated)}).then(()=>{this.textContent='✓ Copied!';setTimeout(()=>this.textContent='📋 Copy to clipboard',2000)})">📋 Copy to clipboard</button>
-        <button class="btn btn-sm" style="background:var(--green-bg);color:var(--green-text);border-color:var(--green)" onclick="addGeneratedToBrief(${JSON.stringify(idea)},${JSON.stringify(generated)})">+ Add to VA brief</button>
+        <button class="btn btn-primary btn-sm" onclick="copyGeneratedSEO(this)">📋 Copy to clipboard</button>
+        <button class="btn btn-sm" style="background:var(--green-bg);color:var(--green-text);border-color:var(--green)" onclick="addGeneratedSEOToBrief()">+ Add to VA brief</button>
         <button class="btn btn-sm" onclick="document.getElementById('modalBody').innerHTML=window._lastReportHTML">← Back to report</button>
       </div>`;
   }catch(e){modal.innerHTML=`<div class="report-error">❌ ${e.message}</div><button class="btn btn-sm" onclick="document.getElementById('modalBody').innerHTML=window._lastReportHTML" style="margin-top:12px">← Back</button>`;}
+}
+function copyGeneratedSEO(btn){
+  if(!window._lastGenerated)return;
+  navigator.clipboard.writeText(window._lastGenerated.generated).then(()=>{btn.textContent='✓ Copied!';setTimeout(()=>btn.textContent='📋 Copy to clipboard',2000)});
+}
+function addGeneratedSEOToBrief(){
+  if(!window._lastGenerated)return;
+  addGeneratedToBrief(window._lastGenerated.idea,window._lastGenerated.generated);
 }
 // ===== BROKEN LINK SCANNER =====
 let scanRunning=false;
