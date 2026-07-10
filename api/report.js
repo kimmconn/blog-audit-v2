@@ -363,8 +363,12 @@ Return ONLY this JSON:
       fromCache: false,
     };
 
-    if (kv) {
+if (kv) {
       try { await kv.set(cacheKey, result, { ex: 2592000 }); } catch(e) {}
+    }
+
+    if (profile?.tier !== 'owner') {
+      await supabase.from('profiles').update({ reports_this_month: reportsUsed + 1, reports_month: currentMonth }).eq('id', userId);
     }
 
     return res.status(200).json(result);
