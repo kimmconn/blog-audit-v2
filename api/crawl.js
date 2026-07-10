@@ -8,9 +8,23 @@ export default async function handler(req, res) {
   const { siteUrl, page = 1, perPage = 100, userId } = req.query;
   if (!siteUrl) return res.status(400).json({ error: 'Missing siteUrl' });
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
-  const cleanUrl = siteUrl.replace(/\/$/, '');
-
+const cleanUrl = siteUrl.replace(/\/$/, '');
   const normalize = (u) => u.replace(/^https?:\/\//,'').replace(/^www\./,'').replace(/\/$/,'').toLowerCase();
+
+  const isBlockedHost = (u) => {
+    try {
+      const { protocol, hostname } = new URL(u);
+      if (protocol !== 'http:' && protocol !== 'https:') return true;
+      const h = hostname.toLowerCase();
+      if (h === 'localhost' || h.endsWith('.local')) return true;
+      if (/^127\./.test(h) || /^10\./.test(h) || /^192\.168\./.test(h) || /^169\.254\./.test(h)) return true;
+      if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h)) return true;
+      if (h === '::1' || h === '0.0.0.0') return true;
+      return false;
+    } catch(e) { return true; }
+  };
+  if (isBlockedHost(cleanUrl)) return res.status(400).json({ error: 'Invalid site URL' });
+  
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
   const { data: profile } = await supabase.from('profiles').select('site_url, tier').eq('id', userId).single();
 
