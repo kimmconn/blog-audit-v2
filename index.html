@@ -892,7 +892,7 @@ async function startKWScan(forceRefresh=false){
     });
     const kwArray=[...allKws];
     const masterVolumeMap={};
-    const KW_BATCH=10;
+    const KW_BATCH=500;
     for(let k=0;k<kwArray.length;k+=KW_BATCH){
       const kwChunk=kwArray.slice(k,k+KW_BATCH);
       const progress=Math.round((k/kwArray.length)*100);
