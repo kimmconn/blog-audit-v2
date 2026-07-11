@@ -1,12 +1,15 @@
 {
   "version": 2,
   "installCommand": "npm install",
-  "functions": {
+"functions": {
     "api/report.js": {
       "maxDuration": 300
     },
     "api/batch-scan.js": {
       "maxDuration": 120
+    },
+    "api/keywords.js": {
+      "maxDuration": 60
     }
   },
   "headers": [
