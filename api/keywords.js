@@ -66,16 +66,23 @@ export default async function handler(req, res) {
     }
     const results = data.tasks?.[0]?.result || [];
 
-    results.forEach(item => {
-      if (item.keyword && item.search_volume !== null) {
+ results.forEach(item => {
+      if (item.keyword) {
         const entry = {
-          volume: item.search_volume,
+          volume: item.search_volume || 0,
           competition: item.competition,
           cpc: item.cpc,
           trend: item.monthly_searches?.slice(-3).map(m => m.search_volume) || [],
         };
         volumeMap[item.keyword] = entry;
         if (kv) { try { kv.set(`kwvol:${item.keyword.toLowerCase()}`, entry, { ex: 2592000 }); } catch(e) {} }
+      }
+    });
+    toFetch.forEach(kw => {
+      if (!volumeMap[kw] && kv) {
+        const empty = { volume: 0, competition: null, cpc: null, trend: [] };
+        volumeMap[kw] = empty;
+        try { kv.set(`kwvol:${kw.toLowerCase()}`, empty, { ex: 2592000 }); } catch(e) {}
       }
     });
 
