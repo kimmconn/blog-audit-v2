@@ -49,13 +49,9 @@ export default async function handler(req, res) {
     // Optional: fetch top keywords per page using page-filtered queries
     // This approach queries each page's keywords directly for accuracy
     let keywordsByPage = {};
+    let kwDebugInfo = null;
     if (includeKeywords) {
       try {
-        // First get all unique page URLs from the main results
-        const pageUrls = rows.map(r => r.url);
-        
-        // Batch pages into groups of 50 to avoid too many API calls
-        // Use a single call with all pages via dimension filter
         const kwRes = await fetch(
           `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
           {
@@ -75,10 +71,10 @@ export default async function handler(req, res) {
         );
         if (kwRes.ok) {
           const kwData = await kwRes.json();
+          kwDebugInfo = { ok: true, status: kwRes.status, rowCount: (kwData.rows||[]).length };
           (kwData.rows || []).forEach(row => {
             const url = row.keys[0];
             const query = row.keys[1];
-            // Normalize URL for matching
             const normalUrl = url.replace(/\/$/, '');
             if (!keywordsByPage[normalUrl]) keywordsByPage[normalUrl] = [];
             if (!keywordsByPage[url]) keywordsByPage[url] = [];
@@ -87,11 +83,15 @@ export default async function handler(req, res) {
               keywordsByPage[url].push(query);
             }
           });
+        } else {
+          const errBody = await kwRes.text().catch(()=>'');
+          kwDebugInfo = { ok: false, status: kwRes.status, error: errBody.slice(0,300) };
         }
-      } catch(e) {}
+      } catch(e) {
+        kwDebugInfo = { ok: false, caughtError: e.message };
+      }
     }
-
-    return res.status(200).json({ rows, keywordsByPage });
+    return res.status(200).json({ rows, keywordsByPage, kwDebugInfo });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
