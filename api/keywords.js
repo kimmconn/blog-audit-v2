@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
   const kv = getRedis();
   const volumeMap = {};
-  let toFetch = keywords.slice(0, 500);
+  let toFetch = keywords.filter(k => k && k.length <= 80).slice(0, 500);
 
   if (!forceRefresh && kv) {
     const cacheChecks = await Promise.allSettled(
