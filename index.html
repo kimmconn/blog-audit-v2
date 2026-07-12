@@ -498,8 +498,8 @@ async function generateReport(postIdx,forceRefresh=false){
   document.getElementById('reportModal').style.display='flex';
   try{
     // Build structured keyword data from GSC - keywords are stored as plain strings
-    const gscKeywords = (post.gscKeywords||[]).slice(0,10).map(k=>({
-      keyword: typeof k==='string'?k:(k.keyword||k.keys?.[0]||String(k)),
+  const gscKeywords = (post.gscKeywords||[]).slice(0,10).map(k=>({
+      keyword: typeof k==='string'?k:(k.query||k.keyword||String(k)),
       impressions: typeof k==='object'&&k.impressions?k.impressions:0,
       clicks: typeof k==='object'&&k.clicks?k.clicks:0
     })).filter(k=>k.keyword);
