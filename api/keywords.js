@@ -24,8 +24,7 @@ export default async function handler(req, res) {
 
   const kv = getRedis();
   const volumeMap = {};
-  let toFetch = keywords.filter(k => k && k.length <= 80).slice(0, 500);
-
+let toFetch = keywords.filter(k => k && k.length <= 80 && k.split(/\s+/).length <= 10 && !k.includes('"')).slice(0, 500);
   if (!forceRefresh && kv) {
     const cacheChecks = await Promise.allSettled(
       toFetch.map(async kw => ({ kw, cached: await kv.get(`kwvol:${kw.toLowerCase()}`) }))
