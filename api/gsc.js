@@ -78,16 +78,17 @@ const { siteUrl, accessToken, startDate, endDate, includeKeywords, pageUrls } = 
         if (kwRes.ok) {
           const kwData = await kwRes.json();
           kwDebugInfo = { ok: true, status: kwRes.status, rowCount: (kwData.rows||[]).length };
-       (kwData.rows || []).forEach(row => {
+      (kwData.rows || []).forEach(row => {
             const rawUrl = row.keys[0];
             const query = row.keys[1];
+            const clicks = row.clicks || 0;
             const baseUrl = rawUrl.split('#')[0]; // strip anchor fragments — not real separate pages
             const withSlash = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
             const noSlash = baseUrl.replace(/\/$/, '');
-            [noSlash, withSlash].forEach(key => {
+           [noSlash, withSlash].forEach(key => {
               if (!keywordsByPage[key]) keywordsByPage[key] = [];
-              if (keywordsByPage[key].length < 8 && !keywordsByPage[key].includes(query)) {
-                keywordsByPage[key].push(query);
+              if (keywordsByPage[key].length < 8 && !keywordsByPage[key].some(k=>k.query===query)) {
+                keywordsByPage[key].push({query, clicks});
               }
             });
           });
