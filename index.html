@@ -190,7 +190,7 @@ async function redeemInviteCode(userId,email){
   if(!code){msg.textContent='Please enter a code.';return;}
   msg.textContent='Checking...';
   try{
-    const res=await fetch('/api/redeem-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,userId,email,agreedTerms:true})});
+const res=await fetch(KEYWORDS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keywords:kwChunk,forceRefresh})});
     const data=await res.json();
     if(!res.ok){msg.textContent=data.error||'Invalid code.';return;}
     checkAuth();
