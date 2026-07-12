@@ -190,7 +190,7 @@ async function redeemInviteCode(userId,email){
   if(!code){msg.textContent='Please enter a code.';return;}
   msg.textContent='Checking...';
   try{
-const res=await fetch(KEYWORDS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keywords:kwChunk,forceRefresh})});
+    const res=await fetch('/api/redeem-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,userId,email,agreedTerms:true})});
     const data=await res.json();
     if(!res.ok){msg.textContent=data.error||'Invalid code.';return;}
     checkAuth();
@@ -898,7 +898,7 @@ async function startKWScan(forceRefresh=false){
       const progress=Math.round((k/kwArray.length)*100);
       banner.innerHTML=`<span>🔍 Looking up keyword volumes... ${progress}% (${k}/${kwArray.length} keywords)</span>`;
       try{
-        const res=await fetch(KEYWORDS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keywords:kwChunk})});
+const res=await fetch(KEYWORDS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keywords:kwChunk,forceRefresh})});
         if(res.ok){const data=await res.json();Object.assign(masterVolumeMap,data.volumeMap||{});}
       }catch(e){}
     }
