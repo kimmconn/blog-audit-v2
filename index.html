@@ -889,13 +889,12 @@ async function startKWScan(forceRefresh=false){
   banner.innerHTML='<span>🔍 Looking up keyword volumes...</span>';
   statusEl.innerHTML='<span class="tag">Scanning...</span>';
   try{
-    // Collect all unique keywords across all posts
     const allKws=new Set();
     const postKeywordMap={};
     postsWithKeywords.forEach(p=>{
-      const kws=(p.gscKeywords||[]).slice(0,10).map(k=>typeof k==='string'?k:k.keyword||k).filter(Boolean);
-      postKeywordMap[p.id]=kws;
-      kws.forEach(k=>allKws.add(k));
+      const kwObjs=(p.gscKeywords||[]).slice(0,10);
+      postKeywordMap[p.id]=kwObjs;
+      kwObjs.forEach(k=>{const q=typeof k==='string'?k:k.query;if(q)allKws.add(q);});
     });
     const kwArray=[...allKws];
     const masterVolumeMap={};
@@ -905,17 +904,19 @@ async function startKWScan(forceRefresh=false){
       const progress=Math.round((k/kwArray.length)*100);
       banner.innerHTML=`<span>🔍 Looking up keyword volumes... ${progress}% (${k}/${kwArray.length} keywords)</span>`;
       try{
-const res=await fetch(KEYWORDS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keywords:kwChunk,forceRefresh})});
+        const res=await fetch(KEYWORDS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keywords:kwChunk,forceRefresh})});
         if(res.ok){const data=await res.json();Object.assign(masterVolumeMap,data.volumeMap||{});}
       }catch(e){}
     }
     let totalUpdated=0;
     postsWithKeywords.forEach(p=>{
-      const kws=postKeywordMap[p.id]||[];
-      let topVolume=0,topKeyword='';
-      kws.forEach(kw=>{
-        const vol=masterVolumeMap[kw]?.volume||0;
-        if(vol>topVolume){topVolume=vol;topKeyword=kw;}
+      const kwObjs=postKeywordMap[p.id]||[];
+      let topKeyword='',topClicks=-1,topVolume=0;
+      kwObjs.forEach(obj=>{
+        const q=typeof obj==='string'?obj:obj.query;
+        const clicks=typeof obj==='string'?0:(obj.clicks||0);
+        if(!q)return;
+        if(clicks>topClicks){topClicks=clicks;topKeyword=q;topVolume=masterVolumeMap[q]?.volume||0;}
       });
       p.topKeyword=topKeyword;
       p.topKeywordVolume=topVolume;
