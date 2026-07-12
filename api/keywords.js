@@ -64,8 +64,8 @@ export default async function handler(req, res) {
     if (data.status_code !== 20000) {
       return res.status(200).json({ error: `DataForSEO: ${data.status_message}`, volumeMap });
     }
-    const results = data.tasks?.[0]?.result || [];
-
+const results = data.tasks?.[0]?.result || [];
+    const _taskDebug = { taskStatusCode: data.tasks?.[0]?.status_code, taskStatusMessage: data.tasks?.[0]?.status_message, resultCount: results.length };
  results.forEach(item => {
       if (item.keyword) {
         const entry = {
@@ -85,7 +85,7 @@ export default async function handler(req, res) {
         try { kv.set(`kwvol:${kw.toLowerCase()}`, empty, { ex: 2592000 }); } catch(e) {}
       }
     });
-return res.status(200).json({ volumeMap, keywordsChecked: keywords.length, fromCache: keywords.length - toFetch.length, fetched: toFetch.length, _debug: { sentSample: toFetch.slice(0,5), receivedSample: results.slice(0,5).map(r=>r.keyword) } });
+    return res.status(200).json({ volumeMap, keywordsChecked: keywords.length, fromCache: keywords.length - toFetch.length, fetched: toFetch.length, _debug: { sentSample: toFetch.slice(0,5), receivedSample: results.slice(0,5).map(r=>r.keyword), taskInfo: _taskDebug } });
   } catch(e) {
     if (e.name === 'TimeoutError') return res.status(200).json({ error: 'Request timed out', volumeMap });
     return res.status(200).json({ error: e.message, volumeMap });
