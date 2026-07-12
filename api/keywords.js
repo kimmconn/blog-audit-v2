@@ -85,8 +85,7 @@ export default async function handler(req, res) {
         try { kv.set(`kwvol:${kw.toLowerCase()}`, empty, { ex: 2592000 }); } catch(e) {}
       }
     });
-
-    return res.status(200).json({ volumeMap, keywordsChecked: keywords.length, fromCache: keywords.length - toFetch.length, fetched: toFetch.length });
+return res.status(200).json({ volumeMap, keywordsChecked: keywords.length, fromCache: keywords.length - toFetch.length, fetched: toFetch.length, _debug: { sentSample: toFetch.slice(0,5), receivedSample: results.slice(0,5).map(r=>r.keyword) } });
   } catch(e) {
     if (e.name === 'TimeoutError') return res.status(200).json({ error: 'Request timed out', volumeMap });
     return res.status(200).json({ error: e.message, volumeMap });
