@@ -165,7 +165,7 @@ async function sendMagicLink(){
   const msg=document.getElementById('authMsg');
   if(!email){msg.textContent='Please enter your email.';return;}
   msg.textContent='Sending...';
-  const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin}});
+  const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin+'/dashboard.html'}});
   if(error){msg.textContent='Error: '+error.message;}
   else{document.getElementById('authGateContent').innerHTML='<div style="font-size:13px">✓ Check your inbox — we sent a magic link to <strong>'+email+'</strong>.</div>';}
 }
