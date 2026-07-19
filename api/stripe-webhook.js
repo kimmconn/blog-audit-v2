@@ -20,12 +20,12 @@ export default async function handler(req, res) {
 
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
 
-  if (event.type === 'checkout.session.completed') {
+if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const userId = session.client_reference_id || session.metadata?.userId;
     const tier = session.metadata?.tier;
     if (userId && tier) {
-      await supabase.from('profiles').upsert({
+      const { error: upsertError } = await supabase.from('profiles').upsert({
         id: userId,
         email: session.customer_email,
         tier,
@@ -33,6 +33,7 @@ export default async function handler(req, res) {
         stripe_subscription_id: session.subscription,
         subscribed_at: new Date().toISOString(),
       });
+      if (upsertError) console.error('Profile upsert failed:', upsertError, 'for userId:', userId);
     }
   }
 
