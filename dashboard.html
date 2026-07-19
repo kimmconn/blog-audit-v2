@@ -197,16 +197,30 @@ function showInviteCodeScreen(userId,email){
   if(authGateEl)authGateEl.style.display='flex';
   if(appEl)appEl.style.display='none';
   document.getElementById('authGateContent').innerHTML=`
-    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">You're signed in! Enter your invite code to continue.</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">You're signed in! Enter your invite code, or subscribe below.</p>
     <input type="text" id="inviteCodeInput" placeholder="INVITE CODE" style="width:100%;margin-bottom:14px;text-transform:uppercase" />
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;font-size:11.5px;color:#4a4d5e">
       <label class="term-card" onclick="this.querySelector('input').dispatchEvent(new Event('change'))"><input type="checkbox" class="termsCheck" onchange="checkTermsComplete(this)"><span class="term-check">✓</span><span>I intend to update at least 10 posts during my trial month using Bloupi's generated briefs.</span></label>
       <label class="term-card" onclick="this.querySelector('input').dispatchEvent(new Event('change'))"><input type="checkbox" class="termsCheck" onchange="checkTermsComplete(this)"><span class="term-check">✓</span><span>I agree to share a testimonial or feedback on my experience, including any traffic or ranking changes I see.</span></label>
-      <label class="term-card" onclick="this.querySelector('input').dispatchEvent(new Event('change'))"><input type="checkbox" class="termsCheck" onchange="checkTermsComplete(this)"><span class="term-check">✓</span><span>I agree to use Bloupi solely for my own blog content, and not to copy, reverse-engineer, or use this tool or its underlying methodology to build or inform a competing product or service.</span></label>
+      <label class="term-card" onclick="this.querySelector('input').dispatchEvent(new Event('change'))"><input type="checkbox" class="termsCheck" onchange="checkTermsComplete(this)"><span class="term-check">✓</span><span>I agree to use Bloupi solely for my own blog content; I won't copy Bloupi or use what I learn here to build or inform something similar.</span></label>
     </div>
     <button class="auth-btn-primary" style="width:100%" id="unlockBtn" disabled onclick="redeemInviteCode('${userId}','${email}')">Unlock access</button>
     <div id="inviteMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin:18px 0"><div style="flex:1;height:1px;background:#e3e9f9"></div><span style="font-size:11px;color:#9aa4d1">OR</span><div style="flex:1;height:1px;background:#e3e9f9"></div></div>
+    <button class="btn" style="width:100%" onclick="startSubscribe('${userId}','${email}','dashboard')">Subscribe — Dashboard $20/mo</button>
+    <button class="btn" style="width:100%;margin-top:8px" onclick="startSubscribe('${userId}','${email}','reports')">Subscribe — Reports $35/mo</button>
+    <div id="subMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
   `;
+}
+async function startSubscribe(userId,email,tier){
+  const msg=document.getElementById('subMsg');
+  msg.textContent='Redirecting to checkout...';
+  try{
+    const res=await fetch('/api/create-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tier,userId,email})});
+    const data=await res.json();
+    if(data.url){window.location.href=data.url;}
+    else{msg.textContent=data.error||'Something went wrong.';}
+  }catch(e){msg.textContent='Something went wrong. Try again.';}
 }
 function checkTermsComplete(cb){
   if(cb)cb.closest('.term-card').classList.toggle('checked',cb.checked);
