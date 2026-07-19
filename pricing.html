@@ -4,95 +4,111 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pricing — Bloupi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#fff;--bg2:#f5f4f0;--bg3:#eeede9;--text:#1a1a18;--text2:#6b6b67;--text3:#9b9b97;--border:rgba(0,0,0,0.12);--radius:8px;--radius-lg:12px;--blue:#378ADD;--blue-bg:#E6F1FB;--blue-text:#185FA5;--purple:#7C3AED;--purple-bg:#F3EEFF;--purple-text:#5B21B6;--green:#639922;--green-bg:#EAF3DE;--green-text:#3B6D11}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);font-size:14px;line-height:1.5}
-  .wrap{max-width:1000px;margin:0 auto;padding:3rem 1.5rem}
-  h1{font-size:28px;font-weight:500;text-align:center;margin-bottom:8px}
-  .sub{text-align:center;color:var(--text2);font-size:14px;margin-bottom:3rem}
-  .draft-note{background:var(--purple-bg);color:var(--purple-text);font-size:12px;padding:10px 14px;border-radius:var(--radius);max-width:600px;margin:0 auto 2.5rem;text-align:center}
-  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-  .tier{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.75rem 1.5rem;display:flex;flex-direction:column}
-  .tier.featured{border:2px solid var(--blue);position:relative}
-  .badge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--blue);color:white;font-size:11px;padding:3px 12px;border-radius:20px;font-weight:500}
-  .tier-name{font-size:13px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
-  .tier-price{font-size:32px;font-weight:500;margin-bottom:2px}
-  .tier-price span{font-size:14px;color:var(--text2);font-weight:400}
-  .tier-desc{font-size:12px;color:var(--text2);margin-bottom:1.5rem;min-height:32px}
-  .features{list-style:none;flex:1;margin-bottom:1.5rem}
-  .features li{font-size:13px;padding:8px 0;border-bottom:0.5px solid var(--border);display:flex;gap:8px;align-items:flex-start}
-  .features li:last-child{border-bottom:none}
-  .check{color:var(--green);flex-shrink:0}
-  .roadmap{color:var(--text3);font-style:italic}
-  .btn{display:block;text-align:center;font-size:13px;padding:10px 16px;border:0.5px solid rgba(0,0,0,0.2);border-radius:var(--radius);background:transparent;color:var(--text);text-decoration:none;font-weight:500}
-  .btn-primary{background:var(--text);color:var(--bg);border-color:var(--text)}
-  .faq{margin-top:3rem;max-width:700px;margin-left:auto;margin-right:auto}
-  .faq h2{font-size:18px;font-weight:500;margin-bottom:1rem;text-align:center}
-  .faq-item{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px}
-  .faq-item strong{display:block;font-size:13px;margin-bottom:4px}
-  .faq-item p{font-size:12px;color:var(--text2)}
-  @media(max-width:800px){.tiers{grid-template-columns:1fr}}
+  *,*::before,*::after{box-sizing:border-box}
+  body{margin:0;background:#fbfbfa;font-family:'Inter',sans-serif}
+  a{color:#2457e0;text-decoration:none}
+  a:hover{color:#1a3fb0}
+  .req-btn{font-family:'Inter',sans-serif;font-weight:600;font-size:15px;text-decoration:none;color:#16255c;border:2px solid #16255c;padding:9px 20px;border-radius:999px;transition:background .15s,color .15s}
+  .req-btn:hover{background:#16255c;color:#fff}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Simple pricing for bloggers who update</h1>
-  <p class="sub">One blog per subscription. Cancel anytime.</p>
-  <div class="draft-note">🚧 Draft pricing — not yet live. Confirm final numbers before launch.</div>
 
-  <div class="tiers">
-    <div class="tier">
-      <div class="tier-name">Dashboard</div>
-      <div class="tier-price">$20<span>/month</span></div>
-      <div class="tier-desc">Know exactly which posts to update first.</div>
-      <ul class="features">
-        <li><span class="check">✓</span> Full post catalog & urgency scoring</li>
-        <li><span class="check">✓</span> Google Search Console integration</li>
-        <li><span class="check">✓</span> Broken link scanner</li>
-        <li><span class="check">✓</span> Keyword volume data</li>
-        <li><span class="check">✓</span> AI content scan (outdated info, closed venues)</li>
-        <li><span class="check">✓</span> CSV export</li>
-      </ul>
-      <a href="#" class="btn">Get started</a>
+<div style="background: #e9f0fd; width: 100%;">
+  <nav style="display: flex; align-items: center; justify-content: space-between; padding: 28px 64px; max-width: 1320px; margin: 0 auto;">
+    <a href="index.html" style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 26px; color: #16255c; text-decoration: none;">bloupi</a>
+    <a href="dashboard.html" class="req-btn">Request Early Access</a>
+  </nav>
+</div>
+
+<div style="background: #fbfbfa; width: 100%; padding: 70px 32px 100px;">
+  <div style="max-width: 1080px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <h1 style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 42px; letter-spacing: -0.3px; color: #14152b; margin: 0 0 12px;">Simple pricing for bloggers who update</h1>
+      <p style="font-size: 17px; color: #4a4d5e; margin: 0 0 20px;">One blog per subscription. Cancel anytime.</p>
+      <div style="display: inline-flex; align-items: center; gap: 8px; background: #f3eeff; color: #5b21b6; font-weight: 600; font-size: 13px; padding: 8px 16px; border-radius: 10px;">🚧 Draft pricing — not yet live. Confirm final numbers before launch.</div>
     </div>
 
-    <div class="tier featured">
-      <div class="badge">Most popular</div>
-      <div class="tier-name">Reports</div>
-      <div class="tier-price">$35<span>/month</span></div>
-      <div class="tier-desc">The full update workflow, done for you.</div>
-      <ul class="features">
-        <li><span class="check">✓</span> Everything in Dashboard</li>
-        <li><span class="check">✓</span> Full AI-generated update reports per post</li>
-        <li><span class="check">✓</span> Venue verification via Google Places</li>
-        <li><span class="check">✓</span> VA-ready briefs with PDF export</li>
-        <li><span class="check">✓</span> Content gap & SEO suggestions</li>
-        <li><span class="check">✓</span> 25 reports per month</li>
-      </ul>
-      <a href="#" class="btn btn-primary">Get started</a>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 48px 0 60px;">
+      <div style="background: #fff; border: 1px solid #ececec; border-radius: 18px; padding: 32px 28px; display: flex; flex-direction: column;">
+        <p style="font-size: 12.5px; color: #8a8d9e; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin: 0 0 10px;">Dashboard</p>
+        <p style="font-family: 'Baloo 2', sans-serif; font-size: 36px; font-weight: 700; color: #14152b; margin: 0 0 6px;">$20<span style="font-size: 15px; color: #8a8d9e; font-weight: 500;">/month</span></p>
+        <p style="font-size: 14px; color: #4a4d5e; margin: 0 0 22px; min-height: 36px;">Know exactly which posts to update first.</p>
+        <ul style="list-style: none; margin: 0 0 26px; padding: 0; flex: 1;">
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> Full post catalog &amp; urgency scoring</li>
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> Google Search Console integration</li>
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> Broken link scanner</li>
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> Keyword volume data</li>
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> AI content scan (outdated info, closed venues)</li>
+          <li style="font-size: 14px; padding: 10px 0; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> CSV export</li>
+        </ul>
+        <a href="dashboard.html" style="text-align: center; font-size: 15px; font-weight: 700; padding: 13px 16px; border-radius: 12px; border: 1px solid #14152b; color: #14152b; text-decoration: none;">Get started</a>
+      </div>
+
+      <div style="background: #fff; border: 2px solid #2457e0; border-radius: 18px; padding: 32px 28px; display: flex; flex-direction: column; position: relative;">
+        <div style="position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: #2457e0; color: #fff; font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 999px;">Most popular</div>
+        <p style="font-size: 12.5px; color: #8a8d9e; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin: 0 0 10px;">Reports</p>
+        <p style="font-family: 'Baloo 2', sans-serif; font-size: 36px; font-weight: 700; color: #14152b; margin: 0 0 6px;">$35<span style="font-size: 15px; color: #8a8d9e; font-weight: 500;">/month</span></p>
+        <p style="font-size: 14px; color: #4a4d5e; margin: 0 0 22px; min-height: 36px;">The full update workflow, done for you.</p>
+        <ul style="list-style: none; margin: 0 0 26px; padding: 0; flex: 1;">
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> Everything in Dashboard</li>
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> Full AI-generated update reports per post</li>
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> Venue verification via Google Places</li>
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> VA-ready briefs with PDF export</li>
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> Content gap &amp; SEO suggestions</li>
+          <li style="font-size: 14px; padding: 10px 0; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> 25 reports per month</li>
+        </ul>
+        <a href="dashboard.html" style="text-align: center; font-size: 15px; font-weight: 700; padding: 13px 16px; border-radius: 12px; background: #14152b; color: #fff; text-decoration: none;">Get started</a>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #ececec; border-radius: 18px; padding: 32px 28px; display: flex; flex-direction: column;">
+        <p style="font-size: 12.5px; color: #8a8d9e; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin: 0 0 10px;">Agentic <em style="font-style: italic; color: #b6b9c4;">— coming soon</em></p>
+        <p style="font-family: 'Baloo 2', sans-serif; font-size: 36px; font-weight: 700; color: #14152b; margin: 0 0 6px;">$80<span style="font-size: 15px; color: #8a8d9e; font-weight: 500;">/month</span></p>
+        <p style="font-size: 14px; color: #4a4d5e; margin: 0 0 22px; min-height: 36px;">AI drafts the update directly in WordPress.</p>
+        <ul style="list-style: none; margin: 0 0 26px; padding: 0; flex: 1;">
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px;"><span style="color: #639922;">✓</span> Everything in Reports</li>
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px; color: #b6b9c4;"><span style="color: #639922;">✓</span> AI drafts updates directly in WordPress</li>
+          <li style="font-size: 14px; padding: 10px 0; border-bottom: 1px solid #f0f0ee; display: flex; gap: 8px; color: #b6b9c4;"><span style="color: #639922;">✓</span> Review &amp; approve before publishing</li>
+          <li style="font-size: 14px; padding: 10px 0; display: flex; gap: 8px; color: #b6b9c4;"><span style="color: #639922;">✓</span> Higher monthly report limit</li>
+        </ul>
+        <a href="dashboard.html" style="text-align: center; font-size: 15px; font-weight: 700; padding: 13px 16px; border-radius: 12px; border: 1px solid #14152b; color: #14152b; text-decoration: none;">Join waitlist</a>
+      </div>
     </div>
 
-    <div class="tier">
-      <div class="tier-name">Agentic <span class="roadmap">— coming soon</span></div>
-      <div class="tier-price">$80<span>/month</span></div>
-      <div class="tier-desc">AI drafts the update directly in WordPress.</div>
-      <ul class="features">
-        <li><span class="check">✓</span> Everything in Reports</li>
-        <li class="roadmap"><span class="check">✓</span> AI drafts updates directly in WordPress</li>
-        <li class="roadmap"><span class="check">✓</span> Review & approve before publishing</li>
-        <li class="roadmap"><span class="check">✓</span> Higher monthly report limit</li>
-      </ul>
-      <a href="#" class="btn">Join waitlist</a>
+    <div style="max-width: 700px; margin: 0 auto;">
+      <h2 style="font-family: 'Baloo 2', sans-serif; font-size: 24px; font-weight: 700; color: #14152b; text-align: center; margin: 0 0 22px;">Questions</h2>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="background: #fff; border: 1px solid #ececec; border-radius: 14px; padding: 18px 20px;">
+          <p style="font-size: 15px; font-weight: 700; color: #14152b; margin: 0 0 6px;">Can I use this for more than one blog?</p>
+          <p style="font-size: 14px; color: #4a4d5e; margin: 0;">Each subscription covers one blog. Need to manage multiple sites? Set up a separate subscription for each.</p>
+        </div>
+        <div style="background: #fff; border: 1px solid #ececec; border-radius: 14px; padding: 18px 20px;">
+          <p style="font-size: 15px; font-weight: 700; color: #14152b; margin: 0 0 6px;">What happens if I go over 25 reports?</p>
+          <p style="font-size: 14px; color: #4a4d5e; margin: 0;">Your report count resets on the 1st of each month. Need more? Reach out — higher-volume plans are available for teams and larger sites.</p>
+        </div>
+        <div style="background: #fff; border: 1px solid #ececec; border-radius: 14px; padding: 18px 20px;">
+          <p style="font-size: 15px; font-weight: 700; color: #14152b; margin: 0 0 6px;">Do I need to be invited to sign up?</p>
+          <p style="font-size: 14px; color: #4a4d5e; margin: 0;">Bloupi is currently invite-only while we finish testing with early users. Public signup is coming soon.</p>
+        </div>
+      </div>
     </div>
-  </div>
-
-  <div class="faq">
-    <h2>Questions</h2>
-    <div class="faq-item"><strong>Can I use this for more than one blog?</strong><p>Each subscription covers one blog. Need to manage multiple sites? Set up a separate subscription for each.</p></div>
-    <div class="faq-item"><strong>What happens if I go over 25 reports?</strong><p>Your report count resets on the 1st of each month. Need more? Reach out — higher-volume plans are available for teams and larger sites.</p></div>
-    <div class="faq-item"><strong>Do I need to be invited to sign up?</strong><p>Bloupi is currently invite-only while we finish testing with early users. Public signup is coming soon.</p></div>
   </div>
 </div>
+
+<div style="background: #14152b; width: 100%; padding: 48px 32px 36px;">
+  <div style="max-width: 1080px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+    <a href="index.html" style="font-family: 'Baloo 2', sans-serif; font-weight: 700; font-size: 20px; color: #fff; text-decoration: none;">bloupi</a>
+    <div style="display: flex; gap: 28px; flex-wrap: wrap;">
+      <a href="privacy.html" style="color: #9aa4d1; font-size: 14px; text-decoration: none;">Privacy Policy</a>
+      <a href="terms.html" style="color: #9aa4d1; font-size: 14px; text-decoration: none;">Terms of Service</a>
+      <a href="mailto:hello@bloupiforbloggers.com" style="color: #9aa4d1; font-size: 14px; text-decoration: none;">hello@bloupiforbloggers.com</a>
+    </div>
+    <p style="color: #6f7899; font-size: 13px; margin: 0;">© 2026 AENS Media LLC</p>
+  </div>
+</div>
+
 </body>
 </html>
