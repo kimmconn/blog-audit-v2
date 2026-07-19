@@ -51,9 +51,9 @@ export default async function handler(req, res) {
         });
       if (upsertError) throw new Error(upsertError.message);
 
-      return res.redirect(`${process.env.NEXTAUTH_URL}?gsc_connected=1`);
+  return res.redirect(`${process.env.NEXTAUTH_URL}/dashboard.html?gsc_connected=1`);
     } catch (e) {
-      return res.redirect(`${process.env.NEXTAUTH_URL}?gsc_error=${encodeURIComponent(e.message)}`);
+      return res.redirect(`${process.env.NEXTAUTH_URL}/dashboard.html?gsc_error=${encodeURIComponent(e.message)}`);
     }
   }
 
