@@ -327,7 +327,7 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
         <div class="int-card"><div class="int-name">Google Maps / Places</div><div class="int-desc">Venue verification runs automatically inside each ✨ Report — confirmed closed venues appear at the top.</div><span class="tag tag-ok">✓ Active in reports</span></div>
         <div class="int-card"><div class="int-name">Link issue scanner</div><div class="int-desc">Scans all outbound links and flags potential 4xx/5xx issues. Runs in background.</div><div id="linkScanStatus"><button class="btn btn-sm btn-primary" onclick="startLinkScan()">Scan all posts for link issues</button></div></div>
         <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume for your top ranking keywords via DataForSEO. Boosts urgency score for high-volume page 2 opportunities.</div><div id="kwScanStatus"><button class="btn btn-sm btn-primary" onclick="startKWScan()">Scan keyword volumes</button></div></div>
-        <div class="int-card"><div class="int-name">AI content scan</div>
+        <div class="int-card"><div class="int-name">AI content scan</div><div class="int-desc">Claude scans every post for outdated prices, closed venues, old currency, COVID refs, and more. Updates urgency scores automatically.</div><div id="aiScanStatus"><button class="btn btn-sm btn-primary" onclick="startAIScan()">Scan all posts with AI</button></div>
       </div>
     </div>
   </div>
