@@ -326,8 +326,8 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
         </div>
         <div class="int-card"><div class="int-name">Google Maps / Places</div><div class="int-desc">Venue verification runs automatically inside each ✨ Report — confirmed closed venues appear at the top.</div><span class="tag tag-ok">✓ Active in reports</span></div>
         <div class="int-card"><div class="int-name">Link issue scanner</div><div class="int-desc">Scans all outbound links and flags potential 4xx/5xx issues. Runs in background.</div><div id="linkScanStatus"><button class="btn btn-sm btn-primary" onclick="startLinkScan()">Scan all posts for link issues</button></div></div>
-        <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume for your top ranking keywords via DataForSEO. Boosts urgency score for high-volume page 2 opportunities.</div><div id="kwScanStatus"><button class="btn btn-sm btn-primary" onclick="startKWScan()">Scan keyword volumes</button></div>
-        <div class="int-card"><div class="int-name">AI content scan</div><div class="int-desc">Claude scans every post for outdated prices, closed venues, old currency, COVID refs, and more. Updates urgency scores automatically.</div><div id="aiScanStatus"><button class="btn btn-sm btn-primary" onclick="startAIScan()">Scan all posts with AI</button><div style="font-size:11px;color:var(--text2);margin-top:6px">Uses Claude Haiku — ~$0.50-1.00 for 500 posts</div></div></div>
+        <div class="int-card"><div class="int-name">Keyword volume</div><div class="int-desc">Monthly search volume for your top ranking keywords via DataForSEO. Boosts urgency score for high-volume page 2 opportunities.</div><div id="kwScanStatus"><button class="btn btn-sm btn-primary" onclick="startKWScan()">Scan keyword volumes</button></div></div>
+        <div class="int-card"><div class="int-name">AI content scan</div>
       </div>
     </div>
   </div>
@@ -541,7 +541,7 @@ function calcScore(p){
 async function generateReport(postIdx,forceRefresh=false){
   const post=posts[postIdx];
   if(!post)return;
-  window._briefItems=null;window._briefData=null;window._briefPostIdx=undefined;window._briefEditorNote='';
+  window._briefItems=null;window._briefData=null;window._briefPostIdx=undefined;window._briefEditorNote='';window._briefGenerated={};
   const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
   document.getElementById('modalTitle').textContent=post.title;
   document.getElementById('modalSubtitle').textContent=post.url;
@@ -1061,6 +1061,7 @@ function openBriefBuilder(data,postIdx){
     const canGenerate=typeof win==='object'&&win.canGenerate;
     items.push({id:itemId++,checked:false,section:'📈 SEO',type:'seo fix',priority:'medium',text:idea,action:'',suggested:'',note:'',canGenerate});
   });
+  items.forEach(item=>{if(window._briefGenerated&&window._briefGenerated[item.id])item.suggested=window._briefGenerated[item.id];});
   window._briefItems=items;window._briefData=data;window._briefPostIdx=postIdx;
   const pc=p=>p==='critical'?'var(--red)':p==='high'?'var(--amber)':'var(--blue)';
   const pb=p=>p==='critical'?'var(--red-bg)':p==='high'?'var(--amber-bg)':'var(--blue-bg)';
@@ -1117,7 +1118,9 @@ async function generateBriefItem(id){
     const data=window._briefData;
     const res=await fetch('/api/generate-seo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:item.text,postTitle:data.postTitle,postUrl:data.postUrl,summary:data.report?.summary,modifiedDate:data.modifiedDate})});
     const json=await res.json();
-    item.suggested=json.generated||json.error||'Could not generate content.';
+    const generated=json.generated||json.error||'Could not generate content.';
+    window._briefGenerated=window._briefGenerated||{};
+    window._briefGenerated[id]=generated;
     openBriefBuilder(window._briefData,window._briefPostIdx);
   }catch(e){
     if(btn){btn.disabled=false;btn.textContent='✨ Generate';}
