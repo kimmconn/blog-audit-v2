@@ -925,6 +925,21 @@ async function startAIScan(forceRefresh=false){
 // ===== KEYWORD SCANNER =====
 async function startKWScan(forceRefresh=false){
   if(posts.length===0){alert('Please crawl your blog and load GSC data first!');return;}
+  if(forceRefresh){
+    const{data:{session}}=await sb.auth.getSession();
+    if(!session){alert('Please sign in first.');return;}
+    const{data:profile}=await sb.from('profiles').select('kw_rescan_used_at,tier').eq('id',session.user.id).single();
+    if(profile?.tier!=='owner'){
+      if(profile?.kw_rescan_used_at){
+        const daysSince=(Date.now()-new Date(profile.kw_rescan_used_at))/(1000*60*60*24);
+        if(daysSince<30){
+          alert(`You can force a keyword rescan once per month. Try again in ${Math.ceil(30-daysSince)} days.`);
+          return;
+        }
+      }
+      await sb.from('profiles').update({kw_rescan_used_at:new Date().toISOString()}).eq('id',session.user.id);
+    }
+  }
   const postsWithKeywords=posts.filter(p=>p.gscKeywords&&p.gscKeywords.length>0);
   if(postsWithKeywords.length===0){alert('No keyword data found. Please load GSC data first.');return;}
   const banner=document.getElementById('kwScanBanner');
