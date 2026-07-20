@@ -535,6 +535,7 @@ function calcScore(p){
 async function generateReport(postIdx,forceRefresh=false){
   const post=posts[postIdx];
   if(!post)return;
+  window._briefItems=null;window._briefData=null;window._briefPostIdx=undefined;
   const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
   document.getElementById('modalTitle').textContent=post.title;
   document.getElementById('modalSubtitle').textContent=post.url;
