@@ -1058,7 +1058,8 @@ function openBriefBuilder(data,postIdx){
   // SEO quick wins
   (r.seoQuickWins||[]).forEach(win=>{
     const idea=typeof win==='string'?win:win.idea;
-    items.push({id:itemId++,checked:false,section:'📈 SEO',type:'seo fix',priority:'medium',text:idea,action:'',suggested:'',note:''});
+    const canGenerate=typeof win==='object'&&win.canGenerate;
+    items.push({id:itemId++,checked:false,section:'📈 SEO',type:'seo fix',priority:'medium',text:idea,action:'',suggested:'',note:'',canGenerate});
   });
   window._briefItems=items;window._briefData=data;window._briefPostIdx=postIdx;
   const pc=p=>p==='critical'?'var(--red)':p==='high'?'var(--amber)':'var(--blue)';
@@ -1094,7 +1095,7 @@ function openBriefBuilder(data,postIdx){
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;flex-wrap:wrap"><span style="font-size:10px;padding:1px 6px;border-radius:var(--radius);background:${pb(item.priority)};color:${pt(item.priority)};text-transform:uppercase">${item.type}</span><span style="font-size:10px;color:${pt(item.priority)};font-weight:500">${item.priority}</span></div>
         <div style="font-size:12px;color:var(--text);margin-bottom:3px">${item.text}</div>
         ${item.action?`<div style="font-size:11px;color:var(--text2);margin-bottom:4px">${item.action}</div>`:''}
-        ${item.suggested?`<div style="font-size:11px;color:var(--green-text);background:var(--green-bg);padding:6px 8px;border-radius:var(--radius);margin-bottom:4px"><strong>Suggested:</strong> ${item.suggested}</div>`:''}
+       ${item.suggested?`<div style="font-size:11px;color:var(--green-text);background:var(--green-bg);padding:6px 8px;border-radius:var(--radius);margin-bottom:4px"><strong>Suggested:</strong> ${item.suggested}<div style="font-size:10px;color:var(--text3);margin-top:4px;font-style:italic">✏️ AI-generated starting point — edit and add your own experience before publishing</div></div>`:(item.canGenerate?`<button class="btn btn-sm" style="margin-bottom:4px" onclick="generateBriefItem(${item.id})">✨ Generate</button>`:'')}
         ${item.note?`<div style="font-size:11px;color:var(--blue-text);background:var(--blue-bg);padding:6px 8px;border-radius:var(--radius);margin-bottom:4px"><strong>📝 Note:</strong> ${item.note}</div>`:''}
         <textarea placeholder="Add your own note..." onchange="briefNote(${item.id},this.value)" style="width:100%;font-size:11px;padding:4px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;min-height:28px;margin-top:4px;font-family:inherit" rows="1"></textarea>
       </div>
@@ -1106,6 +1107,23 @@ function openBriefBuilder(data,postIdx){
 }
 function briefToggle(id,checked){const item=window._briefItems.find(i=>i.id===id);if(item){item.checked=checked;const el=document.getElementById('brief-item-'+id);if(el)el.style.background=checked?'var(--bg)':'var(--bg2)';}}
 function briefNote(id,note){const item=window._briefItems.find(i=>i.id===id);if(item)item.note=note;}
+async function generateBriefItem(id){
+  const item=window._briefItems.find(i=>i.id===id);
+  if(!item||!window._briefData)return;
+  const el=document.getElementById('brief-item-'+id);
+  const btn=el?.querySelector('button');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Generating (20-30s)...';}
+  try{
+    const data=window._briefData;
+    const res=await fetch('/api/generate-seo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({idea:item.text,postTitle:data.postTitle,postUrl:data.postUrl,summary:data.report?.summary,modifiedDate:data.modifiedDate})});
+    const json=await res.json();
+    item.suggested=json.generated||json.error||'Could not generate content.';
+    openBriefBuilder(window._briefData,window._briefPostIdx);
+  }catch(e){
+    if(btn){btn.disabled=false;btn.textContent='✨ Generate';}
+    alert('Generation failed: '+e.message);
+  }
+}
 function briefCheckAll(checked){window._briefItems.forEach(item=>{item.checked=checked;const el=document.getElementById('brief-item-'+item.id);if(el){el.querySelector('input[type=checkbox]').checked=checked;el.style.background=checked?'var(--bg)':'var(--bg2)';}});}
 let customTaskCount=0;
 function briefAddCustomTask(){const id='custom-'+customTaskCount++;const div=document.createElement('div');div.id=id;div.style.cssText='display:flex;gap:8px;margin-bottom:6px;align-items:flex-start';div.innerHTML=`<input type="checkbox" checked style="margin-top:8px;flex-shrink:0" onchange="this.parentElement.style.opacity=this.checked?'1':'0.5'"><textarea placeholder="Describe the task for your VA..." style="flex:1;font-size:12px;padding:6px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;font-family:inherit" rows="2" id="${id}-text"></textarea><button onclick="document.getElementById('${id}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:6px;font-size:16px;flex-shrink:0">×</button>`;document.getElementById('customTasks').appendChild(div);}
