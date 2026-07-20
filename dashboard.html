@@ -66,6 +66,7 @@
   .flag-peaked{background:var(--amber-bg);color:var(--amber-text)}
   .flag-notindexed{background:#F3EEFF;color:#5B21B6}
   .flag-potential{background:#FFF7ED;color:#C2410C}
+ .flag-staleyear{background:#fff4d6;color:#8a6d0b}
   .flag-offmap{background:var(--red-bg);color:var(--red-text)}
   .flag-neverranked{background:var(--bg2);color:var(--text3)}
   .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px}
@@ -282,7 +283,7 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
         <input type="text" id="searchInput" placeholder="Search posts..." oninput="renderTable()" />
         <select id="fUrgency" onchange="renderTable()"><option value="">All urgency</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
         <select id="fAge" onchange="renderTable()"><option value="">Any age</option><option value="36">3+ years</option><option value="24">2+ years</option><option value="12">1+ year</option></select>
-        <select id="fFlag" onchange="renderTable()"><option value="">All posts</option><option value="opportunity">Opportunities (pos 11-20)</option><option value="peaked">Peaked traffic</option><option value="offmap">Fallen off map</option><option value="hotimpr">🔥 High impressions gap</option><option value="notindexed">🔍 Not in GSC</option><option value="floor">Hard floor only</option><option value="recentlyupdated">✅ Recently updated</option></select>
+        <select id="fFlag" onchange="renderTable()"><option value="">All posts</option><option value="opportunity">Opportunities (pos 11-20)</option><option value="peaked">Peaked traffic</option><option value="offmap">Fallen off map</option><option value="hotimpr">🔥 High impressions gap</option><option value="notindexed">🔍 Not in GSC</option><option value="floor">Hard floor only</option><option value="recentlyupdated">✅ Recently updated</option><option value="staleyear">📅 Outdated year</option></select>
         <select id="fSort" onchange="renderTable()"><option value="score">Sort: urgency</option><option value="age">Sort: oldest</option><option value="traffic">Sort: traffic ↓</option><option value="decline">Sort: biggest decline</option><option value="modified">Sort: recently updated</option><option value="title">Sort: A–Z</option></select>
         <button class="btn btn-sm" onclick="exportCSV()">Export CSV</button>
       </div>
@@ -523,6 +524,11 @@ function calcScore(p){
   if(p.hasOldCurrency)s+=5;if(p.hasCovid)s+=3;
   if(p.venueIssues>0){s+=Math.min(p.venueIssues/2,1)*weights.venueIssues;s=Math.max(s,Math.min(s+f.vb,99));}
   if(p.impressions>1000&&p.ctr<0.02)s+=weights.ctrGap;else if(p.impressions>500&&p.ctr<0.01)s+=weights.ctrGap*0.5;
+  const yearMatch=(p.title||'').match(/\b(20\d{2})\b/);
+  if(yearMatch&&parseInt(yearMatch[1])<new Date().getFullYear()){
+    s+=10;
+    flags.push({type:'staleyear',label:`📅 Outdated year: ${yearMatch[1]}`});
+  }
   // Reduce score if recently updated (within 3 months)
   if(p.ageMonths<=3)s=Math.round(s*0.5);
   let hardFloor=false;
@@ -771,6 +777,7 @@ function getFiltered(){
     if(fl==='hotimpr'&&!(p.flags&&p.flags.some(f=>f.type==='hotimpr')))return false;
     if(fl==='notindexed'&&!(p.flags&&p.flags.some(f=>f.type==='notindexed')))return false;
     if(fl==='recentlyupdated'&&p.ageMonths>3)return false;
+    if(fl==='staleyear'&&!(p.flags&&p.flags.some(f=>f.type==='staleyear')))return false;
     return true;
   });
   r.sort((a,b)=>so==='score'?b.score-a.score:so==='age'?b.ageMonths-a.ageMonths:so==='traffic'?b.traffic-a.traffic:so==='decline'?b.trafficDeclinePct-a.trafficDeclinePct:so==='modified'?new Date(b.lastModified||0)-new Date(a.lastModified||0):a.title.localeCompare(b.title));
