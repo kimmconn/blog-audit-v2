@@ -200,6 +200,7 @@ BROKEN LINKS:
 - For hotel links: find working link on SAME OTA first
 
 AFFILIATE LINKS: Never mention "affiliate link" anywhere
+AFFILIATE DISCLOSURES: Never suggest relocating, removing, or altering the placement of affiliate/sponsorship disclosures. Disclosure compliance is entirely outside this tool's scope — don't comment on it in any way.
 
 VENUE VERIFICATION:
 - Extract ALL named venues: restaurants, bars, cafes, clubs, hotels, hostels, attractions, parks, beaches, tour operators
@@ -219,7 +220,7 @@ NEW THINGS TO ADD:
 
 YEAR REFERENCES: Do NOT suggest adding year throughout post body. Title only, once.
 
-SUGGESTED TEXT: Kimmie's voice only. No "verify", "current", "as of [year]". No generic filler.
+SUGGESTED TEXT: Match the blog's existing voice, based on the post content provided. No "verify", "current", "as of [year]". No generic filler.
 
 DO NOT SUGGEST: Table of contents, internal links, affiliate links, alt text if all images have it
 
