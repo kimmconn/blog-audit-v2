@@ -258,6 +258,7 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
     <button class="tab" onclick="switchTab('connect',this)">Data sources</button>
     <button class="tab" onclick="switchTab('settings',this)">Scoring weights</button>
     <button class="tab" onclick="switchTab('indexing',this)">🔍 Indexing</button>
+    <button class="tab" onclick="switchTab('updated',this)">✓ Updated</button>
   </div>
   <div id="tabCatalog">
     <div class="panel">
@@ -344,6 +345,19 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
       </div>
     </div>
   </div>
+  <div id="tabUpdated" style="display:none">
+    <div class="panel">
+      <div class="panel-title">Marked as updated <span class="tag" id="updatedCount"></span></div>
+      <p class="note">Posts you've marked as updated are hidden from the main catalog. Unmark any post to bring it back into your priority list.</p>
+      <div id="updatedEmpty" class="empty" style="display:none"><div style="font-size:32px;margin-bottom:8px">🎉</div><div>Nothing marked as updated yet. Mark posts from the Post catalog tab as you finish them.</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th style="width:60%">Post title</th><th style="width:40%">Actions</th></tr></thead>
+          <tbody id="updatedTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
   <div id="tabSettings" style="display:none">
     <div class="panel">
       <div class="panel-title">Urgency scoring weights</div>
@@ -417,6 +431,13 @@ const PER_PAGE=25;
 let weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};
 const wLabels={age:'Post age',trafficHealth:'Traffic health (peak vs recent)',fallenOffMap:'Fallen off map (had traffic, lost it)',positionOpportunity:'Position 11–20 opportunity',brokenLinks:'Link issues',venueIssues:'Outdated/closed venues',ctrGap:'High impressions, low CTR'};
 function getThresholds(){return{peakedPct:parseInt(document.getElementById('tPeakedPct')?.value||50),offmapClicks:parseInt(document.getElementById('tOffmapClicks')?.value||50),offmapImpr:parseInt(document.getElementById('tOffmapImpr')?.value||500),hotImpr:parseInt(document.getElementById('tHotImpr')?.value||5000),hotCtr:parseFloat(document.getElementById('tHotCtr')?.value||2)/100,kwHigh:parseInt(document.getElementById('tKwHigh')?.value||1000),kwMed:parseInt(document.getElementById('tKwMed')?.value||300)};}
+let dismissedUrls=new Set();
+async function loadDismissedPosts(){
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session)return;
+  const{data}=await sb.from('dismissed_posts').select('post_url').eq('user_id',session.user.id);
+  dismissedUrls=new Set((data||[]).map(d=>d.post_url));
+}
 window.addEventListener('load',async()=>{
   const params=new URLSearchParams(window.location.search);
   const connected=params.get('gsc_connected'),error=params.get('gsc_error');
@@ -424,6 +445,7 @@ window.addEventListener('load',async()=>{
   if(error){alert('GSC error: '+error);return;}
   const{data:{session}}=await sb.auth.getSession();
   if(!session)return;
+  await loadDismissedPosts();
   const{data:conn}=await sb.from('gsc_connections').select('access_token').eq('user_id',session.user.id).single();
   if(conn&&conn.access_token){gscToken=conn.access_token;updateGSCUI(true);showGSCBanner(true);}
 });
@@ -752,21 +774,23 @@ function scoreColor(s){return s>=90?'#E24B4A':s>=60?'#BA7517':s>=30?'#378ADD':'#
 function healthColor(pct){return pct>=70?'#E24B4A':pct>=40?'#BA7517':pct>=20?'#378ADD':'#639922'}
 function fmtNum(n){if(!n)return'—';if(n>=10000)return Math.round(n/1000)+'k';if(n>=1000)return(n/1000).toFixed(1)+'k';return n}
 function fmtPos(p){if(!p||p===0)return'—';return p.toFixed(1)}
-function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing'].forEach(id=>{const e=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(e)e.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings')renderWeights();}
+function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing','updated'].forEach(id=>{const e=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(e)e.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings')renderWeights();if(name==='updated')renderUpdatedTab();}
 function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('');}
 function resetWeights(){weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};renderWeights();}
 function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value);});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
 function updateMetrics(){
-  document.getElementById('mTotal').textContent=posts.length;
-  document.getElementById('mCritical').textContent=posts.filter(p=>p.urgency==='critical').length;
-  document.getElementById('mStale').textContent=posts.filter(p=>p.ageMonths>=12).length;
-  document.getElementById('mOpportunity').textContent=posts.filter(p=>p.flags&&p.flags.some(f=>f.type==='opportunity')).length;
-  const notIndexed=posts.filter(p=>p.flags&&p.flags.some(f=>f.type==='notindexed')).length;
+  const active=posts.filter(p=>!dismissedUrls.has(p.url));
+  document.getElementById('mTotal').textContent=active.length;
+  document.getElementById('mCritical').textContent=active.filter(p=>p.urgency==='critical').length;
+  document.getElementById('mStale').textContent=active.filter(p=>p.ageMonths>=12).length;
+  document.getElementById('mOpportunity').textContent=active.filter(p=>p.flags&&p.flags.some(f=>f.type==='opportunity')).length;
+  const notIndexed=active.filter(p=>p.flags&&p.flags.some(f=>f.type==='notindexed')).length;
   if(notIndexed>0){const el=document.getElementById('mStale');if(el&&el.nextElementSibling)el.nextElementSibling.textContent=`not updated recently • ${notIndexed} not in GSC`;}
 }
 function getFiltered(){
   const s=document.getElementById('searchInput').value.toLowerCase(),u=document.getElementById('fUrgency').value,a=document.getElementById('fAge').value,fl=document.getElementById('fFlag').value,so=document.getElementById('fSort').value;
   let r=posts.filter(p=>{
+    if(dismissedUrls.has(p.url))return false;
     if(s&&!p.title.toLowerCase().includes(s))return false;
     if(u&&p.urgency!==u)return false;
     if(a&&p.ageMonths<parseInt(a))return false;
@@ -785,7 +809,7 @@ function getFiltered(){
 }
 function renderIndexingTab(){
   const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
-  const unindexed=posts.filter(p=>p.gscChecked&&!(p.recentImpressions>0||p.olderImpressions>0||p.recentClicks>0||p.olderClicks>0));
+  const unindexed=posts.filter(p=>p.gscChecked&&!(p.recentImpressions>0||p.olderImpressions>0||p.recentClicks>0||p.olderClicks>0)&&!dismissedUrls.has(p.url));
   const countEl=document.getElementById('indexingCount');
   const emptyEl=document.getElementById('indexingEmpty');
   const tbody=document.getElementById('indexingTableBody');
@@ -798,6 +822,46 @@ function renderIndexingTab(){
     const gscInspect=`https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(siteUrl+'/')}&id=${encodeURIComponent(p.url)}`;
     const ageCol=p.ageMonths>=24?'var(--red-text)':p.ageMonths>=12?'var(--amber-text)':'var(--text2)';
     return`<tr><td title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,50)}${p.title.length>50?'…':''}</a></td><td style="font-size:11px;color:${ageCol}">${fmtAge(p.ageMonths)}</td><td style="font-size:11px;color:var(--text2)">${p.lastModified?new Date(p.lastModified).toLocaleDateString():'—'}</td><td style="display:flex;gap:6px;flex-wrap:wrap"><a href="${gscInspect}" target="_blank" class="btn btn-sm">🔍 Inspect in GSC</a><a href="${p.url}" target="_blank" class="btn btn-sm">Open post ↗</a></td></tr>`;
+  }).join('');
+}
+async function markUpdated(postIdx){
+  const post=posts[postIdx];
+  if(!post)return;
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session){alert('Please sign in first.');return;}
+  dismissedUrls.add(post.url);
+  updateMetrics();renderTable();renderUpdatedTab();
+  const{error}=await sb.from('dismissed_posts').insert({user_id:session.user.id,post_url:post.url});
+  if(error){
+    dismissedUrls.delete(post.url);
+    updateMetrics();renderTable();renderUpdatedTab();
+    alert('Could not mark as updated: '+error.message);
+    return;
+  }
+  const toast=document.createElement('div');
+  toast.style.cssText='position:fixed;bottom:20px;right:20px;background:#1a1a18;color:white;padding:10px 16px;border-radius:8px;font-size:12px;z-index:9999';
+  toast.textContent='✓ Marked as updated — see it in the Updated tab';
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.remove(),3000);
+}
+async function unmarkUpdated(url){
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session)return;
+  dismissedUrls.delete(url);
+  updateMetrics();renderTable();renderUpdatedTab();
+  await sb.from('dismissed_posts').delete().eq('user_id',session.user.id).eq('post_url',url);
+}
+function renderUpdatedTab(){
+  const tbody=document.getElementById('updatedTableBody');
+  const emptyEl=document.getElementById('updatedEmpty');
+  const countEl=document.getElementById('updatedCount');
+  if(!tbody)return;
+  const dismissedPosts=posts.filter(p=>dismissedUrls.has(p.url));
+  if(countEl)countEl.textContent=dismissedPosts.length+' posts';
+  if(dismissedPosts.length===0){if(emptyEl)emptyEl.style.display='block';tbody.innerHTML='';return;}
+  if(emptyEl)emptyEl.style.display='none';
+  tbody.innerHTML=dismissedPosts.map(p=>{
+    return`<tr><td title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,50)}${p.title.length>50?'…':''}</a></td><td style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="unmarkUpdated('${p.url}')">↺ Unmark</button><a href="${p.url}" target="_blank" class="btn btn-sm">Open post ↗</a></td></tr>`;
   }).join('');
 }
 function renderTable(){
@@ -842,7 +906,7 @@ function renderTable(){
         <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${Math.min(p.score/150*100,100)}%;background:${sc}"></div></div><span class="score-num" style="color:${sc}">${p.score}</span></div>
         <div style="margin-top:3px">${p.hardFloor?'<span class="floor-pill">forced</span>':'<span class="pill u-'+p.urgency+'">'+p.urgency+'</span>'}</div>
       </td>
-      <td class="col-action" style="white-space:normal"><button class="report-btn" onclick="generateReport(${postIdx})">✨ Report</button></td>
+      <td class="col-action" style="white-space:normal"><button class="report-btn" onclick="generateReport(${postIdx})">✨ Report</button><br><button class="report-btn" onclick="markUpdated(${postIdx})" style="margin-top:3px" title="Mark as updated">✓ Done</button></td>
     </tr>`;
   }).join('');
 }
