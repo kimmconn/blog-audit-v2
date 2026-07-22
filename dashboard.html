@@ -194,6 +194,18 @@ async function checkAuth(){
   }
   if(authGateEl)authGateEl.style.display='none';
   if(appEl)appEl.style.display='block';
+  if(profile.tier==='trial'&&profile.trial_ends_at){
+    const daysLeft=Math.ceil((new Date(profile.trial_ends_at)-Date.now())/(1000*60*60*24));
+    const banner=document.getElementById('trialBanner');
+    if(banner){
+      banner.style.display='block';
+      if(daysLeft>0){
+        banner.innerHTML=`<div style="background:var(--purple-bg);color:var(--purple-text);padding:8px 14px;border-radius:var(--radius);font-size:12.5px;font-weight:600;display:inline-block">🎉 Free trial — ${daysLeft} day${daysLeft===1?'':'s'} left</div>`;
+      }else{
+        banner.innerHTML=`<div style="background:var(--red-bg);color:var(--red-text);padding:8px 14px;border-radius:var(--radius);font-size:12.5px;font-weight:600;display:inline-block">⏰ Your trial has ended — <a href="pricing.html" style="text-decoration:underline">subscribe to keep access</a></div>`;
+      }
+    }
+  }
 }
 function showInviteCodeScreen(userId,email){
   const authGateEl=document.getElementById('authGate'),appEl=document.querySelector('.app');
@@ -250,6 +262,7 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
 <div class="app">
   <h1>Bloupi</h1>
   <p class="subtitle">Catalog, score, and prioritize your posts for updates</p>
+  <div id="trialBanner" style="display:none;margin-bottom:1rem"></div>
   <div class="metrics">
     <div class="metric"><div class="metric-label">Total posts</div><div class="metric-value" id="mTotal">—</div><div class="metric-sub">cataloged</div></div>
     <div class="metric"><div class="metric-label">Critical urgency</div><div class="metric-value" id="mCritical" style="color:var(--red-text)">—</div><div class="metric-sub">need immediate update</div></div>
