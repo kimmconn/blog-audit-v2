@@ -1,5 +1,4 @@
 import { Redis } from '@upstash/redis';
-
 let redis;
 function getRedis() {
   if (!redis) {
@@ -9,7 +8,6 @@ function getRedis() {
   }
   return redis;
 }
-
 async function checkVenueStatus(venueName, location) {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) return { venue: venueName, status: 'unknown', flag: false };
@@ -40,7 +38,6 @@ async function checkVenueStatus(venueName, location) {
     return { venue: venueName, status: 'unknown', flag: false };
   }
 }
-
 async function searchCompetitors(postTitle) {
   try {
     const searchQuery = postTitle.replace(/[^a-zA-Z0-9 ]/g, ' ').trim();
@@ -56,7 +53,6 @@ async function searchCompetitors(postTitle) {
     return { titles: [] };
   }
 }
-
 function extractInternalLinks(html, siteUrl) {
   const matches = html.match(/href="([^"]+)"/g) || [];
   const domain = siteUrl.replace(/https?:\/\//, '').replace(/www\./, '').split('/')[0];
@@ -68,7 +64,6 @@ function extractInternalLinks(html, siteUrl) {
     .slice(0, 50);
   return internal;
 }
-
 function extractImagesWithoutAlt(html) {
   const imgMatches = html.match(/<img[^>]+>/gi) || [];
   const missing = [];
@@ -83,88 +78,70 @@ function extractImagesWithoutAlt(html) {
   });
   return missing.slice(0, 10);
 }
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
 const { postId, postUrl, postTitle, siteUrl, gscData, brokenLinks, gscKeywords, forceRefresh, userId } = req.body;
 if (!postId || !siteUrl) return res.status(400).json({ error: 'Missing postId or siteUrl' });
 if (!userId) return res.status(400).json({ error: 'Missing userId' });
-
 const { createClient } = await import('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
 const currentMonth = new Date().toISOString().slice(0, 7);
 const { data: profile } = await supabase.from('profiles').select('reports_this_month, reports_month, tier').eq('id', userId).single();
-
 let reportsUsed = profile?.reports_this_month || 0;
 if (profile?.reports_month !== currentMonth) reportsUsed = 0;
-
 if (profile?.tier !== 'owner' && reportsUsed >= 25) {
   return res.status(200).json({ error: "You've hit your 25 reports this month limit. It resets next month!" });
 }
-
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'Anthropic API key not configured' });
-
   const cacheKey = `report_v2:${siteUrl}:${postId}`;
   const kv = getRedis();
-
   if (!forceRefresh && kv) {
     try {
       const cached = await kv.get(cacheKey);
       if (cached && cached.generatedAt) return res.status(200).json({ ...cached, fromCache: true });
     } catch(e) {}
   }
-
   try {
     const wpRes = await fetch(
       `${siteUrl}/wp-json/wp/v2/posts/${postId}?_fields=content,title,date,modified`,
       { headers: { 'User-Agent': 'BlogAuditTool/1.0' }, signal: AbortSignal.timeout(15000) }
     );
     if (!wpRes.ok) return res.status(200).json({ error: `Could not fetch post: ${wpRes.status}` });
-
     const wpData = await wpRes.json();
     const rawHtml = wpData?.content?.rendered || '';
-
     const existingInternalLinks = extractInternalLinks(rawHtml, siteUrl);
     const imagesWithoutAlt = extractImagesWithoutAlt(rawHtml);
-
     const content = rawHtml
       .replace(/<h[1-6][^>]*>/gi, '\n## ').replace(/<\/h[1-6]>/gi, '\n')
       .replace(/<li[^>]*>/gi, '\n- ').replace(/<p[^>]*>/gi, '\n')
       .replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/\n{3,}/g, '\n\n')
       .trim();
-
     const publishDate = wpData?.date?.split('T')[0] || 'unknown';
     const modifiedDate = wpData?.modified?.split('T')[0] || 'unknown';
-
     const gscContext = gscData
       ? `GSC: ${gscData.recentClicks||0} clicks (recent 8mo), ${gscData.olderClicks||0} clicks (prior 8mo), ${gscData.trafficDeclinePct||0}% decline, position ${gscData.position?.toFixed(1)||'?'}, ${gscData.recentImpressions||0} impressions`
       : 'No GSC data available';
-
     const topKeywordsContext = gscKeywords?.length > 0
       ? `\nTOP GSC KEYWORDS FOR THIS POST (by impressions, last 6 months):\n${gscKeywords.slice(0,10).map((k,i) => `${i+1}. "${k.keyword}" — ${k.impressions} impressions, ${k.clicks} clicks`).join('\n')}\nNaturally weave these keywords into your update where relevant.`
       : '';
-
     const linksContext = brokenLinks?.length > 0
       ? `${brokenLinks.length} potential broken links (NOTE: the link checker has false positives — always verify before flagging as broken):\n${brokenLinks.slice(0,10).map(l=>`- ${l.url} (${l.status||'timeout'})`).join('\n')}`
       : 'No broken links detected';
-
     const altTextContext = imagesWithoutAlt.length > 0
       ? `\nIMAGES MISSING ALT TEXT (${imagesWithoutAlt.length} found): ${imagesWithoutAlt.join(', ')}`
       : '\nAll images appear to have alt text — do NOT suggest image alt text optimization.';
-
     const existingLinksContext = existingInternalLinks.length > 0
       ? `\nEXISTING INTERNAL LINKS ALREADY IN THIS POST (do NOT suggest these again):\n${existingInternalLinks.join('\n')}`
       : '';
-
+    const wordCount = content.split(/\s+/).filter(Boolean).length;
+    const wordCountContext = `\nPOST WORD COUNT: ~${wordCount} words.`;
     const competitorPromise = searchCompetitors(postTitle);
-
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -176,79 +153,75 @@ if (profile?.tier !== 'owner' && reportsUsed >= 25) {
         model: 'claude-sonnet-4-5',
         max_tokens: 16000,
     system: `You are an expert travel blog content auditor. Today's date is ${new Date().toLocaleDateString("en-US", {year:"numeric",month:"long",day:"numeric"})}.
-
 WRITING VOICE (match the blog's existing tone from the post content provided):
 - First-person, experience-first, conversational
 - Discovery energy — sharing something found, not lecturing
 - Direct, practical, friend-to-friend advice
 - Occasional light humor and personality where it fits naturally
 - Does NOT need a table of contents unless the post structure suggests otherwise
-
 CRITICAL RULES:
-
 PRICES:
 - General price references like "less than $200 a night" or "under $50" are FINE — flag to verify, do not remove
 - NEVER invent specific prices — only flag existing ones to verify
 - Croatia switched to Euro January 2023 — never suggest HRK prices
 - For prices that need checking: editorNote should say "Verify this price is still accurate at [official website]"
-
 BROKEN LINKS:
 - The link checker has a HIGH FALSE POSITIVE RATE
 - ALWAYS start the action with: "Check if this link is actually broken first (the checker is often wrong). If broken, [then what to do]"
 - NEVER say "replace with affiliate link" — Kimmie handles all affiliate links herself
 - For tour/activity links: editorNote says "If broken, find a replacement on GetYourGuide or Viator"
 - For hotel links: find working link on SAME OTA first
-
 AFFILIATE LINKS: Never mention "affiliate link" anywhere
 AFFILIATE DISCLOSURES: Never suggest relocating, removing, or altering the placement of affiliate/sponsorship disclosures. Disclosure compliance is entirely outside this tool's scope — don't comment on it in any way.
-
 VENUE VERIFICATION:
 - Extract ALL named venues: restaurants, bars, cafes, clubs, hotels, hostels, attractions, parks, beaches, tour operators
 - Up to 10 venues for Google Places verification
-
 IMAGE ALT TEXT:
 - ONLY flag images that are actually missing alt text (filenames provided in context)
 - If context says "All images appear to have alt text" — do NOT suggest alt text optimization at all
 - If images ARE missing alt text, add a missing_alt_text fix in the SECTION where that image appears in the post
 - Suggest descriptive alt text based on the surrounding post content (what the image likely shows)
 - Place these fixes in section order alongside other fixes for that section — not all bunched together
-
+NEW IMAGES:
+- Separately from alt text, always suggest at least one specific NEW image to add (not a fix to an existing one) via seoQuickWins with type "image" — describe what the image should show and roughly where it goes. Always phrase this as adding a new image, never replacing an existing one. This is one of the highest-impact updates a post can get.
+CLARITY & STRUCTURE:
+- While reading through the post, flag vague phrasing, superfluous content, and confusing sentence construction:
+  - Vague: a generic descriptor where a specific one (a name, price, distance, number) is knowable but missing. Example: "responds quickly for a while" should be "responds consistently, with stable response times."
+  - Superfluous: a sentence that could be deleted without losing any information or decision-usefulness for the reader.
+  - Confusing structure: a sentence crams in unrelated ideas or unclear references, forcing a re-read. Example: "there are limits to how much time Google's crawlers can spend crawling any single site, where a site is defined by the hostname" should be split into "there are limits to how much time and resources Google can devote to crawling any single site."
+- Only flag issues you're confident would meaningfully help the reader if fixed — if in doubt, don't flag it. Precision over recall.
+- Add these as fixes in the correct section, using type "vague_content", "superfluous_content", or "confusing_structure" — same currentText/action/suggestedText/editorNote format as other fixes
+- Cap it: include at most the 3-5 most impactful clarity fixes total across the whole post, even if there are more you could flag
+REFRESH DEPTH:
+- Data shows refreshes need to change more than 10% of a post's word count to meaningfully move traffic — light tweaks alone tend not to. As the final sentence of "summary", honestly note whether the fixes you're suggesting add up to a meaningful refresh for a post this length, or whether it's a lighter touch-up — and if it's light, name one additional section that could use deeper attention.
 NEW THINGS TO ADD:
 - For each post, think about what types of venues, experiences, or content have likely opened or become popular since the post was last updated
 - Suggest specific search strategies for the editor to find new things to add (e.g. "Search Google Maps for [location] + [category] and filter by 'Opened after [year]'")
 - This is one of the most valuable parts of the report — always include at least 2-3 newThingsToAdd items
-
 YEAR REFERENCES: Do NOT suggest adding year throughout post body. Title only, once.
-
 SUGGESTED TEXT: Match the blog's existing voice, based on the post content provided. No "verify", "current", "as of [year]". No generic filler.
-
 DO NOT SUGGEST: Table of contents, internal links, affiliate links, alt text if all images have it
-
 TWO SEPARATE FIELDS:
 1. suggestedText = ready-to-paste post content in Kimmie's voice ONLY
 2. editorNote = tips for VA only. NOT post content.
-
 Return ONLY valid JSON, no markdown fences.`,
-
         messages: [{
           role: 'user',
           content: `Create a section-by-section update brief for this travel blog post.
-
 Title: "${postTitle}"
 URL: ${postUrl}
 Published: ${publishDate} | Last modified: ${modifiedDate}
 ${gscContext}
+${wordCountContext}
 ${topKeywordsContext}
 ${linksContext}
 ${altTextContext}
 ${existingLinksContext}
-
 POST CONTENT:
 ${content}
-
 Return ONLY this JSON:
 {
-  "summary": "2-3 sentences: what needs updating and why it matters for traffic/readers",
+  "summary": "2-3 sentences: what needs updating and why it matters for traffic/readers, ending with the refresh-depth note described above",
   "estimatedUpdateTime": "15 mins|30 mins|1 hour|2+ hours",
   "location": "city and country this post is about",
   "venueNames": ["every named restaurant", "bar", "cafe", "club", "hotel", "hostel", "attraction", "park", "tour operator"],
@@ -271,7 +244,7 @@ Return ONLY this JSON:
       "sectionName": "Section heading IN ORDER as it appears in post",
       "fixes": [
         {
-          "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix|missing_alt_text",
+          "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix|missing_alt_text|vague_content|superfluous_content|confusing_structure",
           "priority": "critical|high|medium",
           "currentText": "exact short quote",
           "action": "specific instruction — broken links ALWAYS start with 'Check if this link is actually broken first (the checker is often wrong).'",
@@ -302,27 +275,22 @@ Return ONLY this JSON:
       }),
       signal: AbortSignal.timeout(240000),
     });
-
     if (!claudeRes.ok) {
       const err = await claudeRes.text();
       return res.status(200).json({ error: `Claude API error ${claudeRes.status}: ${err.slice(0,200)}` });
     }
-
     const claudeData = await claudeRes.json();
     const rawText = claudeData.content?.[0]?.text || '{}';
-
     let report;
     try {
       report = JSON.parse(rawText.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim());
     } catch(e) {
       return res.status(200).json({ error: 'Could not parse Claude response', raw: rawText.slice(0,300) });
     }
-
     const venueNames = report.venueNames || [];
     const location = report.location || '';
     delete report.venueNames;
     delete report.location;
-
     const [venueResults, competitors] = await Promise.all([
       venueNames.length > 0 && process.env.GOOGLE_PLACES_API_KEY
         ? Promise.allSettled(venueNames.slice(0, 10).map(v => checkVenueStatus(v, location)))
@@ -330,7 +298,6 @@ Return ONLY this JSON:
         : Promise.resolve([]),
       competitorPromise,
     ]);
-
     venueResults.filter(v => v.flag).forEach(v => {
       const sectionIdx = (report.sections || []).findIndex(s =>
         s.fixes?.some(f => f.currentText?.toLowerCase().includes(v.venue.toLowerCase())) ||
@@ -350,7 +317,6 @@ Return ONLY this JSON:
         report.sections = [{ sectionName: v.venue, fixes: [closedFix] }, ...(report.sections || [])];
       }
     });
-
     const result = {
       postId, postUrl, postTitle, publishDate, modifiedDate,
       brokenLinksCount: brokenLinks?.length || 0,
@@ -362,17 +328,13 @@ Return ONLY this JSON:
       report,
       fromCache: false,
     };
-
 if (kv) {
       try { await kv.set(cacheKey, result, { ex: 2592000 }); } catch(e) {}
     }
-
     if (profile?.tier !== 'owner') {
       await supabase.from('profiles').update({ reports_this_month: reportsUsed + 1, reports_month: currentMonth }).eq('id', userId);
     }
-
     return res.status(200).json(result);
-
   } catch(e) {
     if (e.name === 'TimeoutError') return res.status(200).json({ error: 'Request timed out — try again' });
     return res.status(200).json({ error: e.message });
