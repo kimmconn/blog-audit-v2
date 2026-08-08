@@ -1,5 +1,4 @@
 import { Redis } from '@upstash/redis';
-
 let redis;
 function getRedis() {
   if (!redis) {
@@ -12,23 +11,18 @@ function getRedis() {
   }
   return redis;
 }
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-
   const { postId, postUrl, postTitle, siteUrl, forceRefresh } = req.body;
   if (!postId || !siteUrl) return res.status(400).json({ error: 'Missing postId or siteUrl' });
-
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'Anthropic API key not configured' });
-
   const cacheKey = `scan:${siteUrl}:${postId}`;
   const kv = getRedis();
-
   // Check cache first (skip if forceRefresh)
   if (!forceRefresh && kv) {
     try {
@@ -39,20 +33,17 @@ export default async function handler(req, res) {
       }
     } catch(e) {}
   }
-
   try {
     const wpRes = await fetch(
       `${siteUrl}/wp-json/wp/v2/posts/${postId}?_fields=content,title`,
       { headers: { 'User-Agent': 'BlogAuditTool/1.0' }, signal: AbortSignal.timeout(12000) }
     );
     if (!wpRes.ok) return res.status(200).json({ postId, venueIssues: 0, outdatedCount: 0, error: `fetch failed ${wpRes.status}` });
-
     const wpData = await wpRes.json();
     const rawHtml = wpData?.content?.rendered || '';
     const content = rawHtml
       .replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ')
       .replace(/\s{2,}/g, ' ').trim();
-
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -62,20 +53,22 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 400,
-        system: `You are a travel blog content auditor. Scan posts and extract venue names and outdated content counts. Return ONLY valid JSON, nothing else.`,
+        max_tokens: 700,
+        system: `You are a travel blog content auditor. Scan posts and extract venue names, outdated content counts, and clarity issues. Return ONLY valid JSON, nothing else.`,
         messages: [{
           role: 'user',
           content: `Scan this travel blog post quickly.
-
 Title: "${postTitle}"
 Content: ${content}
-
 Count and extract:
 1. venueIssues: number of specific named venues (hotels, cafes, restaurants, bars, attractions) that may have closed, moved, or changed
 2. outdatedCount: other outdated items (old prices, old currency like Croatian Kuna, COVID refs, "recently opened" claims, old stats)
 3. venueNames: array of specific venue names mentioned (max 10)
-
+4. clarityScore: 0-10 rating of how much this post suffers from vague phrasing, superfluous content, or confusing sentence construction (0 = clear and tight, 10 = pervasively vague/bloated/hard to follow). Only count issues that would meaningfully help the reader if fixed — if in doubt, don't count it.
+   - Vague: a generic descriptor where a specific one is knowable (a name, price, distance, number) is missing. Example: "responds quickly for a while" should be "responds consistently, with stable response times."
+   - Superfluous: a sentence that could be deleted without losing any information or decision-usefulness for the reader.
+   - Confusing structure: a sentence crams in unrelated ideas or unclear references, forcing a re-read. Example: "there are limits to how much time Google's crawlers can spend crawling any single site, where a site is defined by the hostname" should be split — "there are limits to how much time and resources Google can devote to crawling any single site."
+5. clarityFlags: array of the 3-5 MOST IMPACTFUL clarity issues found (fewer is fine if that's all there are), ranked by how much fixing them would help. Each: {"category": "vague|superfluous|structure", "excerpt": "short quote from the post", "suggestion": "one-line fix"}
 Return ONLY this JSON:
 {
   "venueIssues": 0,
@@ -83,25 +76,23 @@ Return ONLY this JSON:
   "hasOldCurrency": false,
   "hasCovid": false,
   "hasOldPrices": false,
-  "venueNames": []
+  "venueNames": [],
+  "clarityScore": 0,
+  "clarityFlags": []
 }`
         }]
       }),
       signal: AbortSignal.timeout(20000),
     });
-
     if (!claudeRes.ok) return res.status(200).json({ postId, venueIssues: 0, outdatedCount: 0, error: `claude ${claudeRes.status}` });
-
     const claudeData = await claudeRes.json();
     const rawText = claudeData.content?.[0]?.text || '{}';
-
     let result;
     try {
       result = JSON.parse(rawText.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim());
     } catch {
       return res.status(200).json({ postId, venueIssues: 0, outdatedCount: 0, error: 'parse failed' });
     }
-
     const output = {
       postId,
       venueIssues: Math.max(0, parseInt(result.venueIssues) || 0),
@@ -110,10 +101,11 @@ Return ONLY this JSON:
       hasCovid: result.hasCovid || false,
       hasOldPrices: result.hasOldPrices || false,
       venueNames: result.venueNames || [],
+      clarityScore: Math.min(10, Math.max(0, parseInt(result.clarityScore) || 0)),
+      clarityFlags: Array.isArray(result.clarityFlags) ? result.clarityFlags.slice(0, 5) : [],
       scannedAt: new Date().toISOString(),
       fromCache: false,
     };
-
     // Save to cache with 30 day TTL
     if (kv) {
       try {
@@ -123,9 +115,7 @@ Return ONLY this JSON:
         output.cacheError = e.message;
       }
     }
-
     return res.status(200).json(output);
-
   } catch(e) {
     if (e.name === 'TimeoutError') return res.status(200).json({ postId, venueIssues: 0, outdatedCount: 0, error: 'timeout' });
     return res.status(200).json({ postId, venueIssues: 0, outdatedCount: 0, error: e.message });
