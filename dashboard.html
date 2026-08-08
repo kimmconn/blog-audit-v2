@@ -69,6 +69,7 @@
   .flag-notindexed{background:#F3EEFF;color:#5B21B6}
   .flag-potential{background:#FFF7ED;color:#C2410C}
  .flag-staleyear{background:#fff4d6;color:#8a6d0b}
+  .flag-claritygap{background:#e3f3fb;color:#0e6390}
   .flag-offmap{background:var(--red-bg);color:var(--red-text)}
   .flag-neverranked{background:var(--bg2);color:var(--text3)}
   .dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px}
@@ -162,7 +163,6 @@
 const SUPABASE_URL='https://drzpixdckjyxmimvwkmm.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_yZERXhqzljSTfePxyGuLqw_0ZkfAJ6v';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-
 async function sendMagicLink(){
   const email=document.getElementById('authEmail').value.trim();
   const msg=document.getElementById('authMsg');
@@ -301,7 +301,7 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
         <input type="text" id="searchInput" placeholder="Search posts..." oninput="renderTable()" />
         <select id="fUrgency" onchange="renderTable()"><option value="">All urgency</option><option value="critical">Critical</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select>
         <select id="fAge" onchange="renderTable()"><option value="">Any age</option><option value="36">3+ years</option><option value="24">2+ years</option><option value="12">1+ year</option></select>
-        <select id="fFlag" onchange="renderTable()"><option value="">All posts</option><option value="opportunity">Opportunities (pos 11-20)</option><option value="peaked">Peaked traffic</option><option value="offmap">Fallen off map</option><option value="hotimpr">🔥 High impressions gap</option><option value="notindexed">🔍 Not in GSC</option><option value="floor">Hard floor only</option><option value="recentlyupdated">✅ Recently updated</option><option value="staleyear">📅 Outdated year</option></select>
+        <select id="fFlag" onchange="renderTable()"><option value="">All posts</option><option value="opportunity">Opportunities (pos 11-20)</option><option value="peaked">Peaked traffic</option><option value="offmap">Fallen off map</option><option value="hotimpr">🔥 High impressions gap</option><option value="notindexed">🔍 Not in GSC</option><option value="floor">Hard floor only</option><option value="recentlyupdated">✅ Recently updated</option><option value="staleyear">📅 Outdated year</option><option value="claritygap">🔍 Clarity gap</option></select>
         <select id="fSort" onchange="renderTable()"><option value="score">Sort: urgency</option><option value="age">Sort: oldest</option><option value="traffic">Sort: traffic ↓</option><option value="decline">Sort: biggest decline</option><option value="modified">Sort: recently updated</option><option value="title">Sort: A–Z</option></select>
         <button class="btn btn-sm" onclick="exportCSV()">Export CSV</button>
       </div>
@@ -419,6 +419,7 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
         <div><strong style="color:var(--text)">Link issues (20 pts + floor)</strong> — potential broken links.</div>
         <div><strong style="color:var(--text)">Venue issues (20 pts + floor)</strong> — closed/outdated venues.</div>
         <div><strong style="color:var(--text)">CTR gap (5 pts)</strong> — high impressions but very low CTR.</div>
+        <div><strong style="color:var(--text)">Clarity gap (10 pts)</strong> — AI-detected vague phrasing, superfluous content, or confusing sentence structure.</div>
       </div>
     </div>
   </div>
@@ -445,8 +446,8 @@ const KEYWORDS_URL='/api/keywords';
 const BATCH_SCAN_URL='/api/batch-scan';
 let posts=[],page=1,gscToken=null,gscData={};
 const PER_PAGE=25;
-let weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};
-const wLabels={age:'Post age',trafficHealth:'Traffic health (peak vs recent)',fallenOffMap:'Fallen off map (had traffic, lost it)',positionOpportunity:'Position 11–20 opportunity',brokenLinks:'Link issues',venueIssues:'Outdated/closed venues',ctrGap:'High impressions, low CTR'};
+let weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5,clarityGap:10};
+const wLabels={age:'Post age',trafficHealth:'Traffic health (peak vs recent)',fallenOffMap:'Fallen off map (had traffic, lost it)',positionOpportunity:'Position 11–20 opportunity',brokenLinks:'Link issues',venueIssues:'Outdated/closed venues',ctrGap:'High impressions, low CTR',clarityGap:'Clarity gap (vague/bloated content)'};
 function getThresholds(){return{peakedPct:parseInt(document.getElementById('tPeakedPct')?.value||50),offmapClicks:parseInt(document.getElementById('tOffmapClicks')?.value||50),offmapImpr:parseInt(document.getElementById('tOffmapImpr')?.value||500),hotImpr:parseInt(document.getElementById('tHotImpr')?.value||5000),hotCtr:parseFloat(document.getElementById('tHotCtr')?.value||2)/100,kwHigh:parseInt(document.getElementById('tKwHigh')?.value||1000),kwMed:parseInt(document.getElementById('tKwMed')?.value||300)};}
 let dismissedUrls=new Set();
 async function loadDismissedPosts(){
@@ -519,7 +520,6 @@ async function loadGSCData(){
     });
     posts.sort((a,b)=>b.score-a.score);
     updateMetrics();renderTable();renderIndexingTab();
-
     const BATCH_SIZE=25;
     const urlList=posts.map(p=>p.url);
     const combinedKwMap={};
@@ -563,6 +563,7 @@ function calcScore(p){
   if(p.hasOldCurrency)s+=5;if(p.hasCovid)s+=3;
   if(p.venueIssues>0){s+=Math.min(p.venueIssues/2,1)*weights.venueIssues;s=Math.max(s,Math.min(s+f.vb,99));}
   if(p.impressions>1000&&p.ctr<0.02)s+=weights.ctrGap;else if(p.impressions>500&&p.ctr<0.01)s+=weights.ctrGap*0.5;
+  if(p.clarityScore>0){s+=Math.min(p.clarityScore/10,1)*weights.clarityGap;if(p.clarityScore>=5)flags.push({type:'claritygap',label:`🔍 Clarity gap`});}
   const yearMatch=(p.title||'').match(/\b(20\d{2})\b/);
   if(yearMatch&&parseInt(yearMatch[1])<new Date().getFullYear()){
     s+=10;
@@ -793,7 +794,7 @@ function fmtNum(n){if(!n)return'—';if(n>=10000)return Math.round(n/1000)+'k';i
 function fmtPos(p){if(!p||p===0)return'—';return p.toFixed(1)}
 function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing','updated'].forEach(id=>{const e=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(e)e.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings')renderWeights();if(name==='updated')renderUpdatedTab();}
 function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('');}
-function resetWeights(){weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5};renderWeights();}
+function resetWeights(){weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5,clarityGap:10};renderWeights();}
 function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value);});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
 function updateMetrics(){
   const active=posts.filter(p=>!dismissedUrls.has(p.url));
@@ -819,6 +820,7 @@ function getFiltered(){
     if(fl==='notindexed'&&!(p.flags&&p.flags.some(f=>f.type==='notindexed')))return false;
     if(fl==='recentlyupdated'&&p.ageMonths>3)return false;
     if(fl==='staleyear'&&!(p.flags&&p.flags.some(f=>f.type==='staleyear')))return false;
+    if(fl==='claritygap'&&!(p.flags&&p.flags.some(f=>f.type==='claritygap')))return false;
     return true;
   });
   r.sort((a,b)=>so==='score'?b.score-a.score:so==='age'?b.ageMonths-a.ageMonths:so==='traffic'?b.traffic-a.traffic:so==='decline'?b.trafficDeclinePct-a.trafficDeclinePct:so==='modified'?new Date(b.lastModified||0)-new Date(a.lastModified||0):a.title.localeCompare(b.title));
@@ -994,21 +996,21 @@ async function startAIScan(forceRefresh=false){
   const statusEl=document.getElementById('aiScanStatus');
   banner.className='scan-banner';banner.style.display='flex';
   statusEl.innerHTML='<span class="tag">AI scanning...</span>';
-  let scanned=0,totalVenue=0,totalOutdated=0;
+  let scanned=0,totalVenue=0,totalOutdated=0,totalClarity=0;
   const postsToScan=[...posts],CONCURRENT=3;
   for(let i=0;i<postsToScan.length;i+=CONCURRENT){
     const batch=postsToScan.slice(i,i+CONCURRENT);
-    banner.innerHTML=`<span>🤖 AI scanning posts — ${scanned} of ${postsToScan.length} done, ${totalVenue} venue issues + ${totalOutdated} outdated items found...</span>`;
+    banner.innerHTML=`<span>🤖 AI scanning posts — ${scanned} of ${postsToScan.length} done, ${totalVenue} venue issues + ${totalOutdated} outdated items + ${totalClarity} clarity flags found...</span>`;
     await Promise.allSettled(batch.map(async(post)=>{
       try{const res=await fetch(BATCH_SCAN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({postId:post.id,postUrl:post.url,postTitle:post.title,siteUrl,forceRefresh})});
-      if(res.ok){const data=await res.json();if(!data.error){post.venueIssues=data.venueIssues||0;post.outdatedCount=data.outdatedCount||0;post.hasOldCurrency=data.hasOldCurrency||false;post.hasCovid=data.hasCovid||false;post.hasOldPrices=data.hasOldPrices||false;post.aiScanned=true;if(data.venueIssues>0||data.outdatedCount>0){const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;totalVenue+=data.venueIssues;totalOutdated+=data.outdatedCount;}}}}catch(e){}
+      if(res.ok){const data=await res.json();if(!data.error){post.venueIssues=data.venueIssues||0;post.outdatedCount=data.outdatedCount||0;post.hasOldCurrency=data.hasOldCurrency||false;post.hasCovid=data.hasCovid||false;post.hasOldPrices=data.hasOldPrices||false;post.clarityScore=data.clarityScore||0;post.clarityFlags=data.clarityFlags||[];post.aiScanned=true;if(data.venueIssues>0||data.outdatedCount>0||data.clarityScore>0){const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;totalVenue+=data.venueIssues;totalOutdated+=data.outdatedCount;if(data.clarityScore>=5)totalClarity++;}}}}catch(e){}
       scanned++;
     }));
     posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
   }
   banner.className='scan-banner scan-complete';
-  banner.innerHTML=`<span>✓ AI scan complete — ${scanned} posts scanned, ${totalVenue} venue issues + ${totalOutdated} outdated items found</span><button class="btn btn-sm" style="margin-left:auto" onclick="startAIScan(true)">↺ Force rescan</button>`;
-  statusEl.innerHTML=`<span class="tag tag-ok">✓ ${totalVenue} venue + ${totalOutdated} outdated items found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startAIScan(false)">Load cached</button><button class="btn btn-sm" style="margin-left:4px" onclick="startAIScan(true)">Force rescan</button>`;
+  banner.innerHTML=`<span>✓ AI scan complete — ${scanned} posts scanned, ${totalVenue} venue issues + ${totalOutdated} outdated items + ${totalClarity} clarity flags found</span><button class="btn btn-sm" style="margin-left:auto" onclick="startAIScan(true)">↺ Force rescan</button>`;
+  statusEl.innerHTML=`<span class="tag tag-ok">✓ ${totalVenue} venue + ${totalOutdated} outdated + ${totalClarity} clarity found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startAIScan(false)">Load cached</button><button class="btn btn-sm" style="margin-left:4px" onclick="startAIScan(true)">Force rescan</button>`;
   posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
 }
 // ===== KEYWORD SCANNER =====
