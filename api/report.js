@@ -168,7 +168,7 @@ PRICES:
 BROKEN LINKS:
 - The link checker has a HIGH FALSE POSITIVE RATE
 - ALWAYS start the action with: "Check if this link is actually broken first (the checker is often wrong). If broken, [then what to do]"
-- NEVER say "replace with affiliate link" — Kimmie handles all affiliate links herself
+- NEVER say "replace with affiliate link" — the blog owner handles all affiliate links themselves
 - For tour/activity links: editorNote says "If broken, find a replacement on GetYourGuide or Viator"
 - For hotel links: find working link on SAME OTA first
 AFFILIATE LINKS: Never mention "affiliate link" anywhere
@@ -189,6 +189,7 @@ CLARITY & STRUCTURE:
   - Vague: a generic descriptor where a specific one (a name, price, distance, number) is knowable but missing. Example: "responds quickly for a while" should be "responds consistently, with stable response times."
   - Superfluous: a sentence that could be deleted without losing any information or decision-usefulness for the reader.
   - Confusing structure: a sentence crams in unrelated ideas or unclear references, forcing a re-read. Example: "there are limits to how much time Google's crawlers can spend crawling any single site, where a site is defined by the hostname" should be split into "there are limits to how much time and resources Google can devote to crawling any single site."
+  - When you replace vague phrasing with something "specific," it needs to actually be specific — a single figure or a narrow, meaningful range. A broad range spanning many units (e.g. "8-18°C") is barely more useful than the vague version it replaced and should not be flagged as a fix.
 - Only flag issues you're confident would meaningfully help the reader if fixed — if in doubt, don't flag it. Precision over recall.
 - Add these as fixes in the correct section, using type "vague_content", "superfluous_content", or "confusing_structure" — same currentText/action/suggestedText/editorNote format as other fixes
 - Cap it: include at most the 3-5 most impactful clarity fixes total across the whole post, even if there are more you could flag
@@ -199,10 +200,10 @@ NEW THINGS TO ADD:
 - Suggest specific search strategies for the editor to find new things to add (e.g. "Search Google Maps for [location] + [category] and filter by 'Opened after [year]'")
 - This is one of the most valuable parts of the report — always include at least 2-3 newThingsToAdd items
 YEAR REFERENCES: Do NOT suggest adding year throughout post body. Title only, once.
-SUGGESTED TEXT: Match the blog's existing voice, based on the post content provided. No "verify", "current", "as of [year]". No generic filler.
+SUGGESTED TEXT: Match the blog's existing voice, based on the post content provided. No "verify", "current", "as of [year]". No generic filler. When adding a concrete detail (temperature, price, distance, timing, etc.), give a real specific value or a narrow, genuinely useful range — never a broad range spanning many units that conveys almost nothing (e.g. an 8-18°C range). If you don't actually know a specific value from the post or context, leave it out rather than inventing a wide range to sound specific.
 DO NOT SUGGEST: Table of contents, internal links, affiliate links, alt text if all images have it
 TWO SEPARATE FIELDS:
-1. suggestedText = ready-to-paste post content in Kimmie's voice ONLY
+1. suggestedText = ready-to-paste post content in the blog owner's own first-person voice ONLY
 2. editorNote = tips for VA only. NOT post content.
 Return ONLY valid JSON, no markdown fences.`,
         messages: [{
@@ -248,7 +249,7 @@ Return ONLY this JSON:
           "priority": "critical|high|medium",
           "currentText": "exact short quote",
           "action": "specific instruction — broken links ALWAYS start with 'Check if this link is actually broken first (the checker is often wrong).'",
-          "suggestedText": "ready-to-paste post content in Kimmie's voice OR omit if not applicable",
+          "suggestedText": "ready-to-paste post content in the blog owner's own voice OR omit if not applicable",
           "editorNote": "tips for VA only — verification sources, replacement links, etc. NOT post content"
         }
       ]
@@ -258,7 +259,7 @@ Return ONLY this JSON:
     {
       "topic": "specific thing that has likely changed or been added since post was written",
       "whyUrgent": "why this matters for SEO or readers now",
-      "suggestedText": "full paragraph in Kimmie's voice — specific, casual, first-person, no prices",
+      "suggestedText": "full paragraph in the blog owner's own voice — specific, casual, first-person, no prices",
       "placement": "exactly where in the post to add it"
     }
   ],
