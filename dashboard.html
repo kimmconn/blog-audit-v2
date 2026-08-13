@@ -192,27 +192,64 @@ async function checkAuth(){
     showInviteCodeScreen(session.user.id,session.user.email);
     return;
   }
+  if(profile.tier==='trial'&&profile.trial_ends_at){
+    const daysLeft=Math.ceil((new Date(profile.trial_ends_at)-Date.now())/(1000*60*60*24));
+    if(daysLeft<=0){
+      showAccessEndedScreen(session.user.id,session.user.email,'trial');
+      return;
+    }
+  }
+  if(profile.tier==='cancelled'){
+    showAccessEndedScreen(session.user.id,session.user.email,'cancelled');
+    return;
+  }
   if(authGateEl)authGateEl.style.display='none';
   if(appEl)appEl.style.display='block';
+  if(profile.site_url){
+    const urlInput=document.getElementById('urlInput');
+    if(urlInput&&!urlInput.value)urlInput.value=profile.site_url;
+  }
   if(profile.tier==='trial'&&profile.trial_ends_at){
     const daysLeft=Math.ceil((new Date(profile.trial_ends_at)-Date.now())/(1000*60*60*24));
     const banner=document.getElementById('trialBanner');
     if(banner){
       banner.style.display='block';
-      if(daysLeft>0){
-        banner.innerHTML=`<div style="background:var(--purple-bg);color:var(--purple-text);padding:8px 14px;border-radius:var(--radius);font-size:12.5px;font-weight:600;display:inline-block">🎉 Free trial — ${daysLeft} day${daysLeft===1?'':'s'} left</div>`;
-      }else{
-        banner.innerHTML=`<div style="background:var(--red-bg);color:var(--red-text);padding:8px 14px;border-radius:var(--radius);font-size:12.5px;font-weight:600;display:inline-block">⏰ Your trial has ended — <a href="pricing.html" style="text-decoration:underline">subscribe to keep access</a></div>`;
-      }
+      banner.innerHTML=`<div style="background:var(--purple-bg);color:var(--purple-text);padding:8px 14px;border-radius:var(--radius);font-size:12.5px;font-weight:600;display:inline-block">🎉 Free trial — ${daysLeft} day${daysLeft===1?'':'s'} left</div>`;
     }
   }
+}
+function showAccessEndedScreen(userId,email,reason){
+  const authGateEl=document.getElementById('authGate'),appEl=document.querySelector('.app');
+  if(authGateEl)authGateEl.style.display='flex';
+  if(appEl)appEl.style.display='none';
+  const heading=reason==='cancelled'?'Your subscription has ended':'Your trial has ended';
+  const sub=reason==='cancelled'?"Resubscribe to get back into your dashboard.":'Subscribe to keep access to your dashboard and reports.';
+  document.getElementById('authGateContent').innerHTML=`
+    <p style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:4px">${heading}</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:16px">${sub}</p>
+    <button class="btn btn-primary" style="width:100%" onclick="startSubscribe('${userId}','${email}','dashboard')">Subscribe — Dashboard $20/mo</button>
+    <button class="btn" style="width:100%;margin-top:8px" onclick="startSubscribe('${userId}','${email}','reports')">Subscribe — Reports $35/mo</button>
+    <div id="subMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+  `;
 }
 function showInviteCodeScreen(userId,email){
   const authGateEl=document.getElementById('authGate'),appEl=document.querySelector('.app');
   if(authGateEl)authGateEl.style.display='flex';
   if(appEl)appEl.style.display='none';
   document.getElementById('authGateContent').innerHTML=`
-   <p style="font-size:12px;color:var(--text2);margin-bottom:4px">You're signed in! Enter your invite code, or subscribe below.</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:4px">You're signed in! Choose a plan to get started.</p>
+    <p style="font-size:10.5px;color:var(--text3);margin-bottom:16px;font-style:italic">💡 Bloupi's AI helps you spot what needs updating and drafts a starting point - you bring the firsthand experience and final say.</p>
+    <button class="btn btn-primary" style="width:100%" onclick="startSubscribe('${userId}','${email}','dashboard')">Subscribe — Dashboard $20/mo</button>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="startSubscribe('${userId}','${email}','reports')">Subscribe — Reports $35/mo</button>
+    <div id="subMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+    <div style="text-align:center;margin-top:18px">
+      <button type="button" onclick="showInviteCodeForm('${userId}','${email}')" style="background:none;border:none;color:var(--text2);font-size:12px;text-decoration:underline;cursor:pointer">Have an invite code?</button>
+    </div>
+  `;
+}
+function showInviteCodeForm(userId,email){
+  document.getElementById('authGateContent').innerHTML=`
+    <p style="font-size:12px;color:var(--text2);margin-bottom:4px">Enter your invite code below.</p>
     <p style="font-size:10.5px;color:var(--text3);margin-bottom:12px;font-style:italic">💡 Bloupi's AI helps you spot what needs updating and drafts a starting point - you bring the firsthand experience and final say.</p>
     <input type="text" id="inviteCodeInput" placeholder="INVITE CODE" style="width:100%;margin-bottom:14px;text-transform:uppercase" />
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;font-size:11.5px;color:#4a4d5e">
@@ -222,10 +259,9 @@ function showInviteCodeScreen(userId,email){
     </div>
     <button class="auth-btn-primary" style="width:100%" id="unlockBtn" disabled onclick="redeemInviteCode('${userId}','${email}')">Unlock access</button>
     <div id="inviteMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
-    <div style="display:flex;align-items:center;gap:10px;margin:18px 0"><div style="flex:1;height:1px;background:#e3e9f9"></div><span style="font-size:11px;color:#9aa4d1">OR</span><div style="flex:1;height:1px;background:#e3e9f9"></div></div>
-    <button class="btn" style="width:100%" onclick="startSubscribe('${userId}','${email}','dashboard')">Subscribe — Dashboard $20/mo</button>
-    <button class="btn" style="width:100%;margin-top:8px" onclick="startSubscribe('${userId}','${email}','reports')">Subscribe — Reports $35/mo</button>
-    <div id="subMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+    <div style="text-align:center;margin-top:14px">
+      <button type="button" onclick="showInviteCodeScreen('${userId}','${email}')" style="background:none;border:none;color:var(--text2);font-size:12px;text-decoration:underline;cursor:pointer">← Back to plans</button>
+    </div>
   `;
 }
 async function startSubscribe(userId,email,tier){
@@ -487,17 +523,20 @@ async function loadGSCData(){
   const banner=document.getElementById('gscBanner');
   banner.className='gsc-banner';
   banner.innerHTML=`<span>⏳ Loading GSC traffic data...</span>`;
+  const{data:{session}}=await sb.auth.getSession();
+  const userId=session?.user?.id;
   try{
     const now=new Date(),endDate=now.toISOString().split('T')[0];
     const midDate=new Date(now);midDate.setMonth(midDate.getMonth()-8);
     const startDate=new Date(now);startDate.setMonth(startDate.getMonth()-16);
     const kwStartDate=new Date(now);kwStartDate.setMonth(kwStartDate.getMonth()-6);
     const [recentRes,olderRes]=await Promise.all([
-      fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:midDate.toISOString().split('T')[0],endDate})}),
-      fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:startDate.toISOString().split('T')[0],endDate:midDate.toISOString().split('T')[0]})})
+      fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:midDate.toISOString().split('T')[0],endDate,userId})}),
+      fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:startDate.toISOString().split('T')[0],endDate:midDate.toISOString().split('T')[0],userId})})
     ]);
     if(!recentRes.ok){const e=await recentRes.json().catch(()=>({}));if(recentRes.status===401){gscToken=null;banner.innerHTML=`<span style="color:var(--red-text)">GSC token expired — please reconnect.</span>`;updateGSCUI(false);return;}throw new Error(e.error||`HTTP ${recentRes.status}`);}
     const recentData=await recentRes.json(),olderData=olderRes.ok?await olderRes.json():{rows:[]};
+    if(recentData.refreshedAccessToken)gscToken=recentData.refreshedAccessToken;
     const recentMap={},olderMap={};
     (recentData.rows||[]).forEach(r=>{recentMap[r.url]=r;});
     (olderData.rows||[]).forEach(r=>{olderMap[r.url]=r;});
@@ -529,8 +568,8 @@ async function loadGSCData(){
       banner.className='gsc-banner gsc-connected';
       banner.innerHTML=`<span>🔑 Loading keywords... ${progress}% (${i}/${urlList.length} posts)</span>`;
       try{
-        const res=await fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:kwStartDate.toISOString().split('T')[0],endDate,includeKeywords:true,pageUrls:batch})});
-        if(res.ok){const data=await res.json();Object.assign(combinedKwMap,data.keywordsByPage||{});}
+        const res=await fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:kwStartDate.toISOString().split('T')[0],endDate,includeKeywords:true,pageUrls:batch,userId})});
+        if(res.ok){const data=await res.json();if(data.refreshedAccessToken)gscToken=data.refreshedAccessToken;Object.assign(combinedKwMap,data.keywordsByPage||{});}
       }catch(e){}
     }
     posts.forEach(p=>{
@@ -588,8 +627,7 @@ async function generateReport(postIdx,forceRefresh=false){
   document.getElementById('modalBody').innerHTML=`<div class="report-loading">⏳ ${forceRefresh?'Regenerating':'Analyzing'} with Claude AI...<br><span style="font-size:11px;margin-top:8px;display:block">This takes 1-3 minutes for a full report</span></div>`;
   document.getElementById('reportModal').style.display='flex';
   try{
-    // Build structured keyword data from GSC - keywords are stored as plain strings
-  const gscKeywords = (post.gscKeywords||[]).slice(0,10).map(k=>({
+    const gscKeywords = (post.gscKeywords||[]).slice(0,10).map(k=>({
       keyword: typeof k==='string'?k:(k.query||k.keyword||String(k)),
       impressions: typeof k==='object'&&k.impressions?k.impressions:0,
       clicks: typeof k==='object'&&k.clicks?k.clicks:0
@@ -606,7 +644,6 @@ const{data:{session}}=await sb.auth.getSession();
     })});
     const data=await res.json();
     if(data.error){document.getElementById('modalBody').innerHTML=`<div class="report-error">❌ ${data.error}</div>`;return;}
-    // Attach the post's GSC keywords for the brief
     data.topGscKeywords=gscKeywords;
     renderReportModal(data,postIdx);
   }catch(e){document.getElementById('modalBody').innerHTML=`<div class="report-error">❌ ${e.message}</div>`;}
@@ -615,7 +652,6 @@ function renderReportModal(data,postIdx){
   const r=data.report;
   const cached=data.fromCache?`<span class="tag" style="font-size:10px">cached ${new Date(data.generatedAt).toLocaleDateString()}</span>`:'<span class="tag tag-ok" style="font-size:10px">fresh</span>';
   let html=`<div class="report-meta"><span>Published: ${data.publishDate||'—'}</span><span>Modified: ${data.modifiedDate||'—'}</span><span>Link issues: ${data.brokenLinksCount||0}</span><span>Est. update time: ${r.estimatedUpdateTime||'—'}</span>${cached}<button class="btn btn-sm" style="margin-left:auto" onclick="generateReport(${postIdx},true)">↺ Regenerate</button></div>`;
-  // Top keywords in report view
   const reportKws=(data.topGscKeywords||[]).filter(k=>k.keyword);
   if(reportKws.length>0){
     html+=`<div style="margin-bottom:1rem;padding:12px 14px;background:var(--purple-bg);border:1px solid #ddc9fb;border-radius:var(--radius-lg);font-size:11px;color:var(--purple-text)">
@@ -626,7 +662,6 @@ function renderReportModal(data,postIdx){
     </div>`;
   }
   if(r.summary)html+=`<div class="report-section"><div class="report-section-title">📋 Summary</div><div class="report-summary">${r.summary}</div></div>`;
-  // Venue verification
   if(data.venueChecks&&data.venueChecks.length>0){
     const flagged=data.venueChecks.filter(v=>v.flag),ok=data.venueChecks.filter(v=>!v.flag);
     html+=`<div class="report-section"><div class="report-section-title">📍 Venue verification (${data.venueChecks.length} checked)</div><div>`;
@@ -634,7 +669,6 @@ function renderReportModal(data,postIdx){
     ok.forEach(v=>{html+=`<div style="font-size:11px;color:var(--green-text);padding:3px 0">✓ ${v.venue} — appears open</div>`;});
     html+=`</div></div>`;
   }
-  // New things to add section
   if(r.newThingsToAdd?.length){
     html+=`<div class="report-section"><div class="report-section-title">🆕 New things to research & add</div>`;
     r.newThingsToAdd.forEach(item=>{
@@ -646,13 +680,11 @@ function renderReportModal(data,postIdx){
     });
     html+=`</div>`;
   }
-  // Quick reference lists
   if(r.quickReferenceLists?.length){
     html+=`<div class="report-section"><div class="report-section-title">📌 Quick reference lists</div>`;
     r.quickReferenceLists.forEach(list=>{html+=`<div style="margin-bottom:12px"><div style="font-weight:500;font-size:12px;margin-bottom:4px">${list.title}</div><div style="font-size:11px;color:var(--text2);margin-bottom:4px">${list.items.join(' · ')}</div>${list.suggestedPlacement?`<div style="font-size:11px;color:var(--blue-text)">💡 ${list.suggestedPlacement}</div>`:''}</div>`;});
     html+=`</div>`;
   }
-  // Section checklist
   if(r.sections?.length){
     html+=`<div class="report-section"><div class="report-section-title">📝 Update checklist — work through in order</div>`;
     r.sections.forEach(section=>{
@@ -674,7 +706,6 @@ function renderReportModal(data,postIdx){
     });
     html+=`</div>`;
   }
-  // Top content gaps — show top 3
   if(r.topContentGaps?.length){
     html+=`<div class="report-section"><div class="report-section-title">🎯 Top content gaps to add</div>`;
     r.topContentGaps.slice(0,3).forEach((gap,i)=>{
@@ -688,7 +719,6 @@ function renderReportModal(data,postIdx){
     });
     html+=`</div>`;
   }
-  // SEO quick wins
   if(r.seoQuickWins?.length){
     html+=`<div class="report-section"><div class="report-section-title">📈 SEO quick wins</div><ul class="quick-wins">`;
     r.seoQuickWins.forEach((win,_wi)=>{
@@ -726,7 +756,6 @@ function renderReportModal(data,postIdx){
 function closeModal(){document.getElementById('reportModal').style.display='none';}
 function closeModalOutside(e){if(e.target===document.getElementById('reportModal'))closeModal();}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
-// ===== GENERATE SEO CONTENT — routes through /api/generate-seo to avoid CORS =====
 async function generateSEOContent(idea,data){
   if(!data)return;
   const modal=document.getElementById('modalBody');
@@ -757,7 +786,6 @@ function addGeneratedSEOToBrief(){
   if(!window._lastGenerated)return;
   addGeneratedToBrief(window._lastGenerated.idea,window._lastGenerated.generated);
 }
-// ===== BROKEN LINK SCANNER =====
 let scanRunning=false;
 async function startLinkScan(){
   if(posts.length===0){alert('Please crawl your blog first!');return;}
@@ -907,7 +935,6 @@ function renderTable(){
     const healthPct=p.trafficDeclinePct||0;
     const healthHtml=hasTraffic?`<div style="font-size:10px;color:${healthColor(healthPct)}">${healthPct>0?healthPct+'% decline':'stable'}</div><div class="health-bar"><div class="health-fill" style="width:${healthPct}%;background:${healthColor(healthPct)}"></div></div>`:'<span style="color:var(--text3);font-size:11px">no data</span>';
     const imprHot=p.impressions>=t.hotImpr&&p.ctr<t.hotCtr;
-    // Show KW vol with keyword as tooltip
     const kwColor=p.topKeywordVolume>=(t.kwHigh||1000)?'var(--purple-text)':p.topKeywordVolume>0?'var(--text)':'var(--text3)';
     const kwDisplay=p.topKeywordVolume>=1000?(p.topKeywordVolume/1000).toFixed(1)+'k':p.topKeywordVolume>0?p.topKeywordVolume:'—';
     const kwTitle=p.topKeyword?`title="${p.topKeyword}"`:'';
@@ -943,6 +970,7 @@ async function startCrawl(){
   const{data:{session}}=await sb.auth.getSession();
   if(!session){alert('Please sign in first.');return;}
   const uid=encodeURIComponent(session.user.id);
+  sb.from('profiles').update({site_url:url}).eq('id',session.user.id).then(()=>{});
   document.getElementById('progressWrap').style.display='block';
   document.getElementById('crawlStatus').textContent='crawling...';
   document.getElementById('crawlStatus').className='tag';
@@ -973,7 +1001,6 @@ function loadDemo(){
   document.getElementById('progressWrap').style.display='none';
   page=1;updateMetrics();renderTable();
 }
-// ===== BATCH AI SCANNER =====
 async function startAIScan(forceRefresh=false){
   if(posts.length===0){alert('Please crawl your blog first!');return;}
   if(forceRefresh){
@@ -1013,7 +1040,6 @@ async function startAIScan(forceRefresh=false){
   statusEl.innerHTML=`<span class="tag tag-ok">✓ ${totalVenue} venue + ${totalOutdated} outdated + ${totalClarity} clarity found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startAIScan(false)">Load cached</button><button class="btn btn-sm" style="margin-left:4px" onclick="startAIScan(true)">Force rescan</button>`;
   posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
 }
-// ===== KEYWORD SCANNER =====
 async function startKWScan(forceRefresh=false){
   if(posts.length===0){alert('Please crawl your blog and load GSC data first!');return;}
   if(forceRefresh){
@@ -1080,7 +1106,6 @@ async function startKWScan(forceRefresh=false){
   }catch(e){banner.innerHTML=`<span style="color:var(--red-text)">❌ ${e.message}</span>`;statusEl.innerHTML='<button class="btn btn-sm btn-primary" onclick="startKWScan()">Retry</button>';}
 }
 function addGeneratedToBrief(idea, content){
-  // Add the generated content as a custom task in the brief
   if(!window._briefItems){
     alert('Open the VA brief first, then generate content to add it.');
     return;
@@ -1088,10 +1113,8 @@ function addGeneratedToBrief(idea, content){
   const id='generated-'+Date.now();
   window._briefItems.push({id,checked:true,section:'✨ Generated content',type:'generated',priority:'high',
     text:idea,action:'',suggested:content,note:''});
-  // If brief is open, rebuild the brief view
   if(window._briefData&&window._briefPostIdx!==undefined){
     openBriefBuilder(window._briefData,window._briefPostIdx);
-    // Show success toast
     const toast=document.createElement('div');
     toast.style.cssText='position:fixed;bottom:20px;right:20px;background:#1a1a18;color:white;padding:10px 16px;border-radius:8px;font-size:12px;z-index:9999';
     toast.textContent='✓ Added to VA brief!';
@@ -1100,11 +1123,9 @@ function addGeneratedToBrief(idea, content){
   }
 }
 renderTable();
-// ===== BRIEF BUILDER =====
 function openBriefBuilder(data,postIdx){
   const r=data.report;
   let items=[],itemId=0;
-  // Closed venues as tasks
   (data.venueChecks||[]).filter(v=>v.flag).forEach(v=>{
     items.push({id:itemId++,checked:true,section:'📍 Venue verification',
       type:v.status==='permanently_closed'?'❌ permanently closed':'⚠️ temporarily closed',
@@ -1112,13 +1133,11 @@ function openBriefBuilder(data,postIdx){
       action:'Remove or replace all mentions',suggested:v.suggestedText||'',note:v.editorNote||''});
   });
   window._openVenues=(data.venueChecks||[]).filter(v=>!v.flag).map(v=>v.venue);
-  // Quick reference lists
   (r.quickReferenceLists||[]).forEach((list,i)=>{
     items.push({id:itemId++,checked:true,section:'📌 Quick reference lists',type:'add list',priority:'medium',
       text:list.title,action:(list.suggestedPlacement?'Add '+list.suggestedPlacement+': ':'')+list.items.join(', '),
       suggested:'',note:''});
   });
-  // Section fixes
   (r.sections||[]).forEach(section=>{
     (section.fixes||[]).forEach(fix=>{
       items.push({id:itemId++,checked:fix.priority==='critical'||fix.priority==='high',
@@ -1127,18 +1146,15 @@ function openBriefBuilder(data,postIdx){
         suggested:fix.suggestedText||'',note:fix.editorNote||''});
     });
   });
-  // New things to add
   (r.newThingsToAdd||[]).forEach((item,i)=>{
     items.push({id:itemId++,checked:true,section:'🆕 New things to research',type:item.category||'new addition',priority:'high',
       text:item.suggestion,action:item.whyRelevant||'',suggested:'',note:''});
   });
-  // Content gaps
   (r.topContentGaps||[]).slice(0,3).forEach((gap,i)=>{
     items.push({id:itemId++,checked:true,section:'🎯 Content Gap #'+(i+1),type:'add content',priority:'high',
       text:gap.topic,action:gap.whyUrgent+(gap.placement?'\n📍 '+gap.placement:''),
       suggested:gap.suggestedText||'',note:gap.editorNote||''});
   });
-  // SEO quick wins
   (r.seoQuickWins||[]).forEach(win=>{
     const idea=typeof win==='string'?win:win.idea;
     const canGenerate=typeof win==='object'&&win.canGenerate;
@@ -1150,7 +1166,6 @@ function openBriefBuilder(data,postIdx){
   const pb=p=>p==='critical'?'var(--red-bg)':p==='high'?'var(--amber-bg)':'var(--blue-bg)';
   const pt=p=>p==='critical'?'var(--red-text)':p==='high'?'var(--amber-text)':'var(--blue-text)';
   const openVenues=window._openVenues||[];
-  // Top keywords for brief header
   const topKws=(data.topGscKeywords||[]).slice(0,10);
   let html=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
     <div><div style="font-size:13px;font-weight:500">📋 Build Post Update Brief</div><div style="font-size:11px;color:var(--text2)">${data.postTitle}</div></div>
@@ -1158,7 +1173,6 @@ function openBriefBuilder(data,postIdx){
   </div>`;
 html+=`<div style="font-size:10.5px;color:var(--text3);margin-bottom:10px;font-style:italic">💡 AI drafts a starting point for each fix - check, edit and add your own experience before publishing.</div>`;
   html+=`<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">📝 Notes for this whole brief (optional)</label><textarea id="briefGeneralNote" placeholder="e.g. Verify all festival dates before publishing" oninput="window._briefEditorNote=this.value" style="width:100%;font-size:12px;padding:8px 10px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;min-height:44px;font-family:inherit">${window._briefEditorNote||''}</textarea></div>`;
-   // Top keywords section
   if(topKws.length>0){
     html+=`<div style="margin-bottom:12px;padding:10px 12px;background:var(--purple-bg);border-radius:var(--radius);font-size:11px;color:var(--purple-text)">
       <strong>🔑 Top keywords to weave in naturally while updating:</strong>
