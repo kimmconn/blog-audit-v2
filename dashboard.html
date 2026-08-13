@@ -240,18 +240,31 @@ function showInviteCodeScreen(userId,email){
     <p style="font-size:12px;color:var(--text2);margin-bottom:4px">You're signed in! Choose a plan to get started.</p>
     <p style="font-size:10.5px;color:var(--text3);margin-bottom:16px;font-style:italic">💡 Bloupi's AI helps you spot what needs updating and drafts a starting point - you bring the firsthand experience and final say.</p>
     <button class="btn btn-primary" style="width:100%" onclick="startSubscribe('${userId}','${email}','dashboard')">Subscribe — Dashboard $20/mo</button>
-    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="startSubscribe('${userId}','${email}','reports')">Subscribe — Reports $35/mo</button>
+    <ul style="list-style:none;font-size:11px;color:var(--text2);margin:6px 0 14px;padding-left:2px;line-height:1.6">
+      <li>✓ Every post scored by urgency, not guesswork</li>
+      <li>✓ Broken links, closed venues & outdated info flagged automatically</li>
+      <li>✓ Clarity Gap catches vague or bloated writing</li>
+    </ul>
+    <button class="btn btn-primary" style="width:100%" onclick="startSubscribe('${userId}','${email}','reports')">Subscribe — Reports $35/mo</button>
+    <ul style="list-style:none;font-size:11px;color:var(--text2);margin:6px 0 6px;padding-left:2px;line-height:1.6">
+      <li>✓ Everything in Dashboard</li>
+      <li>✓ AI-written update brief for every post — ready for you or your VA</li>
+      <li>✓ 25 reports/mo, exportable as PDF</li>
+    </ul>
+    <div style="text-align:center;margin-bottom:10px"><a href="pricing.html" style="font-size:11px;color:var(--accent);text-decoration:underline">See full plan comparison →</a></div>
+    <div style="font-size:10.5px;color:var(--text3);text-align:center;margin-bottom:10px">💳 Got a discount code? Enter it at checkout in the next step.</div>
     <div id="subMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
     <div style="text-align:center;margin-top:18px">
-      <button type="button" onclick="showInviteCodeForm('${userId}','${email}')" style="background:none;border:none;color:var(--text2);font-size:12px;text-decoration:underline;cursor:pointer">Have an invite code?</button>
+      <button type="button" onclick="showInviteCodeForm('${userId}','${email}')" style="background:none;border:none;color:var(--text2);font-size:12px;text-decoration:underline;cursor:pointer">Have a beta invite?</button>
     </div>
   `;
 }
 function showInviteCodeForm(userId,email){
   document.getElementById('authGateContent').innerHTML=`
-    <p style="font-size:12px;color:var(--text2);margin-bottom:4px">Enter your invite code below.</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:4px">Enter your invite key below.</p>
     <p style="font-size:10.5px;color:var(--text3);margin-bottom:12px;font-style:italic">💡 Bloupi's AI helps you spot what needs updating and drafts a starting point - you bring the firsthand experience and final say.</p>
-    <input type="text" id="inviteCodeInput" placeholder="INVITE CODE" style="width:100%;margin-bottom:14px;text-transform:uppercase" />
+    <input type="text" id="inviteCodeInput" placeholder="INVITE KEY" style="width:100%;margin-bottom:8px;text-transform:uppercase" />
+    <div style="font-size:10.5px;color:var(--text3);margin-bottom:14px">💳 Got a discount code instead? That's entered at checkout, not here.</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;font-size:11.5px;color:#4a4d5e">
       <label class="term-card" onclick="this.querySelector('input').dispatchEvent(new Event('change'))"><input type="checkbox" class="termsCheck" onchange="checkTermsComplete(this)"><span class="term-check">✓</span><span>I intend to update at least 10 posts during my trial month using Bloupi's generated briefs.</span></label>
       <label class="term-card" onclick="this.querySelector('input').dispatchEvent(new Event('change'))"><input type="checkbox" class="termsCheck" onchange="checkTermsComplete(this)"><span class="term-check">✓</span><span>I agree to share a testimonial or feedback on my experience, including any traffic or ranking changes I see.</span></label>
