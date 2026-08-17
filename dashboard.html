@@ -330,7 +330,7 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
       <div class="panel-title">Crawl your blog <span class="tag" id="crawlStatus">not started</span></div>
       <div class="crawl-row">
       <input type="text" id="urlInput" placeholder="https://yourblog.com" value="" />
-        <button class="btn btn-primary" onclick="startCrawl()">Crawl posts</button>
+        <button class="btn btn-primary" id="crawlBtn" onclick="startCrawl()">Crawl posts</button>
         <button class="btn" onclick="loadDemo()">Load demo data</button>
       </div>
       <div style="font-size:11px;color:var(--text2);margin-top:6px">Enter your URL exactly as it appears in Google Search Console (with or without "www", matching your verified property) — this ensures GSC data connects correctly.</div>
@@ -494,6 +494,7 @@ const REPORT_URL='/api/report';
 const KEYWORDS_URL='/api/keywords';
 const BATCH_SCAN_URL='/api/batch-scan';
 let posts=[],page=1,gscToken=null,gscData={};
+let crawlRunning=false;
 const PER_PAGE=25;
 let weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5,clarityGap:10};
 const wLabels={age:'Post age',trafficHealth:'Traffic health (peak vs recent)',fallenOffMap:'Fallen off map (had traffic, lost it)',positionOpportunity:'Position 11–20 opportunity',brokenLinks:'Link issues',venueIssues:'Outdated/closed venues',ctrGap:'High impressions, low CTR',clarityGap:'Clarity gap (vague/bloated content)'};
@@ -978,10 +979,14 @@ function exportCSV(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='blog-audit.csv';a.click();
 }
 async function startCrawl(){
+  if(crawlRunning)return;
   const url=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
   if(!url)return;
   const{data:{session}}=await sb.auth.getSession();
   if(!session){alert('Please sign in first.');return;}
+  crawlRunning=true;
+  const crawlBtn=document.getElementById('crawlBtn');
+  if(crawlBtn)crawlBtn.disabled=true;
   const uid=encodeURIComponent(session.user.id);
   sb.from('profiles').update({site_url:url}).eq('id',session.user.id).then(()=>{});
   document.getElementById('progressWrap').style.display='block';
@@ -1002,8 +1007,9 @@ async function startCrawl(){
     page=1;updateMetrics();renderTable();
     if(gscToken){showGSCBanner(true);loadGSCData();}
   }catch(e){document.getElementById('statusMsg').textContent='Error: '+e.message;document.getElementById('crawlStatus').textContent='error';document.getElementById('crawlStatus').className='tag tag-err';}
+  finally{crawlRunning=false;if(crawlBtn)crawlBtn.disabled=false;}
 }
-function processBatch(batch){batch.forEach(p=>{const title=(p.title?.rendered||p.slug||'Untitled').replace(/<[^>]+>/g,'');const ageMonths=monthsAgo(p.modified||p.date);const post={id:p.id,title,url:p.link,ageMonths,lastModified:p.modified||p.date,traffic:0,impressions:0,ctr:0,position:0,recentClicks:0,olderClicks:0,recentImpressions:0,olderImpressions:0,trafficDeclinePct:0,brokenLinks:0,venueIssues:0,outdatedCount:0,brokenLinkUrls:[],linksScanned:false,aiScanned:false,venueConfirmed:false,gscChecked:false,gscKeywords:[],flags:[]};const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;posts.push(post);});}
+function processBatch(batch){const existingIds=new Set(posts.map(p=>p.id));batch.forEach(p=>{if(existingIds.has(p.id))return;existingIds.add(p.id);const title=(p.title?.rendered||p.slug||'Untitled').replace(/<[^>]+>/g,'');const ageMonths=monthsAgo(p.modified||p.date);const post={id:p.id,title,url:p.link,ageMonths,lastModified:p.modified||p.date,traffic:0,impressions:0,ctr:0,position:0,recentClicks:0,olderClicks:0,recentImpressions:0,olderImpressions:0,trafficDeclinePct:0,brokenLinks:0,venueIssues:0,outdatedCount:0,brokenLinkUrls:[],linksScanned:false,aiScanned:false,venueConfirmed:false,gscChecked:false,gscKeywords:[],flags:[]};const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;posts.push(post);});}
 function setProgress(done,total,msg){const pct=total>0?Math.round((done/total)*100):50;document.getElementById('progressFill').style.width=pct+'%';document.getElementById('statusMsg').textContent=msg;}
 function loadDemo(){
   const data=[{t:"Best Cafes in Canggu Bali",age:36,bl:2,vi:3,rc:280,oc:3200,ri:18000,oi:45000,pos:14.2},{t:"Sailing Croatia Complete Guide",age:30,bl:1,vi:0,rc:5100,oc:5400,ri:36000,oi:38000,pos:3.2},{t:"Hidden Gems in Central Italy",age:12,bl:9,vi:1,rc:180,oc:420,ri:24000,oi:31000,pos:17.4},{t:"Top Beaches in Bali",age:28,bl:1,vi:2,rc:1100,oc:4300,ri:22000,oi:41000,pos:12.6},{t:"Nusa Lembongan Complete Guide",age:48,bl:2,vi:3,rc:120,oc:3600,ri:8000,oi:39000,pos:24.1},{t:"Best Restaurants in Seminyak",age:16,bl:1,vi:4,rc:2100,oc:2800,ri:15000,oi:19000,pos:5.4},{t:"Burning Man Survival Guide",age:24,bl:10,vi:0,rc:210,oc:430,ri:9000,oi:15000,pos:18.3},{t:"Tulum Travel Guide",age:36,bl:2,vi:2,rc:2800,oc:5100,ri:38000,oi:61000,pos:7.2},{t:"50 Epic Places Melbourne",age:36,bl:35,vi:0,rc:8,oc:3600,ri:11000,oi:39000,pos:17.9},{t:"Digital Nomad Guide Bali",age:18,bl:0,vi:1,rc:1400,oc:1600,ri:28000,oi:33000,pos:4.9},{t:"Things That Surprised Me Istanbul",age:8,bl:0,vi:0,rc:3800,oc:2100,ri:44000,oi:31000,pos:3.8},{t:"My Week in Ubud",age:30,bl:0,vi:0,rc:12,oc:18,ri:40,oi:60,pos:31.0}];
