@@ -438,10 +438,10 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
       <div class="panel-title">Hard urgency floor rules</div>
       <p class="note">Posts meeting these thresholds are marked "forced" in the urgency column.</p>
       <div class="floor-rules">
-        <div class="floor-row"><span style="min-width:260px">Potential link issues ≥</span><input type="number" id="fBrokenCrit" value="10" min="1" max="50"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
+        <div class="floor-row"><span style="min-width:260px">Potential link issues ≥</span><input type="number" id="fBrokenCrit" value="16" min="1" max="50"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
         <div class="floor-row"><span style="min-width:260px">Closed/outdated venues ≥</span><input type="number" id="fVenueCrit" value="2" min="1" max="20"/><span style="color:var(--text2)">→ force <span class="pill u-critical">critical</span></span></div>
-        <div class="floor-row"><span style="min-width:260px">Any link issues → boost score by</span><input type="number" id="fBrokenBoost" value="20" min="0" max="50" style="width:55px"/> <span style="color:var(--text2)">pts</span></div>
-        <div class="floor-row"><span style="min-width:260px">Any closed venues → boost score by</span><input type="number" id="fVenueBoost" value="15" min="0" max="50" style="width:55px"/> <span style="color:var(--text2)">pts</span></div>
+        <div class="floor-row"><span style="min-width:260px">Any link issues → boost score by</span><input type="number" id="fBrokenBoost" value="8" min="0" max="50" style="width:55px"/> <span style="color:var(--text2)">pts</span></div>
+        <div class="floor-row"><span style="min-width:260px">Any closed venues → boost score by</span><input type="number" id="fVenueBoost" value="12" min="0" max="50" style="width:55px"/> <span style="color:var(--text2)">pts</span></div>
       </div>
       <div style="margin-top:16px"><button class="btn btn-primary" onclick="applyWeights()">Apply floor rules</button></div>
     </div>
@@ -496,7 +496,7 @@ const BATCH_SCAN_URL='/api/batch-scan';
 let posts=[],page=1,gscToken=null,gscData={};
 let crawlRunning=false;
 const PER_PAGE=25;
-let weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5,clarityGap:10};
+let weights={age:6,trafficHealth:25,fallenOffMap:16,positionOpportunity:20,brokenLinks:8,venueIssues:16,ctrGap:9,clarityGap:8};
 const wLabels={age:'Post age',trafficHealth:'Traffic health (peak vs recent)',fallenOffMap:'Fallen off map (had traffic, lost it)',positionOpportunity:'Position 11–20 opportunity',brokenLinks:'Link issues',venueIssues:'Outdated/closed venues',ctrGap:'High impressions, low CTR',clarityGap:'Clarity gap (vague/bloated content)'};
 function getThresholds(){return{peakedPct:parseInt(document.getElementById('tPeakedPct')?.value||50),offmapClicks:parseInt(document.getElementById('tOffmapClicks')?.value||50),offmapImpr:parseInt(document.getElementById('tOffmapImpr')?.value||500),hotImpr:parseInt(document.getElementById('tHotImpr')?.value||5000),hotCtr:parseFloat(document.getElementById('tHotCtr')?.value||2)/100,kwHigh:parseInt(document.getElementById('tKwHigh')?.value||1000),kwMed:parseInt(document.getElementById('tKwMed')?.value||300)};}
 let dismissedUrls=new Set();
@@ -617,6 +617,12 @@ function calcScore(p){
   if(p.venueIssues>0){s+=Math.min(p.venueIssues/2,1)*weights.venueIssues;s=Math.max(s,Math.min(s+f.vb,99));}
   if(p.impressions>1000&&p.ctr<0.02)s+=weights.ctrGap;else if(p.impressions>500&&p.ctr<0.01)s+=weights.ctrGap*0.5;
   if(p.clarityScore>0){s+=Math.min(p.clarityScore/10,1)*weights.clarityGap;if(p.clarityScore>=5)flags.push({type:'claritygap',label:`🔍 Clarity gap`});}
+  // Low-audience dampener: if a post currently gets almost no clicks AND there's no evidence it
+  // ever had more (not a real fall-off-map case), content-integrity flags alone shouldn't make it
+  // "urgent" — there's no realistic traffic to recover even if the fix is made.
+  const totalClicks=(p.recentClicks||0)+(p.olderClicks||0);
+  const hadRealTraffic=flags.some(fl=>fl.type==='offmap');
+  if(hasGSC&&totalClicks<5&&!hadRealTraffic){s*=0.35;}
   const yearMatch=(p.title||'').match(/\b(20\d{2})\b/);
   if(yearMatch&&parseInt(yearMatch[1])<new Date().getFullYear()){
     s+=10;
@@ -836,7 +842,7 @@ function fmtNum(n){if(!n)return'—';if(n>=10000)return Math.round(n/1000)+'k';i
 function fmtPos(p){if(!p||p===0)return'—';return p.toFixed(1)}
 function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing','updated'].forEach(id=>{const e=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(e)e.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings')renderWeights();if(name==='updated')renderUpdatedTab();}
 function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('');}
-function resetWeights(){weights={age:15,trafficHealth:25,fallenOffMap:10,positionOpportunity:15,brokenLinks:20,venueIssues:20,ctrGap:5,clarityGap:10};renderWeights();}
+function resetWeights(){weights={age:6,trafficHealth:25,fallenOffMap:16,positionOpportunity:20,brokenLinks:8,venueIssues:16,ctrGap:9,clarityGap:8};renderWeights();}
 function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value);});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
 function updateMetrics(){
   const active=posts.filter(p=>!dismissedUrls.has(p.url));
@@ -972,10 +978,11 @@ function renderTable(){
 }
 function prevPage(){if(page>1){page--;renderTable();}}
 function nextPage(){const f=getFiltered();if(page<Math.ceil(f.length/PER_PAGE)){page++;renderTable();}}
+function csvField(v){const s=v===null||v===undefined?'':String(v);return `"${s.replace(/"/g,'""')}"`;}
 function exportCSV(){
   const rows=[['Title','URL','Last Modified','Age (months)','Clicks','Impressions','CTR','Position','Traffic Decline %','Link Issues','Venue Issues','Hard Floor','Top Keyword','KW Volume','Flags','Score','Urgency']];
-  getFiltered().forEach(p=>rows.push([`"${p.title}"`,p.url,p.lastModified||'',p.ageMonths,p.traffic,p.impressions,p.ctr?(p.ctr*100).toFixed(1)+'%':'',p.position?p.position.toFixed(1):'',p.trafficDeclinePct||0,p.brokenLinks,p.venueIssues,p.hardFloor?'YES':'',p.topKeyword||'',p.topKeywordVolume||'',(p.flags||[]).map(f=>f.label).join('; '),p.score,p.urgency]));
-  const blob=new Blob([rows.map(r=>r.join(',')).join('\n')],{type:'text/csv'});
+  getFiltered().forEach(p=>rows.push([p.title,p.url,p.lastModified||'',p.ageMonths,p.traffic,p.impressions,p.ctr?(p.ctr*100).toFixed(1)+'%':'',p.position?p.position.toFixed(1):'',p.trafficDeclinePct||0,p.brokenLinks,p.venueIssues,p.hardFloor?'YES':'',p.topKeyword||'',p.topKeywordVolume||'',(p.flags||[]).map(f=>f.label).join('; '),p.score,p.urgency]));
+  const blob=new Blob([rows.map(r=>r.map(csvField).join(',')).join('\n')],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='blog-audit.csv';a.click();
 }
 async function startCrawl(){
