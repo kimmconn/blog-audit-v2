@@ -364,7 +364,7 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
             <th class="col-pos">Pos.</th>
             <th class="col-health">Traffic health</th>
             <th class="col-issues">Issues</th>
-            <th class="col-kw" title="Top keyword volume from GSC">KW Vol</th>
+            <th class="col-kw" title="The Search Console query most closely tied to this post, matched by relevance to the title + click volume, and its monthly search volume">Top Keyword</th>
             <th class="col-flags">Flags</th>
             <th class="col-score">Urgency</th>
             <th class="col-action">Actions</th>
@@ -499,6 +499,24 @@ const PER_PAGE=25;
 let weights={age:6,trafficHealth:25,fallenOffMap:16,positionOpportunity:20,brokenLinks:8,venueIssues:16,ctrGap:9,clarityGap:8};
 const wLabels={age:'Post age',trafficHealth:'Traffic health (peak vs recent)',fallenOffMap:'Fallen off map (had traffic, lost it)',positionOpportunity:'Position 11–20 opportunity',brokenLinks:'Link issues',venueIssues:'Outdated/closed venues',ctrGap:'High impressions, low CTR',clarityGap:'Clarity gap (vague/bloated content)'};
 function getThresholds(){return{peakedPct:parseInt(document.getElementById('tPeakedPct')?.value||50),offmapClicks:parseInt(document.getElementById('tOffmapClicks')?.value||50),offmapImpr:parseInt(document.getElementById('tOffmapImpr')?.value||500),hotImpr:parseInt(document.getElementById('tHotImpr')?.value||5000),hotCtr:parseFloat(document.getElementById('tHotCtr')?.value||2)/100,kwHigh:parseInt(document.getElementById('tKwHigh')?.value||1000),kwMed:parseInt(document.getElementById('tKwMed')?.value||300)};}
+// Words that show up across so many of your own post titles (things, best, guide, hotels...)
+// that they can't identify what any single post is actually about. Computed once per scan
+// from the whole title catalog so the threshold scales with however many posts you have.
+function buildCommonTitleWords(allPosts){
+  const freq={};
+  (allPosts||[]).forEach(p=>{
+    const seen=new Set(((p.title||'').toLowerCase().match(/[a-z']+/g))||[]);
+    seen.forEach(w=>{if(w.length>=3)freq[w]=(freq[w]||0)+1;});
+  });
+  const thresh=Math.max(20,Math.round((allPosts||[]).length*0.05));
+  const common=new Set();
+  Object.keys(freq).forEach(w=>{if(freq[w]>thresh)common.add(w);});
+  return common;
+}
+function titleAnchorWords(title,commonWords){
+  const words=((title||'').toLowerCase().match(/[a-z']+/g))||[];
+  return words.filter(w=>w.length>=3&&!commonWords.has(w));
+}
 let dismissedUrls=new Set();
 async function loadDismissedPosts(){
   const{data:{session}}=await sb.auth.getSession();
@@ -957,7 +975,8 @@ function renderTable(){
     const imprHot=p.impressions>=t.hotImpr&&p.ctr<t.hotCtr;
     const kwColor=p.topKeywordVolume>=(t.kwHigh||1000)?'var(--purple-text)':p.topKeywordVolume>0?'var(--text)':'var(--text3)';
     const kwDisplay=p.topKeywordVolume>=1000?(p.topKeywordVolume/1000).toFixed(1)+'k':p.topKeywordVolume>0?p.topKeywordVolume:'—';
-    const kwTitle=p.topKeyword?`title="${p.topKeyword}"`:'';
+    const kwText=p.topKeyword?(p.topKeyword.length>16?p.topKeyword.slice(0,16)+'…':p.topKeyword):'';
+    const kwTitle=p.topKeyword?`title="${p.topKeyword} — ${kwDisplay} monthly searches"`:'';
     return`<tr>
       <td class="col-title" title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,40)}${p.title.length>40?'…':''}</a></td>
       <td class="col-age" style="font-size:11px;color:${ageCol}">${fmtAge(p.ageMonths)}</td>
@@ -966,7 +985,7 @@ function renderTable(){
       <td class="col-pos" style="font-size:11px;color:${p.position>10&&p.position<=20?'var(--purple-text)':p.position>0?'var(--text)':'var(--text3)'}">${fmtPos(p.position)}</td>
       <td class="col-health">${healthHtml}</td>
       <td class="col-issues" style="font-size:11px">${issues}</td>
-      <td class="col-kw" style="font-size:11px;color:${kwColor}" ${kwTitle}>${kwDisplay}</td>
+      <td class="col-kw" ${kwTitle}>${kwText?`<div style="font-size:10px;color:var(--text2)">${kwText}</div>`:''}<div style="font-size:11px;color:${kwColor}">${kwDisplay}</div></td>
       <td class="col-flags" style="white-space:normal;line-height:1.6">${flagsHtml}</td>
       <td class="col-score">
         <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${Math.min(p.score/150*100,100)}%;background:${sc}"></div></div><span class="score-num" style="color:${sc}">${p.score}</span></div>
@@ -1111,15 +1130,28 @@ async function startKWScan(forceRefresh=false){
       }catch(e){}
     }
     let totalUpdated=0;
+    // Words too common across all your titles (things, best, guide, hotels...) can't
+    // reliably identify what a post is actually about — build that exclusion list once
+    // from the whole catalog so picking a "top keyword" isn't fooled by filler words.
+    const commonTitleWords=buildCommonTitleWords(posts);
     postsWithKeywords.forEach(p=>{
       const kwObjs=postKeywordMap[p.id]||[];
+      const anchors=titleAnchorWords(p.title,commonTitleWords);
       let topKeyword='',topClicks=-1,topVolume=0;
+      let anchoredKeyword='',anchoredClicks=-1,anchoredVolume=0;
       kwObjs.forEach(obj=>{
         const q=typeof obj==='string'?obj:obj.query;
         const clicks=typeof obj==='string'?0:(obj.clicks||0);
         if(!q)return;
         if(clicks>topClicks){topClicks=clicks;topKeyword=q;topVolume=masterVolumeMap[q]?.volume||0;}
+        if(anchors.length&&anchors.some(a=>q.toLowerCase().includes(a))&&clicks>anchoredClicks){
+          anchoredClicks=clicks;anchoredKeyword=q;anchoredVolume=masterVolumeMap[q]?.volume||0;
+        }
       });
+      // Prefer the best keyword that actually relates to the post's own title (by clicks).
+      // If no query matches any anchor word — or the title itself has no anchor words —
+      // fall back to the old top-by-clicks pick rather than leaving it blank.
+      if(anchoredKeyword){topKeyword=anchoredKeyword;topVolume=anchoredVolume;}
       p.topKeyword=topKeyword;
       p.topKeywordVolume=topVolume;
       const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;
