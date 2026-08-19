@@ -975,7 +975,7 @@ function renderTable(){
     const imprHot=p.impressions>=t.hotImpr&&p.ctr<t.hotCtr;
     const kwColor=p.topKeywordVolume>=(t.kwHigh||1000)?'var(--purple-text)':p.topKeywordVolume>0?'var(--text)':'var(--text3)';
     const kwDisplay=p.topKeywordVolume>=1000?(p.topKeywordVolume/1000).toFixed(1)+'k':p.topKeywordVolume>0?p.topKeywordVolume:'—';
-    const kwText=p.topKeyword?(p.topKeyword.length>16?p.topKeyword.slice(0,16)+'…':p.topKeyword):'';
+    const kwText=p.topKeyword||'';
     const kwTitle=p.topKeyword?`title="${p.topKeyword} — ${kwDisplay} monthly searches"`:'';
     return`<tr>
       <td class="col-title" title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,40)}${p.title.length>40?'…':''}</a></td>
@@ -985,7 +985,7 @@ function renderTable(){
       <td class="col-pos" style="font-size:11px;color:${p.position>10&&p.position<=20?'var(--purple-text)':p.position>0?'var(--text)':'var(--text3)'}">${fmtPos(p.position)}</td>
       <td class="col-health">${healthHtml}</td>
       <td class="col-issues" style="font-size:11px">${issues}</td>
-      <td class="col-kw" ${kwTitle}>${kwText?`<div style="font-size:10px;color:var(--text2)">${kwText}</div>`:''}<div style="font-size:11px;color:${kwColor}">${kwDisplay}</div></td>
+      <td class="col-kw" style="white-space:normal" ${kwTitle}>${kwText?`<div style="font-size:10px;color:var(--text2);white-space:normal;word-break:break-word;line-height:1.3">${kwText}</div>`:''}<div style="font-size:11px;color:${kwColor}">${kwDisplay}</div></td>
       <td class="col-flags" style="white-space:normal;line-height:1.6">${flagsHtml}</td>
       <td class="col-score">
         <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${Math.min(p.score/150*100,100)}%;background:${sc}"></div></div><span class="score-num" style="color:${sc}">${p.score}</span></div>
@@ -1113,7 +1113,7 @@ async function startKWScan(forceRefresh=false){
     const allKws=new Set();
     const postKeywordMap={};
     postsWithKeywords.forEach(p=>{
-      const kwObjs=(p.gscKeywords||[]).slice(0,10);
+      const kwObjs=(p.gscKeywords||[]).slice(0,20);
       postKeywordMap[p.id]=kwObjs;
       kwObjs.forEach(k=>{const q=typeof k==='string'?k:k.query;if(q)allKws.add(q);});
     });
