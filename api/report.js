@@ -166,8 +166,10 @@ PRICES:
 - Croatia switched to Euro January 2023 — never suggest HRK prices
 - For prices that need checking: editorNote should say "Verify this price is still accurate at [official website]"
 BROKEN LINKS:
-- The link checker has a HIGH FALSE POSITIVE RATE
-- ALWAYS start the action with: "Check if this link is actually broken first (the checker is often wrong). If broken, [then what to do]"
+- The link checker has a HIGH FALSE POSITIVE RATE, but do NOT repeat that caveat in every fix — the brief shows one disclaimer once, automatically, above the first broken link
+- Action should be direct and short: just say what to do if the link turns out to be broken. Do NOT start with "check if this is actually broken first" — skip straight to the fix
+- KNOWN BOT-BLOCKING DOMAINS: tripadvisor.com, yelp.com, facebook.com, instagram.com, linkedin.com, pinterest.com. These sites block automated link checkers and routinely show as "broken" even when the link works fine for a real visitor. For a broken_link fix on one of these domains, set "lowConfidence": true and keep the action to: "Open in an incognito browser to confirm — [domain] often blocks automated checks."
+- For all other broken_link fixes, "lowConfidence": false (or omit)
 - NEVER say "replace with affiliate link" — the blog owner handles all affiliate links themselves
 - For tour/activity links: editorNote says "If broken, find a replacement on GetYourGuide or Viator"
 - For hotel links: find working link on SAME OTA first
@@ -199,8 +201,8 @@ NEW THINGS TO ADD:
 - For each post, think about what types of venues, experiences, or content have likely opened or become popular since the post was last updated
 - Suggest specific search strategies for the editor to find new things to add (e.g. "Search Google Maps for [location] + [category] and filter by 'Opened after [year]'")
 - This is one of the most valuable parts of the report — always include at least 2-3 newThingsToAdd items
-YEAR REFERENCES: Do NOT suggest adding year throughout post body. Title only, once.
-SUGGESTED TEXT: Match the blog's existing voice, based on the post content provided. No "verify", "current", "as of [year]". No generic filler. When adding a concrete detail (temperature, price, distance, timing, etc.), give a real specific value or a narrow, genuinely useful range — never a broad range spanning many units that conveys almost nothing (e.g. an 8-18°C range). If you don't actually know a specific value from the post or context, leave it out rather than inventing a wide range to sound specific.
+YEAR REFERENCES: Only suggest adding a year to the title if it would genuinely help THIS specific post — ranked/best-of lists, pricing or cost guides, or content about what's currently open or trending, where readers actively want the newest version. Skip it for evergreen itineraries, personal narratives, and how-to/step-by-step guides where the content isn't year-bound — most posts should NOT get this suggestion. If you do suggest it: title only, never throughout the post body, and only once.
+SUGGESTED TEXT: Match the blog's existing voice, based on the post content provided. No "verify", "current", "as of [year]". No generic filler. No em dashes (—) anywhere in generated text — use a comma, period, or a regular hyphen (-) instead. When adding a concrete detail (temperature, price, distance, timing, etc.), give a real specific value or a narrow, genuinely useful range — never a broad range spanning many units that conveys almost nothing (e.g. an 8-18°C range). If you don't actually know a specific value from the post or context, leave it out rather than inventing a wide range to sound specific.
 DO NOT SUGGEST: Table of contents, internal links, affiliate links, alt text if all images have it
 TWO SEPARATE FIELDS:
 1. suggestedText = ready-to-paste post content in the blog owner's own first-person voice ONLY
@@ -247,8 +249,9 @@ Return ONLY this JSON:
         {
           "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix|missing_alt_text|vague_content|superfluous_content|confusing_structure",
           "priority": "critical|high|medium",
+          "lowConfidence": true or false — true ONLY for broken_link fixes on known bot-blocking domains (tripadvisor.com, yelp.com, facebook.com, instagram.com, linkedin.com, pinterest.com), otherwise false,
           "currentText": "exact short quote",
-          "action": "specific instruction — broken links ALWAYS start with 'Check if this link is actually broken first (the checker is often wrong).'",
+          "action": "specific instruction — for broken links, state directly what to do if it's broken, no preamble about checking first",
           "suggestedText": "ready-to-paste post content in the blog owner's own voice OR omit if not applicable",
           "editorNote": "tips for VA only — verification sources, replacement links, etc. NOT post content"
         }
