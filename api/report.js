@@ -128,7 +128,7 @@ if (profile?.tier !== 'owner' && reportsUsed >= 25) {
       ? `GSC: ${gscData.recentClicks||0} clicks (recent 8mo), ${gscData.olderClicks||0} clicks (prior 8mo), ${gscData.trafficDeclinePct||0}% decline, position ${gscData.position?.toFixed(1)||'?'}, ${gscData.recentImpressions||0} impressions`
       : 'No GSC data available';
     const topKeywordsContext = gscKeywords?.length > 0
-      ? `\nTOP GSC KEYWORDS FOR THIS POST (by impressions, last 6 months):\n${gscKeywords.slice(0,10).map((k,i) => `${i+1}. "${k.keyword}" — ${k.impressions} impressions, ${k.clicks} clicks`).join('\n')}\nNaturally weave these keywords into your update where relevant.`
+      ? `\nTOP GSC KEYWORDS FOR THIS POST (by impressions, last 6 months):\n${gscKeywords.slice(0,20).map((k,i) => `${i+1}. "${k.keyword}" - ${k.impressions} impressions, ${k.clicks} clicks${k.volume?`, ${k.volume} monthly searches`:''}`).join('\n')}\nNaturally weave these keywords into your update where relevant, favoring higher search volume ones when there's a natural fit.`
       : '';
     const linksContext = brokenLinks?.length > 0
       ? `${brokenLinks.length} potential broken links (NOTE: the link checker has false positives — always verify before flagging as broken):\n${brokenLinks.slice(0,10).map(l=>`- ${l.url} (${l.status||'timeout'})`).join('\n')}`
@@ -141,7 +141,10 @@ if (profile?.tier !== 'owner' && reportsUsed >= 25) {
       : '';
     const wordCount = content.split(/\s+/).filter(Boolean).length;
     const wordCountContext = `\nPOST WORD COUNT: ~${wordCount} words.`;
-    const competitorPromise = searchCompetitors(postTitle);
+    const competitors = await searchCompetitors(postTitle);
+    const competitorContext = competitors.titles?.length > 0
+      ? `\nTOP COMPETING RESULTS CURRENTLY RANKING FOR THIS TOPIC (from a live search, titles only):\n${competitors.titles.map((t,i) => `${i+1}. ${t}`).join('\n')}\nUse these to help ground your content gap suggestions - what do these competing posts likely cover that this post doesn't?`
+      : '';
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -201,6 +204,7 @@ NEW THINGS TO ADD:
 - For each post, think about what types of venues, experiences, or content have likely opened or become popular since the post was last updated
 - Suggest specific search strategies for the editor to find new things to add (e.g. "Search Google Maps for [location] + [category] and filter by 'Opened after [year]'")
 - This is one of the most valuable parts of the report — always include at least 2-3 newThingsToAdd items
+- If competing result titles are provided below, ground topContentGaps in what those competing posts likely cover that this one doesn't — mention the angle, not the competitor by name. If no competitor titles are provided, rely on your own knowledge of the destination and topic instead.
 YEAR REFERENCES: Only suggest adding a year to the title if it would genuinely help THIS specific post — ranked/best-of lists, pricing or cost guides, or content about what's currently open or trending, where readers actively want the newest version. Skip it for evergreen itineraries, personal narratives, and how-to/step-by-step guides where the content isn't year-bound — most posts should NOT get this suggestion. If you do suggest it: title only, never throughout the post body, and only once.
 SUGGESTED TEXT: Match the blog's existing voice, based on the post content provided. No "verify", "current", "as of [year]". No generic filler. No em dashes (—) anywhere in generated text — use a comma, period, or a regular hyphen (-) instead. When adding a concrete detail (temperature, price, distance, timing, etc.), give a real specific value or a narrow, genuinely useful range — never a broad range spanning many units that conveys almost nothing (e.g. an 8-18°C range). If you don't actually know a specific value from the post or context, leave it out rather than inventing a wide range to sound specific.
 DO NOT SUGGEST: Table of contents, internal links, affiliate links, alt text if all images have it
@@ -217,6 +221,7 @@ Published: ${publishDate} | Last modified: ${modifiedDate}
 ${gscContext}
 ${wordCountContext}
 ${topKeywordsContext}
+${competitorContext}
 ${linksContext}
 ${altTextContext}
 ${existingLinksContext}
@@ -295,13 +300,10 @@ Return ONLY this JSON:
     const location = report.location || '';
     delete report.venueNames;
     delete report.location;
-    const [venueResults, competitors] = await Promise.all([
-      venueNames.length > 0 && process.env.GOOGLE_PLACES_API_KEY
-        ? Promise.allSettled(venueNames.slice(0, 10).map(v => checkVenueStatus(v, location)))
-            .then(checks => checks.filter(r => r.status === 'fulfilled').map(r => r.value))
-        : Promise.resolve([]),
-      competitorPromise,
-    ]);
+    const venueResults = venueNames.length > 0 && process.env.GOOGLE_PLACES_API_KEY
+      ? await Promise.allSettled(venueNames.slice(0, 10).map(v => checkVenueStatus(v, location)))
+          .then(checks => checks.filter(r => r.status === 'fulfilled').map(r => r.value))
+      : [];
     venueResults.filter(v => v.flag).forEach(v => {
       const sectionIdx = (report.sections || []).findIndex(s =>
         s.fixes?.some(f => f.currentText?.toLowerCase().includes(v.venue.toLowerCase())) ||
