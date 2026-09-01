@@ -198,6 +198,30 @@ CLARITY & STRUCTURE:
 - Only flag issues you're confident would meaningfully help the reader if fixed — if in doubt, don't flag it. Precision over recall.
 - Add these as fixes in the correct section, using type "vague_content", "superfluous_content", or "confusing_structure" — same currentText/action/suggestedText/editorNote format as other fixes
 - Cap it: include at most the 3-5 most impactful clarity fixes total across the whole post, even if there are more you could flag
+KEYWORD STUFFING (already in the post):
+- While reading, watch for old-school keyword stuffing already baked into the existing content: the same keyword or an obvious variation of it repeated so often it reads unnatural or robotic. This is NOT about simple topical repetition — real writing naturally repeats its subject. The telltale pattern is circular restatement, where a sentence just repeats the keyword back at itself instead of adding information. Two real examples of what TO catch:
+  - "These Ohio treehouse rentals are some of the best tree cabins in Ohio because the people who love Ohio treehouses love booking treehouse cabins in Ohio."
+  - A heading reading "The Maritime Museum, a unique thing to do in Santa Barbara," immediately followed by "The Maritime Museum is one of the most fun things to do in Santa Barbara because other Santa Barbara activities don't involve boats."
+- Concretely: flag it when 3 or more variations of the same keyword/topic phrase appear within any 4-sentence window and the repeats add no new information. This can happen anywhere in a paragraph, not only right after a heading.
+- Do NOT flag normal repetition of a place or venue name — only flag when it reads like it's performing for a search engine rather than talking to a reader.
+- Add as a fix with type "keyword_stuffing", same currentText/action/suggestedText/editorNote format as other fixes. suggestedText should keep one clean mention and cut the rest, replacing the padding with a real detail instead.
+- Cap at 3 per report, only the clearest, most confident instances. Precision over recall.
+GENERIC / IMPERSONAL VOICE:
+- Flag sections that read like generic travel-guide copy: no "I/my/we," no specific sensory or anecdotal detail, no opinion — just facts anyone could pull off the venue's own website, interchangeable with a thousand other posts on the same place.
+- This is a judgment call about density in context, not a banned-word list. A single "hidden gem" or "must-visit" inside an otherwise specific, firsthand paragraph is fine — do not flag individual stock phrases on their own. Only flag when a whole section leans on this kind of generic language AND has zero firsthand markers.
+- Add as a fix with type "generic_voice". suggestedText should keep the factual content but reframe it with an actual firsthand-sounding detail, reaction, or small anecdote — the goal is sounding like the blogger was really there, not just avoiding certain words.
+- Cap at 3-5 per report, only the clearest instances. Precision over recall.
+PERSONAL EXPERIENCE OPPORTUNITIES:
+- Separate from GENERIC / IMPERSONAL VOICE above (which flags writing that's already bad), proactively look for good SPOTS where inviting the blogger to add a personal, firsthand detail would make an already-fine section noticeably better - even when nothing is wrong with the current text.
+- Frame it as an invitation to the blogger, never as a criticism or a fix to something broken. Example tone: "Do you have a specific memory from visiting Trinket, something you noticed or a moment that stuck with you? A line like that would make this section stand out." Address the blogger directly, as a question.
+- Good candidates: a venue or section described only in facts (hours, location, what it offers) where a specific memory, sensory detail, personal tip, or reaction from an actual visit would add real value; a listicle entry that's accurate but could use one line of "why I picked this one" or "what surprised me when I went."
+- Add as a fix with type "personal_experience". Leave suggestedText empty for this type - you don't have the blogger's real experience to invent, so don't write fake anecdotes. The "action" field carries the inviting question itself.
+- Default priority to "medium" unless the whole section is one of the thinnest, most fact-only parts of the post.
+- Cap at 3-5 per report - pick the spots where a personal detail would add the most value, not every section.
+THIN CONTENT (whole post only, separate from the per-section fixes above):
+- Assess whether the ENTIRE post is thin per Google's own definition: content that provides little or no added value to a reader — auto-generated-feeling filler, listicle entries that are each one bland interchangeable sentence with no unique detail, or a post that reads like hundreds of others on the same topic with nothing original added.
+- This is a whole-post judgment, not a per-section one. Most posts have a few short or generic-feeling spots and that's normal — do NOT flag a post just because one section is thin. Only flag if the post AS A WHOLE genuinely reads this way.
+- Set the top-level "thinContent" field accordingly. Default to isThin:false unless you're genuinely confident — this should be rare, most posts should not trigger it.
 REFRESH DEPTH:
 - Data shows refreshes need to change more than 10% of a post's word count to meaningfully move traffic — light tweaks alone tend not to. As the final sentence of "summary", honestly note whether the fixes you're suggesting add up to a meaningful refresh for a post this length, or whether it's a lighter touch-up — and if it's light, name one additional section that could use deeper attention.
 NEW THINGS TO ADD:
@@ -208,7 +232,8 @@ NEW THINGS TO ADD:
 - This is one of the most valuable parts of the report, but only if the suggestions are genuinely specific to this destination and this gap in time — 1-2 sharp, well-grounded newThingsToAdd items beat 3 generic ones. Don't pad to hit a count.
 - If competing result titles are provided below, ground topContentGaps in what those competing posts likely cover that this one doesn't — mention the angle, not the competitor by name. If no competitor titles are provided, rely on your own knowledge of the destination and topic instead.
 YEAR REFERENCES: Only suggest adding a year to the title if it would genuinely help THIS specific post — ranked/best-of lists, pricing or cost guides, or content about what's currently open or trending, where readers actively want the newest version. Skip it for evergreen itineraries, personal narratives, and how-to/step-by-step guides where the content isn't year-bound — most posts should NOT get this suggestion. If you do suggest it: title only, never throughout the post body, and only once.
-SUGGESTED TEXT: Match the blog's existing voice, based on the post content provided. No "verify", "current", "as of [year]". No generic filler. No em dashes (—) anywhere in generated text — use a comma, period, or a regular hyphen (-) instead. When adding a concrete detail (temperature, price, distance, timing, etc.), give a real specific value or a narrow, genuinely useful range — never a broad range spanning many units that conveys almost nothing (e.g. an 8-18°C range). If you don't actually know a specific value from the post or context, leave it out rather than inventing a wide range to sound specific.
+GLOBAL STYLE RULE: No em dashes (—) anywhere in ANY generated text in this response — not in summary, action, editorNote, whyRelevant, suggestedText, or anywhere else. Use a comma, period, or a regular hyphen (-) instead. This applies everywhere, not just suggestedText.
+SUGGESTED TEXT: Match the blog's existing voice, based on the post content provided. No "verify", "current", "as of [year]". No generic filler. When adding a concrete detail (temperature, price, distance, timing, etc.), give a real specific value or a narrow, genuinely useful range — never a broad range spanning many units that conveys almost nothing (e.g. an 8-18°C range). If you don't actually know a specific value from the post or context, leave it out rather than inventing a wide range to sound specific.
 DO NOT SUGGEST: Table of contents, internal links, affiliate links, alt text if all images have it
 TWO SEPARATE FIELDS:
 1. suggestedText = ready-to-paste post content in the blog owner's own first-person voice ONLY
@@ -232,6 +257,7 @@ ${content}
 Return ONLY this JSON:
 {
   "summary": "2-3 sentences: what needs updating and why it matters for traffic/readers, ending with the refresh-depth note described above",
+  "thinContent": {"isThin": true or false, "reason": "one sentence, only if isThin is true, per the whole-post THIN CONTENT rule above"},
   "estimatedUpdateTime": "15 mins|30 mins|1 hour|2+ hours",
   "location": "city and country this post is about",
   "venueNames": ["every named restaurant", "bar", "cafe", "club", "hotel", "hostel", "attraction", "park", "tour operator"],
@@ -254,7 +280,7 @@ Return ONLY this JSON:
       "sectionName": "Section heading IN ORDER as it appears in post",
       "fixes": [
         {
-          "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix|missing_alt_text|vague_content|superfluous_content|confusing_structure",
+          "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix|missing_alt_text|vague_content|superfluous_content|confusing_structure|keyword_stuffing|generic_voice|personal_experience",
           "priority": "critical|high|medium",
           "lowConfidence": true or false — true ONLY for broken_link fixes on known bot-blocking domains (tripadvisor.com, yelp.com, facebook.com, instagram.com, linkedin.com, pinterest.com), otherwise false,
           "currentText": "exact short quote",
