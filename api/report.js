@@ -128,7 +128,7 @@ if (profile?.tier !== 'owner' && reportsUsed >= 25) {
       ? `GSC: ${gscData.recentClicks||0} clicks (recent 8mo), ${gscData.olderClicks||0} clicks (prior 8mo), ${gscData.trafficDeclinePct||0}% decline, position ${gscData.position?.toFixed(1)||'?'}, ${gscData.recentImpressions||0} impressions`
       : 'No GSC data available';
     const topKeywordsContext = gscKeywords?.length > 0
-      ? `\nTOP GSC KEYWORDS FOR THIS POST (by impressions, last 6 months):\n${gscKeywords.slice(0,20).map((k,i) => `${i+1}. "${k.keyword}" - ${k.impressions} impressions, ${k.clicks} clicks${k.volume?`, ${k.volume} monthly searches`:''}`).join('\n')}\nNaturally weave these keywords into your update where relevant, favoring higher search volume ones when there's a natural fit.`
+      ? `\nTOP GSC KEYWORDS FOR THIS POST (by impressions, last 6 months):\n${gscKeywords.slice(0,10).map((k,i) => `${i+1}. "${k.keyword}" - ${k.impressions} impressions, ${k.clicks} clicks${k.volume?`, ${k.volume} monthly searches`:''}`).join('\n')}\nNaturally weave these keywords into your update where relevant, favoring higher search volume ones when there's a natural fit.`
       : '';
     const linksContext = brokenLinks?.length > 0
       ? `${brokenLinks.length} potential broken links (NOTE: the link checker has false positives — always verify before flagging as broken):\n${brokenLinks.slice(0,10).map(l=>`- ${l.url} (${l.status||'timeout'})`).join('\n')}`
