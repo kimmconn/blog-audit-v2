@@ -202,8 +202,10 @@ REFRESH DEPTH:
 - Data shows refreshes need to change more than 10% of a post's word count to meaningfully move traffic — light tweaks alone tend not to. As the final sentence of "summary", honestly note whether the fixes you're suggesting add up to a meaningful refresh for a post this length, or whether it's a lighter touch-up — and if it's light, name one additional section that could use deeper attention.
 NEW THINGS TO ADD:
 - For each post, think about what types of venues, experiences, or content have likely opened or become popular since the post was last updated
+- Ground this specifically in the actual gap between the post's last-updated date and today (both are provided below) — not a generic "things change over time" narrative
+- Do NOT default to "post-pandemic" or "pandemic recovery" as the explanation for what's changed. That framing is stale and overused. Only reference the pandemic at all if the post was last meaningfully updated before 2022. For posts updated 2022 or later, reason about what's actually new or different in that specific window (new openings, closures, trends, price shifts, changed logistics) — not COVID-era recovery
 - Suggest specific search strategies for the editor to find new things to add (e.g. "Search Google Maps for [location] + [category] and filter by 'Opened after [year]'")
-- This is one of the most valuable parts of the report — always include at least 2-3 newThingsToAdd items
+- This is one of the most valuable parts of the report, but only if the suggestions are genuinely specific to this destination and this gap in time — 1-2 sharp, well-grounded newThingsToAdd items beat 3 generic ones. Don't pad to hit a count.
 - If competing result titles are provided below, ground topContentGaps in what those competing posts likely cover that this one doesn't — mention the angle, not the competitor by name. If no competitor titles are provided, rely on your own knowledge of the destination and topic instead.
 YEAR REFERENCES: Only suggest adding a year to the title if it would genuinely help THIS specific post — ranked/best-of lists, pricing or cost guides, or content about what's currently open or trending, where readers actively want the newest version. Skip it for evergreen itineraries, personal narratives, and how-to/step-by-step guides where the content isn't year-bound — most posts should NOT get this suggestion. If you do suggest it: title only, never throughout the post body, and only once.
 SUGGESTED TEXT: Match the blog's existing voice, based on the post content provided. No "verify", "current", "as of [year]". No generic filler. No em dashes (—) anywhere in generated text — use a comma, period, or a regular hyphen (-) instead. When adding a concrete detail (temperature, price, distance, timing, etc.), give a real specific value or a narrow, genuinely useful range — never a broad range spanning many units that conveys almost nothing (e.g. an 8-18°C range). If you don't actually know a specific value from the post or context, leave it out rather than inventing a wide range to sound specific.
@@ -237,7 +239,7 @@ Return ONLY this JSON:
     {
       "category": "restaurant|bar|attraction|experience|neighbourhood|event",
       "suggestion": "specific research task, e.g. 'Search Google Maps for [location] [category] filtered by opened after [year] to find new additions worth mentioning'",
-      "whyRelevant": "why readers in 2026 would want this info"
+      "whyRelevant": "why readers today would want this info"
     }
   ],
   "quickReferenceLists": [
