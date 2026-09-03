@@ -90,11 +90,12 @@ if (!userId) return res.status(400).json({ error: 'Missing userId' });
 const { createClient } = await import('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
 const currentMonth = new Date().toISOString().slice(0, 7);
-const { data: profile } = await supabase.from('profiles').select('reports_this_month, reports_month, tier').eq('id', userId).single();
+const { data: profile } = await supabase.from('profiles').select('reports_this_month, reports_month, tier, report_limit_override').eq('id', userId).single();
 let reportsUsed = profile?.reports_this_month || 0;
 if (profile?.reports_month !== currentMonth) reportsUsed = 0;
-if (profile?.tier !== 'owner' && reportsUsed >= 25) {
-  return res.status(200).json({ error: "You've hit your 25 reports this month limit. It resets next month!" });
+const reportLimit = profile?.report_limit_override || 12;
+if (profile?.tier !== 'owner' && reportsUsed >= reportLimit) {
+  return res.status(200).json({ error: `You've hit your ${reportLimit} reports this month limit. It resets next month!` });
 }
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'Anthropic API key not configured' });

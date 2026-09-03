@@ -21,6 +21,11 @@ export default async function handler(req, res) {
       customer_email: email,
       client_reference_id: userId,
       allow_promotion_codes: true,
+      payment_method_collection: 'always',
+      subscription_data: {
+        trial_period_days: 30,
+        metadata: { userId, tier },
+      },
       success_url: `${process.env.NEXTAUTH_URL}/dashboard.html?subscribed=1`,
       cancel_url: `${process.env.NEXTAUTH_URL}/dashboard.html?subscribe_cancelled=1`,
       metadata: { userId, tier },
