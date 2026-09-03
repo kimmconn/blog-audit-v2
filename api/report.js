@@ -93,7 +93,7 @@ const currentMonth = new Date().toISOString().slice(0, 7);
 const { data: profile } = await supabase.from('profiles').select('reports_this_month, reports_month, tier, report_limit_override').eq('id', userId).single();
 let reportsUsed = profile?.reports_this_month || 0;
 if (profile?.reports_month !== currentMonth) reportsUsed = 0;
-const reportLimit = profile?.report_limit_override || 12;
+const reportLimit = profile?.report_limit_override || 15;
 if (profile?.tier !== 'owner' && reportsUsed >= reportLimit) {
   return res.status(200).json({ error: `You've hit your ${reportLimit} reports this month limit. It resets next month!` });
 }
