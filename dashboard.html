@@ -192,13 +192,11 @@ async function checkAuth(){
     showPlanScreen(session.user.id,session.user.email);
     return;
   }
-  const blockedStatuses=['canceled','past_due','unpaid','incomplete_expired'];
-  // Legacy invite-code trials (no Stripe involved) still expire off their own trial_ends_at date.
   if(profile.tier==='trial'&&profile.trial_ends_at&&new Date(profile.trial_ends_at)<=new Date()){
     showAccessEndedScreen(session.user.id,session.user.email,'trial');
     return;
   }
-  if(profile.tier==='cancelled'||blockedStatuses.includes(profile.subscription_status)){
+  if(profile.tier==='cancelled'){
     showAccessEndedScreen(session.user.id,session.user.email,'cancelled');
     return;
   }
@@ -208,13 +206,12 @@ async function checkAuth(){
     const urlInput=document.getElementById('urlInput');
     if(urlInput&&!urlInput.value)urlInput.value=profile.site_url;
   }
-  const onTrial=(profile.subscription_status==='trialing'||profile.tier==='trial')&&profile.trial_ends_at;
-  if(onTrial){
+  if(profile.tier==='trial'&&profile.trial_ends_at){
     const daysLeft=Math.ceil((new Date(profile.trial_ends_at)-Date.now())/(1000*60*60*24));
     const banner=document.getElementById('trialBanner');
     if(banner){
       banner.style.display='block';
-      banner.innerHTML=`<div style="background:var(--purple-bg);color:var(--purple-text);padding:8px 14px;border-radius:var(--radius);font-size:12.5px;font-weight:600;display:inline-block">🎉 Free trial — ${daysLeft} day${daysLeft===1?'':'s'} left${profile.subscription_status==='trialing'?', card on file, no charge until it ends':''}</div>`;
+      banner.innerHTML=`<div style="background:var(--purple-bg);color:var(--purple-text);padding:8px 14px;border-radius:var(--radius);font-size:12.5px;font-weight:600;display:inline-block">🎉 Free trial — ${daysLeft} day${daysLeft===1?'':'s'} left</div>`;
     }
   }
 }
