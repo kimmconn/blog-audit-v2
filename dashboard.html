@@ -223,7 +223,7 @@ function showAccessEndedScreen(userId,email,reason){
   if(authGateEl)authGateEl.style.display='flex';
   if(appEl)appEl.style.display='none';
   const heading=reason==='trial'?'Your invite trial has ended':'Your subscription has ended';
-  const sub="Subscribe to get back into your dashboard. Your card won't be charged again until after a new 30-day trial.";
+  const sub="Resubscribe to get back into your dashboard.";
   document.getElementById('authGateContent').innerHTML=`
     <p style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:4px">${heading}</p>
     <p style="font-size:12px;color:var(--text2);margin-bottom:16px">${sub}</p>
@@ -252,7 +252,7 @@ function showPlanScreen(userId,email){
       <li>✓ 15 reports/mo, exportable as PDF</li>
     </ul>
     <div style="text-align:center;margin-bottom:10px"><a href="pricing.html" style="font-size:11px;color:var(--accent);text-decoration:underline">See full plan comparison →</a></div>
-    <div style="font-size:10.5px;color:var(--text3);text-align:center;margin-bottom:10px">💳 30-day free trial, card required. $0 today, first charge only after your trial ends. Cancel anytime before then.</div>
+    <div style="font-size:10.5px;color:var(--text3);text-align:center;margin-bottom:10px">💳 Got a discount code? Enter it at checkout in the next step.</div>
     <div id="subMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
     <div style="text-align:center;margin-top:18px">
       <button type="button" onclick="showInviteCodeForm('${userId}','${email}')" style="background:none;border:none;color:var(--text2);font-size:12px;text-decoration:underline;cursor:pointer">Have a beta invite code?</button>
