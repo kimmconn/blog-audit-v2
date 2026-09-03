@@ -193,6 +193,11 @@ async function checkAuth(){
     return;
   }
   const blockedStatuses=['canceled','past_due','unpaid','incomplete_expired'];
+  // Legacy invite-code trials (no Stripe involved) still expire off their own trial_ends_at date.
+  if(profile.tier==='trial'&&profile.trial_ends_at&&new Date(profile.trial_ends_at)<=new Date()){
+    showAccessEndedScreen(session.user.id,session.user.email,'trial');
+    return;
+  }
   if(profile.tier==='cancelled'||blockedStatuses.includes(profile.subscription_status)){
     showAccessEndedScreen(session.user.id,session.user.email,'cancelled');
     return;
@@ -203,12 +208,13 @@ async function checkAuth(){
     const urlInput=document.getElementById('urlInput');
     if(urlInput&&!urlInput.value)urlInput.value=profile.site_url;
   }
-  if(profile.subscription_status==='trialing'&&profile.trial_ends_at){
+  const onTrial=(profile.subscription_status==='trialing'||profile.tier==='trial')&&profile.trial_ends_at;
+  if(onTrial){
     const daysLeft=Math.ceil((new Date(profile.trial_ends_at)-Date.now())/(1000*60*60*24));
     const banner=document.getElementById('trialBanner');
     if(banner){
       banner.style.display='block';
-      banner.innerHTML=`<div style="background:var(--purple-bg);color:var(--purple-text);padding:8px 14px;border-radius:var(--radius);font-size:12.5px;font-weight:600;display:inline-block">🎉 Free trial — ${daysLeft} day${daysLeft===1?'':'s'} left, card on file, no charge until it ends</div>`;
+      banner.innerHTML=`<div style="background:var(--purple-bg);color:var(--purple-text);padding:8px 14px;border-radius:var(--radius);font-size:12.5px;font-weight:600;display:inline-block">🎉 Free trial — ${daysLeft} day${daysLeft===1?'':'s'} left${profile.subscription_status==='trialing'?', card on file, no charge until it ends':''}</div>`;
     }
   }
 }
@@ -216,8 +222,8 @@ function showAccessEndedScreen(userId,email,reason){
   const authGateEl=document.getElementById('authGate'),appEl=document.querySelector('.app');
   if(authGateEl)authGateEl.style.display='flex';
   if(appEl)appEl.style.display='none';
-  const heading='Your subscription has ended';
-  const sub="Resubscribe to get back into your dashboard. Your card won't be charged again until after a new 30-day trial.";
+  const heading=reason==='trial'?'Your invite trial has ended':'Your subscription has ended';
+  const sub="Subscribe to get back into your dashboard. Your card won't be charged again until after a new 30-day trial.";
   document.getElementById('authGateContent').innerHTML=`
     <p style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:4px">${heading}</p>
     <p style="font-size:12px;color:var(--text2);margin-bottom:16px">${sub}</p>
@@ -248,7 +254,45 @@ function showPlanScreen(userId,email){
     <div style="text-align:center;margin-bottom:10px"><a href="pricing.html" style="font-size:11px;color:var(--accent);text-decoration:underline">See full plan comparison →</a></div>
     <div style="font-size:10.5px;color:var(--text3);text-align:center;margin-bottom:10px">💳 30-day free trial, card required. $0 today, first charge only after your trial ends. Cancel anytime before then.</div>
     <div id="subMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+    <div style="text-align:center;margin-top:18px">
+      <button type="button" onclick="showInviteCodeForm('${userId}','${email}')" style="background:none;border:none;color:var(--text2);font-size:12px;text-decoration:underline;cursor:pointer">Have a beta invite code?</button>
+    </div>
   `;
+}
+function showInviteCodeForm(userId,email){
+  document.getElementById('authGateContent').innerHTML=`
+    <p style="font-size:12px;color:var(--text2);margin-bottom:4px">Enter your invite key below.</p>
+    <p style="font-size:10.5px;color:var(--text3);margin-bottom:12px;font-style:italic">💡 Bloupi's AI helps you spot what needs updating and drafts a starting point - you bring the firsthand experience and final say.</p>
+    <input type="text" id="inviteCodeInput" placeholder="INVITE KEY" style="width:100%;margin-bottom:8px;text-transform:uppercase" />
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;font-size:11.5px;color:#4a4d5e">
+      <label class="term-card" onclick="this.querySelector('input').dispatchEvent(new Event('change'))"><input type="checkbox" class="termsCheck" onchange="checkTermsComplete(this)"><span class="term-check">✓</span><span>I intend to update at least 10 posts during my trial month using Bloupi's generated briefs.</span></label>
+      <label class="term-card" onclick="this.querySelector('input').dispatchEvent(new Event('change'))"><input type="checkbox" class="termsCheck" onchange="checkTermsComplete(this)"><span class="term-check">✓</span><span>I agree to share a testimonial or feedback on my experience, including any traffic or ranking changes I see.</span></label>
+      <label class="term-card" onclick="this.querySelector('input').dispatchEvent(new Event('change'))"><input type="checkbox" class="termsCheck" onchange="checkTermsComplete(this)"><span class="term-check">✓</span><span>I agree to use Bloupi solely for my own blog content; I won't copy Bloupi or use what I learn here to build or inform something similar.</span></label>
+    </div>
+    <button class="auth-btn-primary" style="width:100%" id="unlockBtn" disabled onclick="redeemInviteCode('${userId}','${email}')">Unlock access</button>
+    <div id="inviteMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+    <div style="text-align:center;margin-top:14px">
+      <button type="button" onclick="showPlanScreen('${userId}','${email}')" style="background:none;border:none;color:var(--text2);font-size:12px;text-decoration:underline;cursor:pointer">← Back to plans</button>
+    </div>
+  `;
+}
+function checkTermsComplete(cb){
+  if(cb)cb.closest('.term-card').classList.toggle('checked',cb.checked);
+  const boxes=document.querySelectorAll('.termsCheck');
+  const allChecked=Array.from(boxes).every(b=>b.checked);
+  document.getElementById('unlockBtn').disabled=!allChecked;
+}
+async function redeemInviteCode(userId,email){
+  const code=document.getElementById('inviteCodeInput').value.trim();
+  const msg=document.getElementById('inviteMsg');
+  if(!code){msg.textContent='Please enter a code.';return;}
+  msg.textContent='Checking...';
+  try{
+    const res=await fetch('/api/redeem-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,userId,email,agreedTerms:true})});
+    const data=await res.json();
+    if(!res.ok){msg.textContent=data.error||'Invalid code.';return;}
+    checkAuth();
+  }catch(e){msg.textContent='Something went wrong. Try again.';}
 }
 async function startSubscribe(userId,email,tier){
   const msg=document.getElementById('subMsg');
