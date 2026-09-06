@@ -414,7 +414,7 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
       <div id="updatedEmpty" class="empty" style="display:none"><div style="font-size:32px;margin-bottom:8px">🎉</div><div>Nothing marked as updated yet. Mark posts from the Post catalog tab as you finish them.</div></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th style="width:60%">Post title</th><th style="width:40%">Actions</th></tr></thead>
+          <thead><tr><th style="width:32%">Post title</th><th style="width:34%">Since update</th><th style="width:34%">Actions</th></tr></thead>
           <tbody id="updatedTableBody"></tbody>
         </table>
       </div>
@@ -514,11 +514,13 @@ function titleAnchorWords(title,commonWords){
   return words.filter(w=>w.length>=3&&!commonWords.has(w));
 }
 let dismissedUrls=new Set();
+let updateBaselines=new Map();
 async function loadDismissedPosts(){
   const{data:{session}}=await sb.auth.getSession();
   if(!session)return;
-  const{data}=await sb.from('dismissed_posts').select('post_url').eq('user_id',session.user.id);
+  const{data}=await sb.from('dismissed_posts').select('post_url, baseline_clicks, baseline_impressions, baseline_position, baseline_date').eq('user_id',session.user.id);
   dismissedUrls=new Set((data||[]).map(d=>d.post_url));
+  updateBaselines=new Map((data||[]).map(d=>[d.post_url,{clicks:d.baseline_clicks,impressions:d.baseline_impressions,position:d.baseline_position,date:d.baseline_date}]));
 }
 window.addEventListener('load',async()=>{
   const params=new URLSearchParams(window.location.search);
@@ -916,17 +918,20 @@ async function markUpdated(postIdx){
   const{data:{session}}=await sb.auth.getSession();
   if(!session){alert('Please sign in first.');return;}
   dismissedUrls.add(post.url);
+  const baseline={clicks:post.recentClicks||0,impressions:post.recentImpressions||0,position:post.position||null,date:new Date().toISOString()};
+  updateBaselines.set(post.url,baseline);
   updateMetrics();renderTable();renderUpdatedTab();
-  const{error}=await sb.from('dismissed_posts').insert({user_id:session.user.id,post_url:post.url});
+  const{error}=await sb.from('dismissed_posts').insert({user_id:session.user.id,post_url:post.url,baseline_clicks:baseline.clicks,baseline_impressions:baseline.impressions,baseline_position:baseline.position,baseline_date:baseline.date});
   if(error){
     dismissedUrls.delete(post.url);
+    updateBaselines.delete(post.url);
     updateMetrics();renderTable();renderUpdatedTab();
     alert('Could not mark as updated: '+error.message);
     return;
   }
   const toast=document.createElement('div');
   toast.style.cssText='position:fixed;bottom:20px;right:20px;background:#1a1a18;color:white;padding:10px 16px;border-radius:8px;font-size:12px;z-index:9999';
-  toast.textContent='✓ Marked as updated — see it in the Updated tab';
+  toast.textContent='✓ Marked as updated — tracking Search Console data from today';
   document.body.appendChild(toast);
   setTimeout(()=>toast.remove(),3000);
 }
@@ -934,6 +939,7 @@ async function unmarkUpdated(url){
   const{data:{session}}=await sb.auth.getSession();
   if(!session)return;
   dismissedUrls.delete(url);
+  updateBaselines.delete(url);
   updateMetrics();renderTable();renderUpdatedTab();
   await sb.from('dismissed_posts').delete().eq('user_id',session.user.id).eq('post_url',url);
 }
@@ -947,7 +953,26 @@ function renderUpdatedTab(){
   if(dismissedPosts.length===0){if(emptyEl)emptyEl.style.display='block';tbody.innerHTML='';return;}
   if(emptyEl)emptyEl.style.display='none';
   tbody.innerHTML=dismissedPosts.map(p=>{
-    return`<tr><td title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,50)}${p.title.length>50?'…':''}</a></td><td style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="unmarkUpdated('${p.url}')">↺ Unmark</button><a href="${p.url}" target="_blank" class="btn btn-sm">Open post ↗</a></td></tr>`;
+    const b=updateBaselines.get(p.url);
+    let sinceCol='<span style="color:var(--text3);font-size:11px">no baseline captured</span>';
+    if(b&&b.date){
+      const days=Math.max(0,Math.floor((Date.now()-new Date(b.date).getTime())/(1000*60*60*24)));
+      const dayLabel=days===0?'today':days===1?'1 day ago':`${days} days ago`;
+      const curClicks=p.recentClicks||0,curImpr=p.recentImpressions||0,curPos=p.position;
+      const pctChange=(cur,base)=>{if(!base&&!cur)return null;if(!base)return 100;return Math.round(((cur-base)/base)*100);};
+      const clicksPct=pctChange(curClicks,b.clicks||0);
+      const imprPct=pctChange(curImpr,b.impressions||0);
+      const fmtPct=v=>v===null?'—':(v>0?`+${v}%`:`${v}%`);
+      const colorPct=v=>v===null?'var(--text3)':v>0?'var(--green-text)':v<0?'var(--red-text)':'var(--text2)';
+      const posDelta=(b.position&&curPos)?(b.position-curPos):null; // positive = moved up in rankings
+      sinceCol=`<div style="font-size:11px;color:var(--text2);margin-bottom:2px">Marked done ${dayLabel}</div>
+        <div style="font-size:11px;display:flex;gap:10px;flex-wrap:wrap">
+          <span>Clicks <strong style="color:${colorPct(clicksPct)}">${fmtPct(clicksPct)}</strong></span>
+          <span>Impr. <strong style="color:${colorPct(imprPct)}">${fmtPct(imprPct)}</strong></span>
+          ${posDelta!==null?`<span>Pos. <strong style="color:${posDelta>0?'var(--green-text)':posDelta<0?'var(--red-text)':'var(--text2)'}">${posDelta>0?'▲':posDelta<0?'▼':'–'} ${Math.abs(posDelta).toFixed(1)}</strong></span>`:''}
+        </div>`;
+    }
+    return`<tr><td title="${p.title}"><a href="${p.url}" target="_blank">${p.title.substring(0,50)}${p.title.length>50?'…':''}</a></td><td>${sinceCol}</td><td style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-sm" onclick="unmarkUpdated('${p.url}')">↺ Unmark</button><a href="${p.url}" target="_blank" class="btn btn-sm">Open post ↗</a></td></tr>`;
   }).join('');
 }
 function renderTable(){

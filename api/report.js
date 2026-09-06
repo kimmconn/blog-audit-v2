@@ -146,6 +146,7 @@ if (profile?.tier !== 'owner' && reportsUsed >= reportLimit) {
     const competitorContext = competitors.titles?.length > 0
       ? `\nTOP COMPETING RESULTS CURRENTLY RANKING FOR THIS TOPIC (from a live search, titles only):\n${competitors.titles.map((t,i) => `${i+1}. ${t}`).join('\n')}\nUse these to help ground your content gap suggestions - what do these competing posts likely cover that this post doesn't?`
       : '';
+    const isOwner = profile?.tier === 'owner';
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -156,7 +157,9 @@ if (profile?.tier !== 'owner' && reportsUsed >= reportLimit) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
         max_tokens: 16000,
-    system: `You are an expert travel blog content auditor. Today's date is ${new Date().toLocaleDateString("en-US", {year:"numeric",month:"long",day:"numeric"})}.
+        ...(isOwner ? { tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }] } : {}),
+    system: `You are an expert travel blog content auditor. Today's date is ${new Date().toLocaleDateString("en-US", {year:"numeric",month:"long",day:"numeric"})}.${isOwner ? `
+LIVE WEB SEARCH: You have a web_search tool available for this report only. Use it sparingly (up to 5 searches) and only to verify things you're genuinely unsure about - whether a specific venue has closed, whether a price/hours claim is current, or whether a linked page still exists. Don't search for things you already know confidently. Do not narrate your searches or show your research process in the output - once you're done researching, respond with ONLY the final JSON object described below, exactly as if you had not searched at all. No text before or after it, no commentary about what you searched for.` : ''}
 WRITING VOICE (match the blog's existing tone from the post content provided):
 - First-person, experience-first, conversational
 - Discovery energy — sharing something found, not lecturing
@@ -318,7 +321,10 @@ Return ONLY this JSON:
       return res.status(200).json({ error: `Claude API error ${claudeRes.status}: ${err.slice(0,200)}` });
     }
     const claudeData = await claudeRes.json();
-    const rawText = claudeData.content?.[0]?.text || '{}';
+    // When web search is used, content is an array of mixed blocks (server_tool_use,
+    // web_search_tool_result, text...) - the final JSON answer is the LAST text block.
+    const textBlocks = (claudeData.content || []).filter(b => b.type === 'text');
+    const rawText = textBlocks.length > 0 ? textBlocks[textBlocks.length - 1].text : (claudeData.content?.[0]?.text || '{}');
     let report;
     try {
       report = JSON.parse(rawText.replace(/```json\n?/g,'').replace(/```\n?/g,'').trim());
