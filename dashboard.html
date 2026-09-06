@@ -654,7 +654,7 @@ function calcScore(p){
 async function generateReport(postIdx,forceRefresh=false){
   const post=posts[postIdx];
   if(!post)return;
-  window._briefItems=null;window._briefData=null;window._briefPostIdx=undefined;window._briefEditorNote='';window._briefGenerated={};
+  window._briefItems=null;window._briefData=null;window._briefPostIdx=undefined;window._briefEditorNote='';window._briefGenerated={};window._briefCustomTasks=[];
   const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
   document.getElementById('modalTitle').textContent=post.title;
   document.getElementById('modalSubtitle').textContent=post.url;
@@ -1222,6 +1222,20 @@ function openBriefBuilder(data,postIdx){
     const canGenerate=typeof win==='object'&&win.canGenerate;
     items.push({id:itemId++,checked:false,section:'📈 SEO',type:'seo fix',priority:'medium',text:idea,action:'',suggested:'',note:'',canGenerate});
   });
+  // Preserve checkmarks and typed notes across re-renders. Clicking "Generate" on any item
+  // (including the SEO quick-win generator) used to rebuild the whole brief from scratch and
+  // silently wipe every checkbox and note you'd already entered. This carries them forward.
+  if(window._briefItems&&window._briefPostIdx===postIdx){
+    const prevById={};
+    window._briefItems.forEach(pi=>{prevById[pi.id]=pi;});
+    items.forEach(item=>{
+      const prev=prevById[item.id];
+      if(prev){
+        item.checked=prev.checked;
+        if(prev.note)item.note=prev.note;
+      }
+    });
+  }
   items.forEach(item=>{if(window._briefGenerated&&window._briefGenerated[item.id])item.suggested=window._briefGenerated[item.id];});
   window._briefItems=items;window._briefData=data;window._briefPostIdx=postIdx;
   const pc=p=>p==='critical'?'var(--red)':p==='high'?'var(--amber)':'var(--blue)';
@@ -1288,6 +1302,7 @@ html+=`<div style="font-size:10.5px;color:var(--text3);margin-bottom:10px;font-s
   html+=`<div style="margin-top:16px;padding-top:12px;border-top:0.5px solid var(--border)"><div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:8px">➕ ADD YOUR OWN TASKS</div><div id="customTasks"></div><button class="btn btn-sm" onclick="briefAddCustomTask()" style="margin-top:6px">+ Add task</button></div>
   <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" onclick="downloadBriefPDF()">⬇ Download Brief PDF</button><button class="btn btn-sm" onclick="showReportView()">← Back to report</button></div>`;
   document.getElementById('modalBody').innerHTML=html;
+  (window._briefCustomTasks||[]).forEach(t=>renderCustomTaskEl(t));
 }
 function briefToggle(id,checked){const item=window._briefItems.find(i=>i.id===id);if(item){item.checked=checked;const el=document.getElementById('brief-item-'+id);if(el)el.style.background=checked?'var(--bg)':'var(--bg2)';}}
 function briefNote(id,note){const item=window._briefItems.find(i=>i.id===id);if(item)item.note=note;}
@@ -1312,14 +1327,27 @@ async function generateBriefItem(id){
 }
 function briefCheckAll(checked){window._briefItems.forEach(item=>{item.checked=checked;const el=document.getElementById('brief-item-'+item.id);if(el){el.querySelector('input[type=checkbox]').checked=checked;el.style.background=checked?'var(--bg)':'var(--bg2)';}});}
 let customTaskCount=0;
-function briefAddCustomTask(){const id='custom-'+customTaskCount++;const div=document.createElement('div');div.id=id;div.style.cssText='display:flex;gap:8px;margin-bottom:6px;align-items:flex-start';div.innerHTML=`<input type="checkbox" checked style="margin-top:8px;flex-shrink:0" onchange="this.parentElement.style.opacity=this.checked?'1':'0.5'"><textarea placeholder="Describe the task for your VA..." style="flex:1;font-size:12px;padding:6px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;font-family:inherit" rows="2" id="${id}-text"></textarea><button onclick="document.getElementById('${id}').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:6px;font-size:16px;flex-shrink:0">×</button>`;document.getElementById('customTasks').appendChild(div);}
+function renderCustomTaskEl(task){
+  const div=document.createElement('div');div.id=task.id;div.style.cssText='display:flex;gap:8px;margin-bottom:6px;align-items:flex-start';
+  div.innerHTML=`<input type="checkbox" ${task.checked?'checked':''} style="margin-top:8px;flex-shrink:0" onchange="briefCustomTaskChecked('${task.id}',this.checked);this.parentElement.style.opacity=this.checked?'1':'0.5'"><textarea placeholder="Describe the task for your VA..." style="flex:1;font-size:12px;padding:6px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);resize:vertical;font-family:inherit" rows="2" oninput="briefCustomTaskText('${task.id}',this.value)">${task.text||''}</textarea><button onclick="briefRemoveCustomTask('${task.id}')" style="background:none;border:none;color:var(--text3);cursor:pointer;padding:6px;font-size:16px;flex-shrink:0">×</button>`;
+  const container=document.getElementById('customTasks');
+  if(container)container.appendChild(div);
+}
+function briefAddCustomTask(){
+  window._briefCustomTasks=window._briefCustomTasks||[];
+  const task={id:'custom-'+customTaskCount++,text:'',checked:true};
+  window._briefCustomTasks.push(task);
+  renderCustomTaskEl(task);
+}
+function briefCustomTaskChecked(id,checked){const t=(window._briefCustomTasks||[]).find(t=>t.id===id);if(t)t.checked=checked;}
+function briefCustomTaskText(id,text){const t=(window._briefCustomTasks||[]).find(t=>t.id===id);if(t)t.text=text;}
+function briefRemoveCustomTask(id){window._briefCustomTasks=(window._briefCustomTasks||[]).filter(t=>t.id!==id);const el=document.getElementById(id);if(el)el.remove();}
 function showReportView(){if(window._briefData&&window._briefPostIdx!==undefined)renderReportModal(window._briefData,window._briefPostIdx);}
 function downloadBriefPDF(){
   const data=window._briefData,r=data?.report;
   if(!data)return;
   const checkedItems=(window._briefItems||[]).filter(i=>i.checked);
-  const customTasks=[];
-  document.querySelectorAll('[id^="custom-"]').forEach(el=>{const cb=el.querySelector('input[type=checkbox]');const ta=el.querySelector('textarea');if(cb?.checked&&ta?.value.trim())customTasks.push(ta.value.trim());});
+  const customTasks=(window._briefCustomTasks||[]).filter(t=>t.checked&&(t.text||'').trim()).map(t=>t.text.trim());
   const pColor=p=>p==='critical'?'#A32D2D':p==='high'?'#854F0B':'#185FA5';
   const pBg=p=>p==='critical'?'#FCEBEB':p==='high'?'#FAEEDA':'#E6F1FB';
   const topKwList=(data.topGscKeywords||[]).slice(0,10);
