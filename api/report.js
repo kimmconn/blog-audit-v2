@@ -193,12 +193,17 @@ IMAGE ALT TEXT:
 - Place these fixes in section order alongside other fixes for that section — not all bunched together
 NEW IMAGES:
 - Separately from alt text, always suggest at least one specific NEW image to add (not a fix to an existing one) via seoQuickWins with type "image" — describe what the image should show and roughly where it goes. Always phrase this as adding a new image, never replacing an existing one. This is one of the highest-impact updates a post can get.
+TYPOS:
+- Separately from CLARITY & STRUCTURE below, flag plain spelling/typing errors on their own: a misspelled word, a missing or doubled word, a wrong "it's/its" or similar, a stray/missing apostrophe, a repeated word. This is NOT a judgment call like vague/superfluous content — it's just wrong as typed.
+- Add these as fixes with type "typo". action should be short and direct, e.g. "Fix typo: 'yer' should be 'year'". suggestedText is the corrected sentence.
+- Do not lump typos in with vague_content or any other type — even if a sentence has both a typo and a vague-content issue, split them into two separate fixes.
 CLARITY & STRUCTURE:
 - While reading through the post, flag vague phrasing, superfluous content, and confusing sentence construction:
   - Vague: a generic descriptor where a specific one (a name, price, distance, number) is knowable but missing. Example: "responds quickly for a while" should be "responds consistently, with stable response times."
   - Superfluous: a sentence that could be deleted without losing any information or decision-usefulness for the reader.
   - Confusing structure: a sentence crams in unrelated ideas or unclear references, forcing a re-read. Example: "there are limits to how much time Google's crawlers can spend crawling any single site, where a site is defined by the hostname" should be split into "there are limits to how much time and resources Google can devote to crawling any single site."
   - When you replace vague phrasing with something "specific," it needs to actually be specific — a single figure or a narrow, meaningful range. A broad range spanning many units (e.g. "8-18°C") is barely more useful than the vague version it replaced and should not be flagged as a fix.
+  - Do not flag plain typos here — those belong under TYPOS above with type "typo".
 - Only flag issues you're confident would meaningfully help the reader if fixed — if in doubt, don't flag it. Precision over recall.
 - Add these as fixes in the correct section, using type "vague_content", "superfluous_content", or "confusing_structure" — same currentText/action/suggestedText/editorNote format as other fixes
 - Cap it: include at most the 3-5 most impactful clarity fixes total across the whole post, even if there are more you could flag
@@ -237,6 +242,7 @@ NEW THINGS TO ADD:
 - If competing result titles are provided below, ground topContentGaps in what those competing posts likely cover that this one doesn't — mention the angle, not the competitor by name. If no competitor titles are provided, rely on your own knowledge of the destination and topic instead.
 YEAR REFERENCES: Only suggest adding a year to the title if it would genuinely help THIS specific post — ranked/best-of lists, pricing or cost guides, or content about what's currently open or trending, where readers actively want the newest version. Skip it for evergreen itineraries, personal narratives, and how-to/step-by-step guides where the content isn't year-bound — most posts should NOT get this suggestion. If you do suggest it: title only, never throughout the post body, and only once.
 GLOBAL STYLE RULE: No em dashes (—) anywhere in ANY generated text in this response — not in summary, action, editorNote, whyRelevant, suggestedText, or anywhere else. Use a comma, period, or a regular hyphen (-) instead. This applies everywhere, not just suggestedText.
+GLOBAL STYLE RULE - EVERGREEN FRAMING: The blog owner is silently updating an existing post, not publishing a dated news update about it. Readers have no idea when the post was last touched and should never be made aware there was a "before." In any suggestedText (topContentGaps, add_content fixes, quickReferenceLists, etc.), never write as if narrating the update itself: no "since [year], this has happened," no "this year," no "as of [year]," no "recently updated," no framing that implies the reader knows an older version existed. If you need to gesture at recency, use durable phrasing instead: "these days," "more recently," "a newer addition," "one of the newer spots in the area" — words that stay true no matter when the post is next read. The post should read as if it has always been this accurate, not like a dated revision log.
 SUGGESTED TEXT: Match the blog's existing voice, based on the post content provided. No "verify", "current", "as of [year]". No generic filler. When adding a concrete detail (temperature, price, distance, timing, etc.), give a real specific value or a narrow, genuinely useful range — never a broad range spanning many units that conveys almost nothing (e.g. an 8-18°C range). If you don't actually know a specific value from the post or context, leave it out rather than inventing a wide range to sound specific.
 DO NOT SUGGEST: Table of contents, internal links, affiliate links, alt text if all images have it
 TWO SEPARATE FIELDS:
@@ -284,7 +290,7 @@ Return ONLY this JSON:
       "sectionName": "Section heading IN ORDER as it appears in post",
       "fixes": [
         {
-          "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix|missing_alt_text|vague_content|superfluous_content|confusing_structure|keyword_stuffing|generic_voice|personal_experience",
+          "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix|missing_alt_text|typo|vague_content|superfluous_content|confusing_structure|keyword_stuffing|generic_voice|personal_experience",
           "priority": "critical|high|medium",
           "lowConfidence": true or false — true ONLY for broken_link fixes on known bot-blocking domains (tripadvisor.com, yelp.com, facebook.com, instagram.com, linkedin.com, pinterest.com), otherwise false,
           "currentText": "exact short quote",
