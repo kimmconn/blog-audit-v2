@@ -705,8 +705,20 @@ function renderReportModal(data,postIdx){
   if(r.thinContent?.isThin)html+=`<div style="margin-bottom:1rem;padding:12px 14px;background:var(--amber-bg);border:1px solid #f5dfa8;border-radius:var(--radius-lg);font-size:12px;color:var(--amber-text)"><strong>🪶 This post reads thin overall:</strong> ${r.thinContent.reason||'consider fleshing out with more original, specific detail.'}</div>`;
   if(data.venueChecks&&data.venueChecks.length>0){
     const flagged=data.venueChecks.filter(v=>v.flag),ok=data.venueChecks.filter(v=>!v.flag);
-    html+=`<div class="report-section"><div class="report-section-title">📍 Venue verification (${data.venueChecks.length} checked)</div><div>`;
-    flagged.forEach(v=>{html+=`<div class="report-item" style="border-color:var(--red)"><div class="report-item-type" style="background:var(--red-bg);color:var(--red-text)">${v.status==='permanently_closed'?'❌ permanently closed':'⚠️ temporarily closed'}</div><div style="font-weight:500">${v.venue}</div>${v.address?`<div style="font-size:11px;color:var(--text2)">${v.address}</div>`:''}</div>`;});
+    const meta=data.venueCheckMeta;
+    html+=`<div class="report-section"><div class="report-section-title">📍 Venue verification (${data.venueChecks.length} checked)</div>`;
+    if(meta&&meta.totalNamed>meta.checked){
+      const unchecked=meta.unchecked||[];
+      const uncheckedNote=unchecked.length===0?'':(unchecked.length<=12?` Not checked this round: ${unchecked.join(', ')} — worth a quick look if you're editing those sections.`:` ${unchecked.length} other named venues weren't checked this round — worth a quick look if you're editing those sections.`);
+      html+=`<div style="font-size:10px;color:var(--text2);margin:-2px 0 8px">Checks the ${meta.checked} most-mentioned venues in the post (of ${meta.totalNamed} named).${uncheckedNote}</div>`;
+    }
+    html+=`<div>`;
+    flagged.forEach(v=>{
+      const isRename=v.status==='possible_rename';
+      const label=isRename?'🔀 possible rename':(v.status==='permanently_closed'?'❌ permanently closed':'⚠️ temporarily closed');
+      const color=isRename?'amber':'red';
+      html+=`<div class="report-item" style="border-color:var(--${color})"><div class="report-item-type" style="background:var(--${color}-bg);color:var(--${color}-text)">${label}</div><div style="font-weight:500">${v.venue}</div>${isRename?`<div style="font-size:11px;color:var(--text2)">Google now shows this address as "${v.displayName}" — verify before removing.</div>`:''}${v.address?`<div style="font-size:11px;color:var(--text2)">${v.address}</div>`:''}</div>`;
+    });
     ok.forEach(v=>{html+=`<div style="font-size:11px;color:var(--green-text);padding:3px 0">✓ ${v.venue} — appears open</div>`;});
     html+=`</div></div>`;
   }
@@ -1213,10 +1225,13 @@ function openBriefBuilder(data,postIdx){
   const r=data.report;
   let items=[],itemId=0;
   (data.venueChecks||[]).filter(v=>v.flag).forEach(v=>{
+    const isRename=v.status==='possible_rename';
     items.push({id:itemId++,checked:true,section:'📍 Venue verification',
-      type:v.status==='permanently_closed'?'❌ permanently closed':'⚠️ temporarily closed',
-      priority:'critical',text:`${v.venue}${v.address?' — '+v.address:''}`,
-      action:'Remove or replace all mentions',suggested:v.suggestedText||'',note:v.editorNote||''});
+      type:isRename?'🔀 possible rename':(v.status==='permanently_closed'?'❌ permanently closed':'⚠️ temporarily closed'),
+      priority:isRename?'medium':'critical',lowConfidence:isRename,
+      text:`${v.venue}${v.address?' — '+v.address:''}`,
+      action:isRename?`Google now shows this address as "${v.displayName}" — verify on the venue's own site before editing, then update the name if it's changed rather than removing it.`:'Remove or replace all mentions',
+      suggested:v.suggestedText||'',note:v.editorNote||''});
   });
   window._openVenues=(data.venueChecks||[]).filter(v=>!v.flag).map(v=>v.venue);
   (r.quickReferenceLists||[]).forEach((list,i)=>{

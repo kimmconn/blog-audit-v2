@@ -8,6 +8,24 @@ function getRedis() {
   }
   return redis;
 }
+function normalizeVenueName(name) {
+  return (name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+// Rough name-similarity check so a rename (business still open, different name) doesn't
+// silently pass as "open" - Places will often fuzzy-match the old name to whatever now
+// occupies that address, returning an "operational" status for a place that isn't the one
+// the post is naming. Token overlap is crude but cheap and reuses the same API response.
+function venueNameSimilarity(a, b) {
+  const na = normalizeVenueName(a), nb = normalizeVenueName(b);
+  if (!na || !nb) return 0;
+  if (na === nb) return 1;
+  if (na.includes(nb) || nb.includes(na)) return 0.85;
+  const tokensA = na.split(' ').filter(t => t.length > 2);
+  const tokensB = new Set(nb.split(' ').filter(t => t.length > 2));
+  if (!tokensA.length || !tokensB.size) return 0;
+  const overlap = tokensA.filter(t => tokensB.has(t)).length;
+  return overlap / Math.max(tokensA.length, tokensB.size);
+}
 async function checkVenueStatus(venueName, location) {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) return { venue: venueName, status: 'unknown', flag: false };
@@ -27,15 +45,47 @@ async function checkVenueStatus(venueName, location) {
     const place = data.places?.[0];
     if (!place) return { venue: venueName, status: 'not_found', flag: false };
     const status = place.businessStatus;
+    const displayName = place.displayName?.text || venueName;
+    const isClosed = status === 'CLOSED_PERMANENTLY' || status === 'CLOSED_TEMPORARILY';
+    const possibleRename = !isClosed && venueNameSimilarity(venueName, displayName) < 0.4;
     return {
       venue: venueName,
-      displayName: place.displayName?.text || venueName,
+      displayName,
       address: place.formattedAddress || '',
-      status: status === 'CLOSED_PERMANENTLY' ? 'permanently_closed' : status === 'CLOSED_TEMPORARILY' ? 'temporarily_closed' : 'open',
-      flag: status === 'CLOSED_PERMANENTLY' || status === 'CLOSED_TEMPORARILY',
+      status: isClosed ? (status === 'CLOSED_PERMANENTLY' ? 'permanently_closed' : 'temporarily_closed') : (possibleRename ? 'possible_rename' : 'open'),
+      flag: isClosed || possibleRename,
+      lowConfidence: possibleRename || undefined,
     };
   } catch(e) {
     return { venue: venueName, status: 'unknown', flag: false };
+  }
+}
+// Wraps checkVenueStatus with a 30-day cache keyed on venue+location. Different users'
+// posts frequently reference the same real-world venues (same destination, same popular
+// hotel/restaurant) - this avoids paying for a fresh Places call every time any post
+// mentions a venue that was already checked recently for someone else.
+async function getVenueStatusCached(venueName, location, kv) {
+  const cacheKey = `venue_status_v1:${normalizeVenueName(location)}:${normalizeVenueName(venueName)}`;
+  if (kv) {
+    try {
+      const cached = await kv.get(cacheKey);
+      if (cached) return cached;
+    } catch(e) {}
+  }
+  const result = await checkVenueStatus(venueName, location);
+  if (kv && result.status !== 'unknown') {
+    try { await kv.set(cacheKey, result, { ex: 2592000 }); } catch(e) {}
+  }
+  return result;
+}
+function countMentions(name, text) {
+  if (!name || !text) return 0;
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  try {
+    const matches = text.match(new RegExp(escaped, 'gi'));
+    return matches ? matches.length : 0;
+  } catch(e) {
+    return 0;
   }
 }
 async function searchCompetitors(postTitle) {
@@ -183,8 +233,8 @@ BROKEN LINKS:
 AFFILIATE LINKS: Never mention "affiliate link" anywhere
 AFFILIATE DISCLOSURES: Never suggest relocating, removing, or altering the placement of affiliate/sponsorship disclosures. Disclosure compliance is entirely outside this tool's scope — don't comment on it in any way.
 VENUE VERIFICATION:
-- Extract ALL named venues: restaurants, bars, cafes, clubs, hotels, hostels, attractions, parks, beaches, tour operators
-- Up to 10 venues for Google Places verification
+- Extract ALL named venues, in the order they appear in the post: restaurants, bars, cafes, clubs, hotels, hostels, attractions, parks, beaches, tour operators
+- Only a limited number will actually be checked against Google Places - if there are more named venues than that, the ones checked are chosen by how often each is mentioned in the post, not by this list's order, so extract every one rather than trying to guess which matter most
 IMAGE ALT TEXT:
 - ONLY flag images that are actually missing alt text (filenames provided in context)
 - If context says "All images appear to have alt text" — do NOT suggest alt text optimization at all
@@ -290,7 +340,7 @@ Return ONLY this JSON:
       "sectionName": "Section heading IN ORDER as it appears in post",
       "fixes": [
         {
-          "type": "broken_link|outdated_price|closed_venue|outdated_date|outdated_info|add_content|seo_fix|missing_alt_text|typo|vague_content|superfluous_content|confusing_structure|keyword_stuffing|generic_voice|personal_experience",
+          "type": "broken_link|outdated_price|closed_venue|possible_rename|outdated_date|outdated_info|add_content|seo_fix|missing_alt_text|typo|vague_content|superfluous_content|confusing_structure|keyword_stuffing|generic_voice|personal_experience",
           "priority": "critical|high|medium",
           "lowConfidence": true or false — true ONLY for broken_link fixes on known bot-blocking domains (tripadvisor.com, yelp.com, facebook.com, instagram.com, linkedin.com, pinterest.com), otherwise false,
           "currentText": "exact short quote",
@@ -341,16 +391,39 @@ Return ONLY this JSON:
     const location = report.location || '';
     delete report.venueNames;
     delete report.location;
+    // Owner (and, once it exists, the higher-paying "agentic" tier) get a deeper venue check;
+    // the standard Reports tier stays at 10 - Places API calls cost money per check, and this
+    // isn't worth eating margin on for that tier.
+    const VENUE_CHECK_CAP = (profile?.tier === 'owner' || profile?.tier === 'agentic') ? 20 : 10;
+    // Rank by how many times each venue is actually mentioned in the post before capping,
+    // so with more named venues than the cap, the ones checked are genuinely the most-mentioned -
+    // not just whichever ones the model happened to list first.
+    const scoredVenues = venueNames.map((v, i) => ({ v, i, count: countMentions(v, content) }));
+    const topVenues = [...scoredVenues].sort((a, b) => b.count - a.count || a.i - b.i).slice(0, VENUE_CHECK_CAP);
+    const checkedSet = new Set(topVenues.map(x => x.v));
+    // Selection is by mention count, but checks/results stay in post reading order so a VA can
+    // work through them top to bottom instead of jumping around.
+    const rankedVenueNames = topVenues.sort((a, b) => a.i - b.i).map(x => x.v);
+    const uncheckedVenueNames = scoredVenues.filter(x => !checkedSet.has(x.v)).sort((a, b) => a.i - b.i).map(x => x.v);
     const venueResults = venueNames.length > 0 && process.env.GOOGLE_PLACES_API_KEY
-      ? await Promise.allSettled(venueNames.slice(0, 10).map(v => checkVenueStatus(v, location)))
+      ? await Promise.allSettled(rankedVenueNames.map(v => getVenueStatusCached(v, location, kv)))
           .then(checks => checks.filter(r => r.status === 'fulfilled').map(r => r.value))
       : [];
     venueResults.filter(v => v.flag).forEach(v => {
+      const isRename = v.status === 'possible_rename';
       const sectionIdx = (report.sections || []).findIndex(s =>
         s.fixes?.some(f => f.currentText?.toLowerCase().includes(v.venue.toLowerCase())) ||
         s.sectionName?.toLowerCase().includes(v.venue.toLowerCase())
       );
-      const closedFix = {
+      const venueFix = isRename ? {
+        type: 'possible_rename',
+        priority: 'medium',
+        lowConfidence: true,
+        currentText: v.venue,
+        action: `🔀 Google now shows this address under the name "${v.displayName}" - this may be a rename rather than a closure. Verify before editing.`,
+        suggestedText: '',
+        editorNote: `Google Places couldn't confidently match "${v.venue}"${v.address ? ' at ' + v.address : ''} to itself - it returned "${v.displayName}" instead. Check the venue's own site or socials to confirm whether it's renamed, then update the name in the post rather than removing it if it's still open.`
+      } : {
         type: 'closed_venue',
         priority: 'critical',
         currentText: v.venue,
@@ -359,15 +432,16 @@ Return ONLY this JSON:
         editorNote: `Google Maps confirms ${v.status === 'permanently_closed' ? 'permanently' : 'temporarily'} closed. Remove or find a replacement you can personally vouch for.`
       };
       if (sectionIdx > -1) {
-        report.sections[sectionIdx].fixes.unshift(closedFix);
+        report.sections[sectionIdx].fixes.unshift(venueFix);
       } else {
-        report.sections = [{ sectionName: v.venue, fixes: [closedFix] }, ...(report.sections || [])];
+        report.sections = [{ sectionName: v.venue, fixes: [venueFix] }, ...(report.sections || [])];
       }
     });
     const result = {
       postId, postUrl, postTitle, publishDate, modifiedDate,
       brokenLinksCount: brokenLinks?.length || 0,
       venueChecks: venueResults,
+      venueCheckMeta: { checked: rankedVenueNames.length, totalNamed: venueNames.length, cap: VENUE_CHECK_CAP, unchecked: uncheckedVenueNames },
       competitors,
       existingInternalLinks,
       imagesWithoutAlt,
