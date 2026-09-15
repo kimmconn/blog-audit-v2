@@ -541,13 +541,11 @@ async function loadDismissedPosts(){
 }
 window.addEventListener('load',async()=>{
   const params=new URLSearchParams(window.location.search);
-  const connected=params.get('gsc_connected'),error=params.get('gsc_error'),subscribed=params.get('subscribed');
+  const connected=params.get('gsc_connected'),error=params.get('gsc_error'),subscribed=params.get('subscribed'),subTier=params.get('tier');
   if(subscribed==='1'&&!sessionStorage.getItem('bloupi_sub_tracked')){
     // Fires once per browser session so a page refresh on this URL doesn't double-count.
-    // No dollar value attached yet since the Stripe success redirect doesn't pass which
-    // tier was purchased - worth adding later for real ROAS reporting, but this at least
-    // gives Meta a real conversion signal to optimize against instead of none at all.
-    if(typeof fbq==='function')fbq('track','Subscribe');
+    const tierValue={dashboard:20,reports:35}[subTier];
+    if(typeof fbq==='function')fbq('track','Subscribe',tierValue?{value:tierValue,currency:'USD'}:{});
     sessionStorage.setItem('bloupi_sub_tracked','1');
   }
   if(connected||error||subscribed)window.history.replaceState({},'',window.location.pathname);
