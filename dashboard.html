@@ -308,6 +308,25 @@ async function redeemInviteCode(userId,email){
     checkAuth();
   }catch(e){msg.textContent='Something went wrong. Try again.';}
 }
+async function renderSubscriptionPanel(){
+  const body=document.getElementById('subscriptionPanelBody');
+  if(!body)return;
+  const{data:{session}}=await sb.auth.getSession();
+  const userId=session?.user?.id;
+  if(!userId){body.innerHTML='<p class="note">Sign in to view subscription details.</p>';return;}
+  const{data:profile}=await sb.from('profiles').select('tier,stripe_customer_id').eq('id',userId).single();
+  if(profile?.stripe_customer_id){
+    body.innerHTML=`<p class="note">View your invoices, update your payment method, or cancel anytime.</p>
+      <button class="btn btn-primary" id="manageSubBtn" onclick="openBillingPortal()">Manage subscription</button>
+      <div id="manageSubMsg" style="font-size:12px;color:var(--text2);margin-top:8px"></div>`;
+  }else if(profile?.tier==='owner'){
+    body.innerHTML=`<p class="note">You have owner access - there's no billing to manage here.</p>`;
+  }else if(profile?.tier==='trial'){
+    body.innerHTML=`<p class="note">You're on a free trial, so there's no billing yet. Once you subscribe, you'll be able to manage your plan and payment method here.</p>`;
+  }else{
+    body.innerHTML=`<p class="note">No billing account on file yet. Once you subscribe, you'll be able to manage your plan and payment method here.</p>`;
+  }
+}
 async function openBillingPortal(){
   const btn=document.getElementById('manageSubBtn'),msg=document.getElementById('manageSubMsg');
   if(msg)msg.textContent='Redirecting to your billing portal...';
@@ -454,9 +473,7 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
   <div id="tabSettings" style="display:none">
     <div class="panel">
       <div class="panel-title">Your subscription</div>
-      <p class="note">View your invoices, update your payment method, or cancel anytime.</p>
-      <button class="btn btn-primary" id="manageSubBtn" onclick="openBillingPortal()">Manage subscription</button>
-      <div id="manageSubMsg" style="font-size:12px;color:var(--text2);margin-top:8px"></div>
+      <div id="subscriptionPanelBody"><p class="note">Loading...</p></div>
     </div>
     <div class="panel">
       <div class="panel-title">Urgency scoring weights</div>
@@ -504,6 +521,11 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
         <div><strong style="color:var(--text)">Clarity gap (10 pts)</strong> — AI-detected vague phrasing, superfluous content, or confusing sentence structure.</div>
       </div>
     </div>
+    <div class="panel">
+      <div class="panel-title">Glossary — what everything means</div>
+      <p class="note">Plain-language definitions for every badge, flag, and label you'll see on the dashboard or inside a report. These same explanations also show up if you hover over the badge itself.</p>
+      <div id="glossaryContent"></div>
+    </div>
   </div>
 </div>
 <!-- REPORT MODAL -->
@@ -531,6 +553,74 @@ let crawlRunning=false;
 const PER_PAGE=25;
 let weights={age:6,trafficHealth:25,fallenOffMap:16,positionOpportunity:20,brokenLinks:8,venueIssues:16,ctrGap:9,clarityGap:8};
 const wLabels={age:'Post age',trafficHealth:'Traffic health (peak vs recent)',fallenOffMap:'Fallen off map (had traffic, lost it)',positionOpportunity:'Position 11–20 opportunity',brokenLinks:'Link issues',venueIssues:'Outdated/closed venues',ctrGap:'High impressions, low CTR',clarityGap:'Clarity gap (vague/bloated content)'};
+// Plain-language explanation for every badge/flag/type shown anywhere on the dashboard or in a
+// report - used both for hover tooltips (title attributes) and the full glossary in Settings.
+const GLOSSARY={
+  // urgency levels
+  critical:"Needs attention right away - either it scored high across multiple problems, or it hit one of the hard thresholds below (see 'forced').",
+  high:"Real problems worth fixing soon - not urgent enough to be critical.",
+  medium:"Could use attention eventually. Not a priority right now.",
+  low:"In decent shape. Nothing pressing here.",
+  forced:"Automatically bumped to critical because it crossed one of the hard thresholds below (like 2+ closed venues), no matter what its calculated score was.",
+  // dashboard row flags
+  peaked:"This post's traffic used to be higher and has been sliding for a while - it's not performing like it used to.",
+  offmap:"This post used to show up in Google search, but now it's basically invisible - almost no one is finding it anymore.",
+  neverranked:"This post has been up for a while but has never really shown up in Google search.",
+  opportunity:"Already ranking on page 2 of Google (position 11-20). A good update could be enough to push it to page 1.",
+  hotimpr:"Lots of people are seeing this post in Google search, but very few click it. Something about the title or description isn't convincing people to click.",
+  notindexed:"Google Search Console has no data for this post at all - usually means it isn't indexed or isn't being found in search.",
+  potential:"Mentions one or more venues (restaurant, bar, hotel, etc.) our check couldn't fully confirm are still open. Run a Report to see exactly which ones.",
+  claritygap:"Parts of this post are vague, wordy, or hard to follow (like 'pretty affordable' instead of an actual price). Fixing this usually makes it more useful, and more likely to rank.",
+  staleyear:"The title or content mentions a specific year that's now out of date.",
+  // report fix types (from a generated report)
+  broken_link:"A link our checker couldn't successfully load. Checkers sometimes get this wrong (some sites block automated checks), so verify yourself before assuming it's actually broken.",
+  outdated_price:"A specific price mentioned in the post that's worth double-checking, since prices change over time.",
+  closed_venue:"A restaurant, bar, hotel, or other place mentioned that Google Maps shows as permanently or temporarily closed.",
+  possible_rename:"A venue that might have changed its name - Google Maps found a very similar business nearby. Sometimes that means a rename, sometimes it's just a different, unrelated place. Worth a quick check.",
+  outdated_date:"A specific date or year mentioned that may no longer be accurate.",
+  outdated_info:"Something that might not be true anymore, but we're not confident enough to say for sure - worth double-checking since it may be based on your own firsthand experience only you would know.",
+  add_content:"A suggestion for something new to add - not a fix to what's there, just an idea for making the post more complete.",
+  seo_fix:"A suggestion to improve this post's SEO, like adding structured data or a missing element search engines look for.",
+  missing_alt_text:"An image with no alt text (the description screen readers and Google use to understand what an image shows).",
+  typo:"A plain spelling or typing mistake - a misspelled word, missing word, wrong apostrophe, and so on.",
+  vague_content:"A sentence that could be more useful with an actual name, number, price, or distance instead of a vague description.",
+  superfluous_content:"A sentence that isn't really adding anything - it could be deleted without losing any information.",
+  confusing_structure:"A sentence that's hard to follow because it crams too many ideas together or has an unclear reference.",
+  keyword_stuffing:"A spot where the same keyword or phrase repeats so often it reads unnatural, like it's written for a search engine instead of a person.",
+  generic_voice:"A section that reads like generic, could-be-anyone travel copy - no personal detail, opinion, or firsthand voice.",
+  personal_experience:"Not a problem - an invitation. A good spot to add a specific memory or detail from your own visit, since it would make this section stronger."
+};
+function glossaryTip(key){const g=GLOSSARY[key];return g?`title="${g.replace(/"/g,'&quot;')}"`:'';}
+function renderGlossary(){
+  const el=document.getElementById('glossaryContent');
+  if(!el)return;
+  const groups=[
+    {title:'Urgency levels',items:[
+      ['critical','🔴 Critical'],['high','🟠 High'],['medium','🔵 Medium'],['low','🟢 Low'],['forced','⬛ Forced']
+    ]},
+    {title:'Dashboard flags (Post catalog table)',items:[
+      ['peaked','📉 Traffic peaked'],['offmap','🔴 Fallen off map'],['neverranked','⚪ Never ranked'],
+      ['opportunity','🟣 Page 2 opp.'],['hotimpr','🔥 Impression gap'],['notindexed','🔍 Not in GSC'],
+      ['potential','⚠️ Potential venue issue'],['claritygap','🔍 Clarity gap'],['staleyear','📅 Outdated year']
+    ]},
+    {title:'Report fix types (inside a ✨ Report)',items:[
+      ['broken_link','Broken link'],['outdated_price','Outdated price'],['closed_venue','Closed venue'],
+      ['possible_rename','Possible rename'],['outdated_date','Outdated date'],['outdated_info','Outdated info'],
+      ['add_content','Add content'],['seo_fix','SEO fix'],['missing_alt_text','Missing alt text'],
+      ['typo','Typo'],['vague_content','Vague content'],['superfluous_content','Superfluous content'],
+      ['confusing_structure','Confusing structure'],['keyword_stuffing','Keyword stuffing'],
+      ['generic_voice','Generic voice'],['personal_experience','Personal experience opportunity']
+    ]}
+  ];
+  el.innerHTML=groups.map(g=>`
+    <div style="margin-top:14px">
+      <div style="font-size:11.5px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px">${g.title}</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${g.items.map(([key,label])=>`<div style="font-size:12px;color:var(--text2)"><strong style="color:var(--text)">${label}</strong> — ${GLOSSARY[key]||''}</div>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
 function getThresholds(){return{peakedPct:parseInt(document.getElementById('tPeakedPct')?.value||50),offmapClicks:parseInt(document.getElementById('tOffmapClicks')?.value||50),offmapImpr:parseInt(document.getElementById('tOffmapImpr')?.value||500),hotImpr:parseInt(document.getElementById('tHotImpr')?.value||5000),hotCtr:parseFloat(document.getElementById('tHotCtr')?.value||2)/100,kwHigh:parseInt(document.getElementById('tKwHigh')?.value||1000),kwMed:parseInt(document.getElementById('tKwMed')?.value||300)};}
 // Words that show up across so many of your own post titles (things, best, guide, hotels...)
 // that they can't identify what any single post is actually about. Computed once per scan
@@ -760,7 +850,7 @@ function renderReportModal(data,postIdx){
       const isRename=v.status==='possible_rename';
       const label=isRename?'🔀 possible rename':(v.status==='permanently_closed'?'❌ permanently closed':'⚠️ temporarily closed');
       const color=isRename?'amber':'red';
-      html+=`<div class="report-item" style="border-color:var(--${color})"><div class="report-item-type" style="background:var(--${color}-bg);color:var(--${color}-text)">${label}</div><div style="font-weight:500">${v.venue}</div>${isRename?`<div style="font-size:11px;color:var(--text2)">Google now shows this address as "${v.displayName}" — verify before removing.</div>`:''}${v.address?`<div style="font-size:11px;color:var(--text2)">${v.address}</div>`:''}</div>`;
+      html+=`<div class="report-item" style="border-color:var(--${color})"><div class="report-item-type" style="background:var(--${color}-bg);color:var(--${color}-text)" ${glossaryTip(isRename?'possible_rename':'closed_venue')}>${label}</div><div style="font-weight:500">${v.venue}</div>${isRename?`<div style="font-size:11px;color:var(--text2)">Google now shows this address as "${v.displayName}" — verify before removing.</div>`:''}${v.address?`<div style="font-size:11px;color:var(--text2)">${v.address}</div>`:''}</div>`;
     });
     ok.forEach(v=>{html+=`<div style="font-size:11px;color:var(--green-text);padding:3px 0">✓ ${v.venue} — appears open</div>`;});
     html+=`</div></div>`;
@@ -791,7 +881,7 @@ function renderReportModal(data,postIdx){
         const pb=fix.priority==='critical'?'var(--red-bg)':fix.priority==='high'?'var(--amber-bg)':'var(--blue-bg)';
         const pt=fix.priority==='critical'?'var(--red-text)':fix.priority==='high'?'var(--amber-text)':'var(--blue-text)';
         html+=`<div class="report-item" style="margin-left:8px;border-left:3px solid ${pc}">
-          <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><span class="report-item-type" style="background:${pb};color:${pt}">${(fix.type||'fix').replace(/_/g,' ')}</span><span style="font-size:10px;color:${pt};font-weight:500">${fix.priority}</span></div>
+          <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><span class="report-item-type" style="background:${pb};color:${pt}" ${glossaryTip(fix.type)}>${(fix.type||'fix').replace(/_/g,' ')}</span><span style="font-size:10px;color:${pt};font-weight:500">${fix.priority}</span></div>
           ${fix.currentText?`<div class="report-item-quote">"${fix.currentText}"</div>`:''}
           <div class="report-item-issue" style="margin-bottom:6px">${fix.action||''}</div>
           ${fix.suggestedText?`<div style="background:var(--green-bg);border-radius:var(--radius);padding:8px;font-size:11px;color:var(--green-text);margin-top:4px"><strong>Suggested:</strong> ${fix.suggestedText}</div>`:''}
@@ -916,7 +1006,7 @@ function scoreColor(s){return s>=90?'#E24B4A':s>=60?'#BA7517':s>=30?'#378ADD':'#
 function healthColor(pct){return pct>=70?'#E24B4A':pct>=40?'#BA7517':pct>=20?'#378ADD':'#639922'}
 function fmtNum(n){if(!n)return'—';if(n>=10000)return Math.round(n/1000)+'k';if(n>=1000)return(n/1000).toFixed(1)+'k';return n}
 function fmtPos(p){if(!p||p===0)return'—';return p.toFixed(1)}
-function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing','updated'].forEach(id=>{const e=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(e)e.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings')renderWeights();if(name==='updated')renderUpdatedTab();}
+function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing','updated'].forEach(id=>{const e=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(e)e.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings'){renderWeights();renderGlossary();renderSubscriptionPanel();}if(name==='updated')renderUpdatedTab();}
 function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('');}
 function resetWeights(){weights={age:6,trafficHealth:25,fallenOffMap:16,positionOpportunity:20,brokenLinks:8,venueIssues:16,ctrGap:9,clarityGap:8};renderWeights();}
 function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value);});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
@@ -1047,7 +1137,7 @@ function renderTable(){
     const issues=[linkIssues,aiIssues].filter(Boolean).join(' ')||'<span style="color:var(--text3)">not scanned</span>';
     const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
     const gscInspectUrl=`https://search.google.com/search-console/inspect?resource_id=${encodeURIComponent(siteUrl)}&id=${encodeURIComponent(p.url)}`;
-    const flagsHtml=(p.flags&&p.flags.length>0)?p.flags.map(f=>{if(f.type==='notindexed')return`<a href="${gscInspectUrl}" target="_blank" title="Check in GSC URL inspection"><span class="flag flag-${f.type}">${f.label} ↗</span></a>`;return`<span class="flag flag-${f.type}">${f.label}</span>`;}).join(''):'<span style="color:var(--text3);font-size:11px">—</span>';
+    const flagsHtml=(p.flags&&p.flags.length>0)?p.flags.map(f=>{if(f.type==='notindexed')return`<a href="${gscInspectUrl}" target="_blank" title="${(GLOSSARY.notindexed+' Click to inspect in GSC.').replace(/"/g,'&quot;')}"><span class="flag flag-${f.type}">${f.label} ↗</span></a>`;return`<span class="flag flag-${f.type}" ${glossaryTip(f.type)}>${f.label}</span>`;}).join(''):'<span style="color:var(--text3);font-size:11px">—</span>';
     const ageCol=p.ageMonths<=3?'var(--green-text)':p.ageMonths>=24?'var(--red-text)':p.ageMonths>=12?'var(--amber-text)':'var(--text2)';
     const sc=scoreColor(p.score);
     const hasTraffic=p.traffic>0||p.impressions>0;
@@ -1070,7 +1160,7 @@ function renderTable(){
       <td class="col-flags" style="white-space:normal;line-height:1.6">${flagsHtml}</td>
       <td class="col-score">
         <div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${Math.min(p.score/150*100,100)}%;background:${sc}"></div></div><span class="score-num" style="color:${sc}">${p.score}</span></div>
-        <div style="margin-top:3px">${p.hardFloor?'<span class="floor-pill">forced</span>':'<span class="pill u-'+p.urgency+'">'+p.urgency+'</span>'}</div>
+        <div style="margin-top:3px">${p.hardFloor?`<span class="floor-pill" ${glossaryTip('forced')}>forced</span>`:`<span class="pill u-${p.urgency}" ${glossaryTip(p.urgency)}>${p.urgency}</span>`}</div>
       </td>
       <td class="col-action" style="white-space:normal"><button class="report-btn" onclick="generateReport(${postIdx})">✨ Report</button><br><button class="report-btn" onclick="markUpdated(${postIdx})" style="margin-top:3px" title="Mark as updated">✓ Done</button></td>
     </tr>`;
