@@ -40,6 +40,51 @@ function tokensMatch(t1, t2) {
   const maxLen = Math.max(t1.length, t2.length);
   return maxLen >= 5 && levenshtein(t1, t2) <= 1;
 }
+// The AI writes quickReferenceLists and seoQuickWins before the Google Places closure check
+// has run, so it has no way to know that a venue it just recommended is actually closed.
+// This scrubs any confirmed-closed venue name back out of those two fields after the fact,
+// so a report never tells a VA to add schema markup or a "top restaurants" callout for a
+// place that's already been flagged elsewhere in the same report as permanently/temporarily closed.
+function stripClosedVenueMentions(report, closedVenueNames) {
+  if (!closedVenueNames.length) return;
+  const closedKeys = closedVenueNames.map(v => normalizeVenueName(v)).filter(Boolean);
+  const mentionsClosedVenue = (text) => {
+    const nt = normalizeVenueName(text || '');
+    return !!nt && closedKeys.some(k => nt.includes(k));
+  };
+  const scrubText = (text) => {
+    let cleaned = text;
+    closedVenueNames.forEach(name => {
+      cleaned = cleaned.replace(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '');
+    });
+    return cleaned
+      .replace(/,\s*,/g, ',')
+      .replace(/\(\s*,?\s*\)/g, '')
+      .replace(/,\s*\)/g, ')')
+      .replace(/,\s*and\s*\)/gi, ')')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/,\s*$/, '')
+      .trim();
+  };
+  if (Array.isArray(report.quickReferenceLists)) {
+    report.quickReferenceLists = report.quickReferenceLists
+      .map(list => ({ ...list, items: (list.items || []).filter(item => !mentionsClosedVenue(item)) }))
+      .filter(list => list.items.length > 0);
+  }
+  if (Array.isArray(report.seoQuickWins)) {
+    report.seoQuickWins = report.seoQuickWins
+      .map(win => {
+        const ideaText = typeof win === 'string' ? win : win?.idea;
+        if (!ideaText || !mentionsClosedVenue(ideaText)) return win;
+        const cleaned = scrubText(ideaText);
+        return typeof win === 'string' ? cleaned : { ...win, idea: cleaned };
+      })
+      .filter(win => {
+        const ideaText = typeof win === 'string' ? win : win?.idea;
+        return !!ideaText && ideaText.replace(/[^a-z0-9]/gi, '').length > 0;
+      });
+  }
+}
 // Rough name-similarity check so a rename (business still open, different name) doesn't
 // silently pass as "open" - Places will often fuzzy-match the old name to whatever now
 // occupies that address, returning an "operational" status for a place that isn't the one
@@ -274,6 +319,9 @@ IMAGE ALT TEXT:
 - Place these fixes in section order alongside other fixes for that section — not all bunched together
 NEW IMAGES:
 - Separately from alt text, always suggest at least one specific NEW image to add (not a fix to an existing one) via seoQuickWins with type "image" — describe what the image should show and roughly where it goes. Always phrase this as adding a new image, never replacing an existing one. This is one of the highest-impact updates a post can get.
+FAQ SCHEMA:
+- Always include one seoQuickWins idea suggesting FAQ schema markup, with type "schema" and canGenerate:true, unless the post already reads as one long FAQ itself. Base it on 3-5 real, specific questions a reader planning this trip/activity would actually search or wonder about this post's specific topic and destination — not generic filler like "What is the best time to visit?" unless that's genuinely one of the sharper questions for this post.
+- IMPORTANT: never name a specific venue in this idea's description that is also being flagged elsewhere in this same report as permanently or temporarily closed — the venue-closure check runs separately and its results aren't available to you yet, so if a venue you're about to mention has any real chance of being outdated, phrase the idea around the destination/activity generally rather than committing to a specific named venue.
 TYPOS:
 - Separately from CLARITY & STRUCTURE below, flag plain spelling/typing errors on their own: a misspelled word, a missing or doubled word, a wrong "it's/its" or similar, a stray/missing apostrophe, a repeated word. This is NOT a judgment call like vague/superfluous content — it's just wrong as typed.
 - Add these as fixes with type "typo". action should be short and direct, e.g. "Fix typo: 'yer' should be 'year'". suggestedText is the corrected sentence.
@@ -443,6 +491,10 @@ Return ONLY this JSON:
       ? await Promise.allSettled(rankedVenueNames.map(v => getVenueStatusCached(v, location, kv)))
           .then(checks => checks.filter(r => r.status === 'fulfilled').map(r => r.value))
       : [];
+    const closedVenueNames = venueResults
+      .filter(v => v.status === 'permanently_closed' || v.status === 'temporarily_closed')
+      .map(v => v.venue);
+    stripClosedVenueMentions(report, closedVenueNames);
     venueResults.filter(v => v.flag).forEach(v => {
       const isRename = v.status === 'possible_rename';
       const sectionIdx = (report.sections || []).findIndex(s =>
