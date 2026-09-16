@@ -8,8 +8,37 @@ function getRedis() {
   }
   return redis;
 }
+const DIACRITIC_MARKS_RE = new RegExp('[' + String.fromCharCode(0x0300) + '-' + String.fromCharCode(0x036f) + ']', 'g');
 function normalizeVenueName(name) {
-  return (name || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  return (name || '')
+    .normalize('NFD').replace(DIACRITIC_MARKS_RE, '') // strip accents/diacritics (č->c, š->s, é->e, etc.) before comparing
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+// Two tokens count as "the same word" if they're identical, or differ by at most one
+// character on a word long enough that a single-letter difference is clearly a spelling
+// variant (e.g. "spilja" vs "spila") rather than a genuinely different short word.
+function tokensMatch(t1, t2) {
+  if (t1 === t2) return true;
+  const maxLen = Math.max(t1.length, t2.length);
+  return maxLen >= 5 && levenshtein(t1, t2) <= 1;
 }
 // Rough name-similarity check so a rename (business still open, different name) doesn't
 // silently pass as "open" - Places will often fuzzy-match the old name to whatever now
@@ -20,11 +49,11 @@ function venueNameSimilarity(a, b) {
   if (!na || !nb) return 0;
   if (na === nb) return 1;
   if (na.includes(nb) || nb.includes(na)) return 0.85;
-  const tokensA = na.split(' ').filter(t => t.length > 2);
-  const tokensB = new Set(nb.split(' ').filter(t => t.length > 2));
-  if (!tokensA.length || !tokensB.size) return 0;
-  const overlap = tokensA.filter(t => tokensB.has(t)).length;
-  return overlap / Math.max(tokensA.length, tokensB.size);
+  const tokensA = na.split(' ').filter(t => t.length > 1);
+  const tokensB = nb.split(' ').filter(t => t.length > 1);
+  if (!tokensA.length || !tokensB.length) return 0;
+  const overlap = tokensA.filter(ta => tokensB.some(tb => tokensMatch(ta, tb))).length;
+  return overlap / Math.max(tokensA.length, tokensB.length);
 }
 async function checkVenueStatus(venueName, location) {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
@@ -249,6 +278,7 @@ TYPOS:
 - Separately from CLARITY & STRUCTURE below, flag plain spelling/typing errors on their own: a misspelled word, a missing or doubled word, a wrong "it's/its" or similar, a stray/missing apostrophe, a repeated word. This is NOT a judgment call like vague/superfluous content — it's just wrong as typed.
 - Add these as fixes with type "typo". action should be short and direct, e.g. "Fix typo: 'yer' should be 'year'". suggestedText is the corrected sentence.
 - Do not lump typos in with vague_content or any other type — even if a sentence has both a typo and a vague-content issue, split them into two separate fixes.
+- Classify by what's actually broken, not by how much the sentence changes: fixing a typo sometimes means tightening a few surrounding words too (e.g. a missing space merged two words into one, so the corrected sentence reads slightly cleaner as a side effect). That is still type "typo," not "vague_content" — vague_content is for a sentence that reads fine mechanically but is missing a knowable specific. Never use "vague_content" as a way to also ask the blogger to make something "more specific" or "cleaner" on top of a plain mechanical fix.
 CLARITY & STRUCTURE:
 - While reading through the post, flag vague phrasing, superfluous content, and confusing sentence construction:
   - Vague: a generic descriptor where a specific one (a name, price, distance, number) is knowable but missing. Example: "responds quickly for a while" should be "responds consistently, with stable response times."
@@ -295,6 +325,7 @@ NEW THINGS TO ADD:
 YEAR REFERENCES: Only suggest adding a year to the title if it would genuinely help THIS specific post — ranked/best-of lists, pricing or cost guides, or content about what's currently open or trending, where readers actively want the newest version. Skip it for evergreen itineraries, personal narratives, and how-to/step-by-step guides where the content isn't year-bound — most posts should NOT get this suggestion. If you do suggest it: title only, never throughout the post body, and only once.
 GLOBAL STYLE RULE: No em dashes (—) anywhere in ANY generated text in this response — not in summary, action, editorNote, whyRelevant, suggestedText, or anywhere else. Use a comma, period, or a regular hyphen (-) instead. This applies everywhere, not just suggestedText.
 GLOBAL STYLE RULE - EVERGREEN FRAMING: The blog owner is silently updating an existing post, not publishing a dated news update about it. Readers have no idea when the post was last touched and should never be made aware there was a "before." In any suggestedText (topContentGaps, add_content fixes, quickReferenceLists, etc.), never write as if narrating the update itself: no "since [year], this has happened," no "this year," no "as of [year]," no "recently updated," no framing that implies the reader knows an older version existed. If you need to gesture at recency, use durable phrasing instead: "these days," "more recently," "a newer addition," "one of the newer spots in the area" — words that stay true no matter when the post is next read. The post should read as if it has always been this accurate, not like a dated revision log.
+GLOBAL STYLE RULE - PROTECT THE BLOGGER'S VOICE: Exclamation points, sentence fragments, casual asides, and other stylistic choices that create a conversational, enthusiastic, friend-to-friend tone are the blogger's voice, not an error. Never suggest removing an exclamation point, or otherwise flatten enthusiastic/casual phrasing, in the name of a "cleaner read," more formal tone, or more restrained style — that is a style preference, not a mistake, and it is not this tool's place to push the blogger toward a different voice than the one they've chosen. Only touch punctuation as part of a genuine typo fix (a missing apostrophe, a doubled comma, a wrong mark entirely, mismatched quotes) — never to tone down enthusiasm.
 GLOBAL STYLE RULE - PROTECT FIRSTHAND CLAIMS: The blogger's own stated personal recommendations, opinions, and tips (which option they preferred and why, what worked for them) are ground truth, not a phrasing problem to fix. Never rewrite suggestedText to reverse or contradict the substance of a firsthand tip based on your own general knowledge of the topic, even if generic advice on the subject would suggest otherwise. Only touch a firsthand claim if it's flagged elsewhere as an objective factual error (e.g. the specific venue/option they recommended has closed) - never because you reasoned your way to a different generic answer. If you're not sure whether something is a firsthand claim or just plainly outdated info, don't rewrite it and don't stay silent either: add it as an "outdated_info" fix with "lowConfidence": true, no suggestedText, and action phrased as an open question back to the blogger, e.g. "Is this still your experience, or has anything changed since you wrote this?" - surface the doubt, never assert an answer you're not sure of.
 SUGGESTED TEXT: Match the blog's existing voice, based on the post content provided. No "verify", "current", "as of [year]". No generic filler. When adding a concrete detail (temperature, price, distance, timing, etc.), give a real specific value or a narrow, genuinely useful range — never a broad range spanning many units that conveys almost nothing (e.g. an 8-18°C range). If you don't actually know a specific value from the post or context, leave it out rather than inventing a wide range to sound specific.
 DO NOT SUGGEST: Table of contents, internal links, affiliate links, alt text if all images have it
