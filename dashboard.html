@@ -561,7 +561,7 @@ const GLOSSARY={
   high:"Real problems worth fixing soon - not urgent enough to be critical.",
   medium:"Could use attention eventually. Not a priority right now.",
   low:"In decent shape. Nothing pressing here.",
-  forced:"Automatically bumped to critical because it crossed one of the hard thresholds below (like 2+ closed venues), no matter what its calculated score was.",
+  forced:"Automatically bumped to critical because it crossed one of the hard thresholds above (see Hard urgency floor rules and Traffic signal thresholds above), no matter what its calculated score was. You can customize those numbers there any time.",
   // dashboard row flags
   peaked:"This post's traffic used to be higher and has been sliding for a while - it's not performing like it used to.",
   offmap:"This post used to show up in Google search, but now it's basically invisible - almost no one is finding it anymore.",
@@ -576,19 +576,27 @@ const GLOSSARY={
   broken_link:"A link our checker couldn't successfully load. Checkers sometimes get this wrong (some sites block automated checks), so verify yourself before assuming it's actually broken.",
   outdated_price:"A specific price mentioned in the post that's worth double-checking, since prices change over time.",
   closed_venue:"A restaurant, bar, hotel, or other place mentioned that Google Maps shows as permanently or temporarily closed.",
-  possible_rename:"A venue that might have changed its name - Google Maps found a very similar business nearby. Sometimes that means a rename, sometimes it's just a different, unrelated place. Worth a quick check.",
+  possible_rename:"The venue name in your post doesn't show up on Google Maps anymore, but a very similar business was found at or near the same spot. It might be the same place under a new name, or it might be an unrelated new business that moved in. Worth a quick check to confirm which.",
   outdated_date:"A specific date or year mentioned that may no longer be accurate.",
   outdated_info:"Something that might not be true anymore, but we're not confident enough to say for sure - worth double-checking since it may be based on your own firsthand experience only you would know.",
   add_content:"A suggestion for something new to add - not a fix to what's there, just an idea for making the post more complete.",
   seo_fix:"A suggestion to improve this post's SEO, like adding structured data or a missing element search engines look for.",
   missing_alt_text:"An image with no alt text (the description screen readers and Google use to understand what an image shows).",
   typo:"A plain spelling or typing mistake - a misspelled word, missing word, wrong apostrophe, and so on.",
-  vague_content:"A sentence that could be more useful with an actual name, number, price, or distance instead of a vague description.",
+  vague_content:"A sentence that could be more useful with an actual name, number, or distance instead of a vague description - like saying 'a short walk away' without naming the actual distance, or 'a nearby beach' instead of naming which one.",
   superfluous_content:"A sentence that isn't really adding anything - it could be deleted without losing any information.",
   confusing_structure:"A sentence that's hard to follow because it crams too many ideas together or has an unclear reference.",
   keyword_stuffing:"A spot where the same keyword or phrase repeats so often it reads unnatural, like it's written for a search engine instead of a person.",
   generic_voice:"A section that reads like generic, could-be-anyone travel copy - no personal detail, opinion, or firsthand voice.",
-  personal_experience:"Not a problem - an invitation. A good spot to add a specific memory or detail from your own visit, since it would make this section stronger."
+  personal_experience:"Not a problem - an invitation. A good spot to add a specific memory or detail from your own visit, since it would make this section stronger.",
+  // other parts of a report, beyond the per-section fixes above
+  summary:"A short overview at the top of the report - what needs updating in this post and why it matters, plus whether it's a light touch-up or a bigger refresh.",
+  estimatedUpdateTime:"A rough guess at how long the suggested changes would actually take to make.",
+  newThingsToAdd:"Research tasks, not ready-to-paste text - ideas for new venues, experiences, or content worth looking into since the post was last updated.",
+  topContentGaps:"Topics or angles your competitors are likely covering that this post doesn't - a way to catch up on what readers might be finding elsewhere instead of here.",
+  otherContentIdeas:"Freeform extra ideas for expanding the post, beyond the specific fixes listed elsewhere in the report.",
+  quickReferenceLists:"A list already inside the post (like a packing list or day-by-day itinerary) pulled out and suggested for a clearer format or placement.",
+  seoQuickWins:"A specific, actionable SEO improvement - things like a better title, a missing FAQ schema, a table, or a new image to add."
 };
 function glossaryTip(key){const g=GLOSSARY[key];return g?`title="${g.replace(/"/g,'&quot;')}"`:'';}
 function renderGlossary(){
@@ -610,6 +618,12 @@ function renderGlossary(){
       ['typo','Typo'],['vague_content','Vague content'],['superfluous_content','Superfluous content'],
       ['confusing_structure','Confusing structure'],['keyword_stuffing','Keyword stuffing'],
       ['generic_voice','Generic voice'],['personal_experience','Personal experience opportunity']
+    ]},
+    {title:'Other parts of a report',items:[
+      ['summary','Summary'],['estimatedUpdateTime','Estimated update time'],
+      ['newThingsToAdd','Potential things to research'],['topContentGaps','Content gaps'],
+      ['otherContentIdeas','Other content ideas'],['quickReferenceLists','Quick reference list'],
+      ['seoQuickWins','SEO quick win']
     ]}
   ];
   el.innerHTML=groups.map(g=>`
