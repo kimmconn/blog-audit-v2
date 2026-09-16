@@ -188,6 +188,19 @@ function extractInternalLinks(html, siteUrl) {
     .slice(0, 50);
   return internal;
 }
+// Pulls the actual rendered <title> and meta description off the live page - works
+// regardless of which SEO plugin (Yoast, RankMath, none) generated them, since it reads
+// what a search engine or social share would actually see, not a plugin-specific field.
+function extractSeoMeta(html) {
+  const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+  const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i)
+    || html.match(/<meta[^>]+content=["']([^"']*)["'][^>]+name=["']description["']/i);
+  const decode = (s) => s ? s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#0?39;/g,"'").replace(/&nbsp;/g,' ').trim() : '';
+  return {
+    seoTitle: titleMatch ? decode(titleMatch[1]) : '',
+    metaDescription: descMatch ? decode(descMatch[1]) : '',
+  };
+}
 function extractImagesWithoutAlt(html) {
   const imgMatches = html.match(/<img[^>]+>/gi) || [];
   const missing = [];
@@ -249,6 +262,15 @@ if (profile?.tier !== 'owner' && reportsUsed >= reportLimit) {
       .trim();
     const publishDate = wpData?.date?.split('T')[0] || 'unknown';
     const modifiedDate = wpData?.modified?.split('T')[0] || 'unknown';
+    let seoTitle = '', metaDescription = '';
+    try {
+      const liveRes = await fetch(postUrl, { headers: { 'User-Agent': 'BlogAuditTool/1.0' }, signal: AbortSignal.timeout(15000) });
+      if (liveRes.ok) {
+        const liveHtml = await liveRes.text();
+        ({ seoTitle, metaDescription } = extractSeoMeta(liveHtml));
+      }
+    } catch (e) {}
+    const seoMetaContext = `\nCURRENT SEO TITLE TAG: ${seoTitle ? `"${seoTitle}" (${seoTitle.length} characters)` : 'NOT FOUND - could not read a <title> tag on the live page'}\nCURRENT META DESCRIPTION: ${metaDescription ? `"${metaDescription}" (${metaDescription.length} characters)` : 'NOT FOUND - no meta description tag on the live page'}`;
     const gscContext = gscData
       ? `GSC: ${gscData.recentClicks||0} clicks (recent 8mo), ${gscData.olderClicks||0} clicks (prior 8mo), ${gscData.trafficDeclinePct||0}% decline, position ${gscData.position?.toFixed(1)||'?'}, ${gscData.recentImpressions||0} impressions`
       : 'No GSC data available';
@@ -319,6 +341,13 @@ IMAGE ALT TEXT:
 - Place these fixes in section order alongside other fixes for that section — not all bunched together
 NEW IMAGES:
 - Separately from alt text, always suggest at least one specific NEW image to add (not a fix to an existing one) via seoQuickWins with type "image" — describe what the image should show and roughly where it goes. Always phrase this as adding a new image, never replacing an existing one. This is one of the highest-impact updates a post can get.
+SEO TITLE & META DESCRIPTION:
+- You're given the ACTUAL current title tag and meta description read straight off the live page (see CURRENT SEO TITLE TAG / CURRENT META DESCRIPTION above) - evaluate what's really there, don't guess.
+- Flag the title tag (seoQuickWins, type "title") if: it's missing entirely, it's noticeably too long (roughly 60+ characters, likely to get truncated in search results) or too short/thin, it's just the raw post title with no improvement possible, or it's generic/duplicated boilerplate that doesn't reflect this specific post.
+- Flag the meta description (seoQuickWins, type "meta") if: it's missing entirely, it's noticeably too long (roughly 160+ characters) or too short to be useful, or it's generic filler that doesn't give a reader a reason to click.
+- When you do flag either one, the "idea" field must include a ready-to-use replacement written specifically for this post (real destination/topic details, not placeholder text) - not just "shorten the title," actually write the shorter title.
+- If both the title and description are already solid (present, reasonable length, specific to the post), do not flag either one - don't manufacture a suggestion just to have one.
+- Follow the same style rules as everything else here: no em dashes, no "as of [year]," matches the blog's voice.
 FAQ SCHEMA:
 - Always include one seoQuickWins idea suggesting FAQ schema markup, with type "schema" and canGenerate:true, unless the post already reads as one long FAQ itself. Base it on 3-5 real, specific questions a reader planning this trip/activity would actually search or wonder about this post's specific topic and destination — not generic filler like "What is the best time to visit?" unless that's genuinely one of the sharper questions for this post.
 - IMPORTANT: never name a specific venue in this idea's description that is also being flagged elsewhere in this same report as permanently or temporarily closed — the venue-closure check runs separately and its results aren't available to you yet, so if a venue you're about to mention has any real chance of being outdated, phrase the idea around the destination/activity generally rather than committing to a specific named venue.
@@ -396,6 +425,7 @@ ${competitorContext}
 ${linksContext}
 ${altTextContext}
 ${existingLinksContext}
+${seoMetaContext}
 POST CONTENT:
 ${content}
 Return ONLY this JSON:
