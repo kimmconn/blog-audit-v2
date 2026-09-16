@@ -308,6 +308,20 @@ async function redeemInviteCode(userId,email){
     checkAuth();
   }catch(e){msg.textContent='Something went wrong. Try again.';}
 }
+async function openBillingPortal(){
+  const btn=document.getElementById('manageSubBtn'),msg=document.getElementById('manageSubMsg');
+  if(msg)msg.textContent='Redirecting to your billing portal...';
+  if(btn)btn.disabled=true;
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    const userId=session?.user?.id;
+    if(!userId){if(msg)msg.textContent='Please sign in again.';if(btn)btn.disabled=false;return;}
+    const res=await fetch('/api/create-portal-session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId})});
+    const data=await res.json();
+    if(data.url){window.location.href=data.url;}
+    else{if(msg)msg.textContent=data.error||'Something went wrong.';if(btn)btn.disabled=false;}
+  }catch(e){if(msg)msg.textContent='Something went wrong. Try again.';if(btn)btn.disabled=false;}
+}
 async function startSubscribe(userId,email,tier){
   const msg=document.getElementById('subMsg');
   msg.textContent='Redirecting to checkout...';
@@ -334,7 +348,7 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
   <div class="tabs">
     <button class="tab active" onclick="switchTab('catalog',this)">Post catalog</button>
     <button class="tab" onclick="switchTab('connect',this)">Data sources</button>
-    <button class="tab" onclick="switchTab('settings',this)">Scoring weights</button>
+    <button class="tab" onclick="switchTab('settings',this)">Settings</button>
     <button class="tab" onclick="switchTab('indexing',this)">🔍 Indexing</button>
     <button class="tab" onclick="switchTab('updated',this)">✓ Updated</button>
   </div>
@@ -438,6 +452,12 @@ sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
     </div>
   </div>
   <div id="tabSettings" style="display:none">
+    <div class="panel">
+      <div class="panel-title">Your subscription</div>
+      <p class="note">View your invoices, update your payment method, or cancel anytime.</p>
+      <button class="btn btn-primary" id="manageSubBtn" onclick="openBillingPortal()">Manage subscription</button>
+      <div id="manageSubMsg" style="font-size:12px;color:var(--text2);margin-top:8px"></div>
+    </div>
     <div class="panel">
       <div class="panel-title">Urgency scoring weights</div>
       <p class="note">Adjust how much each signal contributes to the urgency score (0–100).</p>

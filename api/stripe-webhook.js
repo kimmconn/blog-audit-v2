@@ -42,5 +42,23 @@ if (event.type === 'checkout.session.completed') {
     await supabase.from('profiles').update({ tier: 'cancelled' }).eq('stripe_subscription_id', subscription.id);
   }
 
+  // Fires when a customer changes plans (e.g. Dashboard <-> Reports) from the
+  // self-serve billing portal - there's no checkout session here, so we map
+  // the subscription's price back to a tier ourselves and sync it.
+  if (event.type === 'customer.subscription.updated') {
+    const subscription = event.data.object;
+    const priceId = subscription.items?.data?.[0]?.price?.id;
+    const priceTierMap = {
+      [process.env.STRIPE_PRICE_DASHBOARD]: 'dashboard',
+      [process.env.STRIPE_PRICE_REPORTS]: 'reports',
+    };
+    const tier = priceTierMap[priceId];
+    if (tier && subscription.status === 'active') {
+      await supabase.from('profiles')
+        .update({ tier, stripe_subscription_id: subscription.id })
+        .eq('stripe_customer_id', subscription.customer);
+    }
+  }
+
   return res.status(200).json({ received: true });
 }
