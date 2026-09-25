@@ -187,7 +187,10 @@ async function sendMagicLink(){
   msg.textContent='Sending...';
   const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin+'/dashboard.html'}});
   if(error){msg.textContent='Error: '+error.message;}
-  else{document.getElementById('authGateContent').innerHTML='<div style="font-size:13px">✓ Check your inbox — we sent a magic link to <strong>'+email+'</strong>.</div>';}
+  else{
+    document.getElementById('authGateContent').innerHTML='<div style="font-size:13px">✓ Check your inbox — we sent a magic link to <strong>'+email+'</strong>.</div>';
+    if(typeof fbq==='function')fbq('track','Lead');
+  }
 }
 async function checkAuth(){
   const authGateEl=document.getElementById('authGate'),appEl=document.querySelector('.app');
