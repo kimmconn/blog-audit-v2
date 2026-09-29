@@ -207,7 +207,14 @@ async function checkAuth(){
     if(appEl)appEl.style.display='none';
     return;
   }
-  const{data:profile}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
+  let{data:profile}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
+  if(!profile){
+    // Guard against a race right after sign-in where this query can fire before the
+    // session token is fully attached, making an existing profile look missing. Retry
+    // once before concluding the user genuinely has no profile yet.
+    await new Promise(r=>setTimeout(r,600));
+    ({data:profile}=await sb.from('profiles').select('*').eq('id',session.user.id).single());
+  }
   if(!profile){
     showPlanScreen(session.user.id,session.user.email);
     return;
