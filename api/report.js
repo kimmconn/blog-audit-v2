@@ -332,6 +332,8 @@ AFFILIATE LINKS: Never mention "affiliate link" anywhere
 AFFILIATE DISCLOSURES: Never suggest relocating, removing, or altering the placement of affiliate/sponsorship disclosures. Disclosure compliance is entirely outside this tool's scope — don't comment on it in any way.
 VENUE VERIFICATION:
 - Extract ALL named venues, in the order they appear in the post: restaurants, bars, cafes, clubs, hotels, hostels, attractions, parks, beaches, tour operators
+- ONLY include physical, single-location places a reader could walk into. NEVER include airlines, airports, train/bus/ferry companies, car rental companies, booking sites or OTAs (Booking.com, GetYourGuide, Viator, Hostelworld), apps, brands, or multi-location chains. These have no single address to check, and looking them up returns unrelated businesses.
+- Only extract names that literally appear in the post text provided. Never add a venue from your own knowledge.
 - Only a limited number will actually be checked against Google Places - if there are more named venues than that, the ones checked are chosen by how often each is mentioned in the post, not by this list's order, so extract every one rather than trying to guess which matter most
 IMAGE ALT TEXT:
 - ONLY flag images that are actually missing alt text (filenames provided in context)
@@ -346,6 +348,7 @@ SEO TITLE & META DESCRIPTION:
 - Flag the title tag (seoQuickWins, type "title") if: it's missing entirely, it's noticeably too long (roughly 60+ characters, likely to get truncated in search results) or too short/thin, it's just the raw post title with no improvement possible, or it's generic/duplicated boilerplate that doesn't reflect this specific post.
 - Flag the meta description (seoQuickWins, type "meta") if: it's missing entirely, it's noticeably too long (roughly 160+ characters) or too short to be useful, or it's generic filler that doesn't give a reader a reason to click.
 - When you do flag either one, the "idea" field must include a ready-to-use replacement written specifically for this post (real destination/topic details, not placeholder text) - not just "shorten the title," actually write the shorter title.
+- HARD LENGTH LIMITS for any replacement you write: title tag 60 characters or fewer, meta description 155 characters or fewer, spaces and punctuation included. Count the characters before you answer, and if a draft is over, cut it down. State the final character count in parentheses after each replacement.
 - If both the title and description are already solid (present, reasonable length, specific to the post), do not flag either one - don't manufacture a suggestion just to have one.
 - Follow the same style rules as everything else here: no em dashes, no "as of [year]," matches the blog's voice.
 FAQ SCHEMA:
