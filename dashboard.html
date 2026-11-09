@@ -203,19 +203,41 @@ async function checkAuth(){
     return;
   }
   if(!session){
+    window._authedUserId=null;
     if(authGateEl)authGateEl.style.display='flex';
     if(appEl)appEl.style.display='none';
     return;
   }
-  let{data:profile}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
+  // Once this user has been let in, later auth events (token refresh etc.) must not be able
+  // to kick them back out because of one flaky profile lookup. A real sign-out clears this above.
+  if(window._authedUserId===session.user.id)return;
+  let{data:profile,error:profErr}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
   if(!profile){
     // Guard against a race right after sign-in where this query can fire before the
     // session token is fully attached, making an existing profile look missing. Retry
     // once before concluding the user genuinely has no profile yet.
     await new Promise(r=>setTimeout(r,600));
-    ({data:profile}=await sb.from('profiles').select('*').eq('id',session.user.id).single());
+    ({data:profile,error:profErr}=await sb.from('profiles').select('*').eq('id',session.user.id).single());
+  }
+  if(!profile&&session.access_token){
+    // Last resort: ask our own server to look the profile up (it verifies the login token,
+    // then reads only this user's row). Covers any browser-side problem hiding the row.
+    try{
+      const r=await fetch('/api/profile',{method:'POST',headers:{'Authorization':'Bearer '+session.access_token}});
+      if(r.ok){const j=await r.json();if(j.profile){profile=j.profile;console.warn('Profile loaded via server fallback; browser query returned nothing',profErr);}}
+    }catch(e){console.error('Profile server fallback failed',e);}
   }
   if(!profile){
+    // PGRST116 = query worked but found no row (a genuinely new user). Anything else is a
+    // real failure (network, permissions, etc.) - never show "choose a plan" for those,
+    // since an already-subscribed user could end up paying twice. Show the real error instead.
+    if(profErr&&profErr.code!=='PGRST116'){
+      console.error('Profile load failed:',profErr);
+      if(authGateEl)authGateEl.style.display='flex';
+      if(appEl)appEl.style.display='none';
+      document.getElementById('authGateContent').innerHTML=`<p style="font-size:13px;color:var(--text);font-weight:600;margin-bottom:6px">We couldn't load your account</p><p style="font-size:12px;color:var(--text2);margin-bottom:12px">You're signed in as <strong>${session.user.email}</strong>, but something went wrong loading your profile. Please refresh. If it keeps happening, email hello@bloupiforbloggers.com and include this: <code>${profErr.code||''} ${profErr.message||''}</code></p><button class="auth-btn-primary" style="width:100%" onclick="window.location.reload()">Refresh</button>`;
+      return;
+    }
     showPlanScreen(session.user.id,session.user.email);
     return;
   }
@@ -227,6 +249,7 @@ async function checkAuth(){
     showAccessEndedScreen(session.user.id,session.user.email,'cancelled');
     return;
   }
+  window._authedUserId=session.user.id;
   if(authGateEl)authGateEl.style.display='none';
   if(appEl)appEl.style.display='block';
   if(profile.site_url){
@@ -261,7 +284,9 @@ function showPlanScreen(userId,email){
   if(authGateEl)authGateEl.style.display='flex';
   if(appEl)appEl.style.display='none';
   document.getElementById('authGateContent').innerHTML=`
-    <p style="font-size:12px;color:var(--text2);margin-bottom:4px">You're signed in! Choose a plan to get started.</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:4px">You're signed in as <strong>${email}</strong>. Choose a plan to get started.</p>
+    <p style="font-size:9px;color:var(--text3);margin-bottom:6px">Account ID: ${userId}</p>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:10px">Already subscribed with a different email? <button type="button" onclick="sb.auth.signOut().then(()=>window.location.reload())" style="background:none;border:none;padding:0;color:var(--accent);font-size:11px;text-decoration:underline;cursor:pointer">Sign out and use that one</button>.</p>
     <p style="font-size:10.5px;color:var(--text3);margin-bottom:16px;font-style:italic">💡 Bloupi's AI helps you spot what needs updating and drafts a starting point - you bring the firsthand experience and final say.</p>
     <button class="btn btn-primary" style="width:100%" onclick="startSubscribe('${userId}','${email}','dashboard')">Subscribe — Dashboard $20/mo</button>
     <ul style="list-style:none;font-size:11px;color:var(--text2);margin:6px 0 14px;padding-left:2px;line-height:1.6">
@@ -362,7 +387,9 @@ async function startSubscribe(userId,email,tier){
   }catch(e){msg.textContent='Something went wrong. Try again.';}
 }
 checkAuth();
-sb.auth.onAuthStateChange((event,session)=>{checkAuth();});
+// Supabase docs warn against calling other supabase methods directly inside this callback
+// (it can deadlock on the auth lock), so defer the check to the next tick.
+sb.auth.onAuthStateChange((event,session)=>{setTimeout(()=>checkAuth(),0);});
 </script>
 <div class="app">
   <h1>Bloupi</h1>
