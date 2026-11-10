@@ -192,6 +192,23 @@ async function sendMagicLink(){
     if(typeof fbq==='function')fbq('track','Lead');
   }
 }
+// If a magic link comes back rejected (already used, expired, or opened early by an email
+// scanner / mail app), Supabase puts error_code=otp_expired in the URL hash. Explain it in
+// plain words instead of silently showing a blank sign-in box.
+(function showLinkError(){
+  const h=window.location.hash||'';
+  if(!h.includes('error_code='))return;
+  const p=new URLSearchParams(h.replace(/^#/,''));
+  const code=p.get('error_code');
+  const msg=document.getElementById('authMsg');
+  if(msg){
+    msg.style.cssText='font-size:12.5px;line-height:1.5;color:#8a3b12;background:#fff4e5;border:1px solid #f3d6a8;border-radius:10px;padding:10px 12px;margin-top:10px';
+    msg.innerHTML=code==='otp_expired'
+      ?'<strong>That sign-in link has expired or was already used.</strong> Email apps sometimes open links automatically, which uses them up. Enter your email above and send a fresh link, then open the <em>newest</em> email right away. If it still fails, copy the link and paste it into your browser.'
+      :'<strong>That sign-in link didn\'t work.</strong> Enter your email above to send a fresh link, then open the newest email right away.';
+  }
+  window.history.replaceState(null,'',window.location.pathname+window.location.search);
+})();
 async function checkAuth(){
   const authGateEl=document.getElementById('authGate'),appEl=document.querySelector('.app');
   let session;
