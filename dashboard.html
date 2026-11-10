@@ -157,6 +157,16 @@ src="https://www.facebook.com/tr?id=4582628865350058&ev=PageView&noscript=1"
 .term-card input[type="checkbox"]{position:absolute;opacity:0;pointer-events:none}
 .term-check{flex-shrink:0;width:18px;height:18px;border-radius:5px;border:1.5px solid #c7d2ef;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:transparent;margin-top:1px;transition:background .15s,border-color .15s,color .15s}
 .term-card.checked .term-check{background:#2457e0;border-color:#2457e0;color:#fff}
+  #tourShade{position:fixed;inset:0;z-index:3000;background:transparent}
+  #tourSpot{position:fixed;z-index:3001;border-radius:12px;box-shadow:0 0 0 9999px rgba(22,37,92,0.58),0 0 0 3px #fff inset;pointer-events:none;transition:all .25s ease}
+  #tourCard{position:fixed;z-index:3002;width:min(340px,92vw);background:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 18px 50px rgba(22,37,92,0.35);font-family:'Inter',sans-serif}
+  #tourCard .t-count{position:absolute;top:12px;right:14px;font-size:11px;font-weight:700;color:var(--accent);background:var(--blue-bg);border-radius:999px;padding:2px 10px}
+  #tourCard .t-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;padding-right:52px}
+  #tourCard .t-intro{font-size:11.5px;line-height:1.5;color:var(--blue-text);background:var(--blue-bg);border-radius:10px;padding:8px 10px;margin-bottom:10px}
+  #tourCard .t-body{font-size:12.5px;line-height:1.55;color:var(--text2);margin-bottom:14px}
+  #tourCard .t-row{display:flex;align-items:center;gap:8px}
+  #tourCard .t-skip{display:block;width:100%;background:none;border:none;color:var(--text3);font-size:11px;line-height:1.4;text-decoration:underline;cursor:pointer;padding:0;margin-top:12px;text-align:center}
+  .tour-replay{background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;text-decoration:underline;cursor:pointer;padding:0;margin-left:8px}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
@@ -434,7 +444,7 @@ sb.auth.onAuthStateChange((event,session)=>{setTimeout(()=>checkAuth(),0);});
 </script>
 <div class="app">
   <h1>Bloupi</h1>
-  <p class="subtitle">Catalog, score, and prioritize your posts for updates</p>
+  <p class="subtitle">Catalog, score, and prioritize your posts for updates <button type="button" class="tour-replay" onclick="window.startBloupiTour&&window.startBloupiTour()">Take the tour</button></p>
   <div id="trialBanner" style="display:none;margin-bottom:1rem"></div>
   <div class="metrics">
     <div class="metric"><div class="metric-label">Total posts</div><div class="metric-value" id="mTotal">—</div><div class="metric-sub">cataloged</div></div>
@@ -458,6 +468,7 @@ sb.auth.onAuthStateChange((event,session)=>{setTimeout(()=>checkAuth(),0);});
         <button class="btn" onclick="loadDemo()">Load demo data</button>
       </div>
       <div style="font-size:11px;color:var(--text2);margin-top:6px">Enter your URL exactly as it appears in Google Search Console (with or without "www", matching your verified property) — this ensures GSC data connects correctly.</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:8px;background:var(--bg2);border-radius:10px;padding:8px 12px;line-height:1.55">💾 <strong>Opening a new window or coming back later?</strong> The dashboard starts fresh each visit, so just click <strong>Crawl posts</strong> and run your scans again. Link, keyword and AI scan results are saved for 30 days, so re-running them is quick and doesn't redo the work. After 30 days they refresh with new results.</div>
       <div class="progress-wrap" id="progressWrap" style="display:none">
         <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
         <div class="status-msg" id="statusMsg"></div>
@@ -508,6 +519,7 @@ sb.auth.onAuthStateChange((event,session)=>{setTimeout(()=>checkAuth(),0);});
   <div id="tabConnect" style="display:none">
     <div class="panel">
       <div class="panel-title">Data source integrations</div>
+      <p class="note">Scan results are saved for 30 days. If you open a new window or come back later, press the scan buttons again. It's quick, and nothing is redone until the 30 days are up.</p>
       <div class="integrations">
         <div class="int-card"><div class="int-name">WordPress REST API</div><div class="int-desc">Fetches all posts via the serverless proxy.</div><span class="tag tag-ok">Connected</span></div>
         <div class="int-card">
@@ -538,7 +550,7 @@ sb.auth.onAuthStateChange((event,session)=>{setTimeout(()=>checkAuth(),0);});
   <div id="tabUpdated" style="display:none">
     <div class="panel">
       <div class="panel-title">Marked as updated <span class="tag" id="updatedCount"></span></div>
-      <p class="note">Posts you've marked as updated are hidden from the main catalog. Unmark any post to bring it back into your priority list.</p>
+      <p class="note">Posts you've marked as updated are hidden from the main catalog. <strong>Bloupi starts measuring your improvement the moment you mark a post done</strong>, so you'll see the change in clicks, impressions and rankings since that day (needs Google Search Console connected). Unmark any post to bring it back into your priority list.</p>
       <div id="updatedEmpty" class="empty" style="display:none"><div style="font-size:32px;margin-bottom:8px">🎉</div><div>Nothing marked as updated yet. Mark posts from the Post catalog tab as you finish them.</div></div>
       <div class="table-wrap">
         <table>
@@ -1689,6 +1701,115 @@ function downloadBriefPDF(){
   printWindow.document.close();
   printWindow.addEventListener('load',()=>{setTimeout(()=>printWindow.print(),500);});
 }
+</script>
+<script>
+// First-visit guided tour. Plain JS, no library. Shows once per browser (remembered in
+// localStorage) and can be replayed any time from the "Take the tour" link under the title.
+(function(){
+  const KEY='bloupi_tour_v1_done';
+  const $=s=>document.querySelector(s);
+  const tabIndex={catalog:0,connect:1,settings:2,indexing:3,updated:4};
+  const card=(sel)=>{const e=$(sel);return e?e.closest('.int-card'):null;};
+  const steps=[
+    {tab:'catalog',target:()=>$('.crawl-row'),title:'Scan your blog',
+     intro:'<strong>New: a quick tour of Bloupi!</strong> It pops up once for everyone, even if you have been using Bloupi for a while, so nobody misses a feature. You can skip it, or replay it any time.',
+     body:'Type your blog URL and click <strong>Crawl posts</strong>. This builds the list of every post on your blog. No blog handy? <strong>Load demo data</strong> shows you a sample.'},
+    {tab:'catalog',target:()=>document.querySelectorAll('.tabs .tab')[1],title:'Now open Data sources',
+     body:'This is the step people miss! Crawling only <em>lists</em> your posts. Nothing gets scored until you connect your data on this tab.'},
+    {tab:'connect',target:()=>card('#gscStatus'),title:'Connect Google Search Console',
+     body:'This brings in clicks, impressions and rankings for every post, so Bloupi can see which ones are slipping.'},
+    {tab:'connect',target:()=>[card('#linkScanStatus'),card('#kwScanStatus'),card('#aiScanStatus')],title:'Run the scans',
+     body:'Run the <strong>link scanner</strong>, <strong>keyword volume</strong> and <strong>AI content scan</strong>. Each one adds to your urgency scores. Results are saved for 30 days, so running them again is quick. The dashboard starts fresh each visit, so press these buttons again whenever you come back.'},
+    {tab:'catalog',target:()=>$('.table-wrap'),title:'Work through your list',
+     body:'Back on Post catalog, posts are ranked by urgency, most urgent first. Click <strong>✨ Report</strong> on a post for a full brief of what to fix (Reports plan).'},
+    {tab:'updated',target:()=>document.querySelectorAll('.tabs .tab')[4],title:'Mark posts as done',
+     body:'After you update a post, click <strong>✓ Done</strong> on it in the list. It moves to this <strong>Updated</strong> tab, and Bloupi <strong>starts measuring your improvement immediately</strong>: the change in clicks, impressions and rankings from the moment you clicked Done (needs Search Console connected).'},
+    {tab:'settings',target:()=>{const e=$('#weightsUI');return e?e.closest('.panel'):null;},title:'Make the scoring yours',
+     body:'In <strong>Settings</strong> you can customize your scoring weights. Every signal (traffic decline, page 2 opportunities, broken links and more) has a slider. Turn up what matters most for your blog and your urgency list reorders to match.'},
+    {tab:'settings',target:()=>{const e=$('#glossaryContent');const pn=e&&e.closest('.panel');return pn?pn.querySelector('.panel-title'):null;},title:'The glossary explains everything',
+     body:'Not sure what a flag, score or term means? The <strong>Glossary</strong> in Settings explains all of it. You can replay this tour any time with <strong>Take the tour</strong> under the page title.'}
+  ];
+  let idx=0,active=false,shade,spot,cardEl;
+  function done(){try{localStorage.setItem(KEY,'1');}catch(e){}}
+  function rectOf(t){
+    const list=(Array.isArray(t)?t:[t]).filter(Boolean);
+    if(!list.length)return null;
+    let l=1e9,tp=1e9,r=-1e9,b=-1e9,any=false;
+    list.forEach(el=>{const x=el.getBoundingClientRect();if(!x.width&&!x.height)return;any=true;l=Math.min(l,x.left);tp=Math.min(tp,x.top);r=Math.max(r,x.right);b=Math.max(b,x.bottom);});
+    return any?{left:l,top:tp,width:r-l,height:b-tp,right:r,bottom:b}:null;
+  }
+  function place(){
+    if(!active)return;
+    const s=steps[idx];
+    let rc=rectOf(s.target());
+    const pad=8,vw=window.innerWidth,vh=window.innerHeight;
+    // On narrow screens a multi-card highlight can be taller than the screen and hide behind
+    // the tip box, so fall back to just the first element in that case.
+    if(rc&&rc.height>vh*0.5){const f=[].concat(s.target()).filter(Boolean)[0];const r1=f&&rectOf(f);if(r1)rc=r1;}
+    if(!rc){spot.style.cssText='left:50%;top:40%;width:0;height:0';cardEl.style.left=Math.max(8,(vw-cardEl.offsetWidth)/2)+'px';cardEl.style.top='30%';return;}
+    spot.style.left=(rc.left-pad)+'px';spot.style.top=(rc.top-pad)+'px';
+    spot.style.width=(rc.width+pad*2)+'px';spot.style.height=(rc.height+pad*2)+'px';
+    const cw=cardEl.offsetWidth,ch=cardEl.offsetHeight;
+    let top=rc.bottom+pad+14;
+    if(top+ch>vh-8)top=rc.top-pad-14-ch;
+    if(top<8)top=Math.min(vh-ch-8,Math.max(8,rc.top+rc.height/2-ch/2));
+    let left=rc.left+rc.width/2-cw/2;
+    left=Math.max(8,Math.min(vw-cw-8,left));
+    cardEl.style.left=left+'px';cardEl.style.top=top+'px';
+  }
+  // If anything goes wrong inside a step, close the tour rather than leave the page dimmed.
+  function show(i){try{showStep(i);}catch(e){console.error('Tour error',e);end();}}
+  function showStep(i){
+    idx=i;const s=steps[i];
+    if(s.tab&&typeof switchTab==='function'){switchTab(s.tab,document.querySelectorAll('.tabs .tab')[tabIndex[s.tab]]);}
+    const first=[].concat(s.target()).filter(Boolean)[0];
+    if(first&&first.scrollIntoView)first.scrollIntoView({block:'center',behavior:'auto'});
+    const last=i===steps.length-1;
+    cardEl.innerHTML=`<div class="t-count">${i+1} / ${steps.length}</div><div class="t-title">${s.title}</div>${s.intro?`<div class="t-intro">${s.intro}</div>`:''}<div class="t-body">${s.body}</div>
+      <div class="t-row" style="justify-content:flex-end">${i>0?'<button class="btn btn-sm" id="tourBack">Back</button>':''}<button class="btn btn-sm btn-primary" id="tourNext">${last?'Got it':'Next'}</button></div>${last?'':'<button class="t-skip" id="tourSkip">Skip tour (not recommended, you\'ll want to know where everything is!)</button>'}`;
+    const sk=$('#tourSkip');if(sk)sk.onclick=end;
+    const bk=$('#tourBack');if(bk)bk.onclick=()=>show(idx-1);
+    $('#tourNext').onclick=()=>last?end():show(idx+1);
+    setTimeout(place,60);
+  }
+  function end(){
+    active=false;done();
+    [shade,spot,cardEl].forEach(e=>e&&e.remove());
+    document.removeEventListener('keydown',onKey);
+    window.removeEventListener('resize',place);window.removeEventListener('scroll',place,true);
+    if(typeof switchTab==='function')switchTab('catalog',document.querySelectorAll('.tabs .tab')[0]);
+    window.scrollTo(0,0);
+  }
+  function onKey(e){
+    if(!active)return;
+    if(e.key==='Escape')end();
+    else if(e.key==='ArrowRight'&&idx<steps.length-1)show(idx+1);
+    else if(e.key==='ArrowLeft'&&idx>0)show(idx-1);
+  }
+  window.startBloupiTour=function(){
+    if(active)return;
+    active=true;
+    shade=document.createElement('div');shade.id='tourShade';
+    spot=document.createElement('div');spot.id='tourSpot';
+    cardEl=document.createElement('div');cardEl.id='tourCard';
+    document.body.append(shade,spot,cardEl);
+    document.addEventListener('keydown',onKey);
+    window.addEventListener('resize',place);window.addEventListener('scroll',place,true);
+    show(0);
+  };
+  // Auto-start once, after the user has actually been let into the dashboard.
+  let tries=0;
+  const poll=setInterval(()=>{
+    tries++;
+    if(tries>40){clearInterval(poll);return;}
+    const app=$('.app');
+    if(window._authedUserId&&app&&app.style.display!=='none'){
+      clearInterval(poll);
+      let seen=false;try{seen=!!localStorage.getItem(KEY);}catch(e){}
+      if(!seen)setTimeout(window.startBloupiTour,800);
+    }
+  },500);
+})();
 </script>
 </body>
 </html>
