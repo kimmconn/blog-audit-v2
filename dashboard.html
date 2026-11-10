@@ -188,9 +188,33 @@ async function sendMagicLink(){
   const{error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin+'/dashboard.html'}});
   if(error){msg.textContent='Error: '+error.message;}
   else{
-    document.getElementById('authGateContent').innerHTML='<div style="font-size:13px">✓ Check your inbox — we sent a magic link to <strong>'+email+'</strong>.</div>';
+    window._pendingEmail=email;
+    const safeEmail=email.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    document.getElementById('authGateContent').innerHTML=`
+      <div style="font-size:13px;margin-bottom:14px">✓ Check your inbox — we sent a sign-in email to <strong>${safeEmail}</strong>. Click the link in it, <em>or</em> type the code from the email below.</div>
+      <input type="text" id="authCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Code from the email" style="width:100%;margin-bottom:10px;letter-spacing:2px" onkeydown="if(event.key==='Enter')verifyCode()" />
+      <button class="auth-btn-primary" style="width:100%" onclick="verifyCode()">Sign in with code</button>
+      <div id="authCodeMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+      <div style="text-align:center;margin-top:14px"><button type="button" onclick="window.location.reload()" style="background:none;border:none;color:var(--text2);font-size:12px;text-decoration:underline;cursor:pointer">Use a different email / send a new email</button></div>`;
     if(typeof fbq==='function')fbq('track','Lead');
   }
+}
+// Sign in by typing the one-time code from the email instead of clicking the link. A code is
+// plain text, so mail scanners and in-app mail browsers can't use it up the way they can a link.
+async function verifyCode(){
+  const msg=document.getElementById('authCodeMsg');
+  const token=(document.getElementById('authCode').value||'').replace(/\s/g,'');
+  const email=window._pendingEmail;
+  if(!email){window.location.reload();return;}
+  if(!/^\d{6,10}$/.test(token)){msg.textContent='Please enter the numeric code from the email.';return;}
+  msg.textContent='Checking...';
+  const{error}=await sb.auth.verifyOtp({email,token,type:'email'});
+  if(error){
+    msg.innerHTML='That code didn\'t work or has expired. Use the link below to send a fresh email, then enter the newest code.';
+    return;
+  }
+  msg.textContent='Signed in! Loading your dashboard...';
+  checkAuth();
 }
 // If a magic link comes back rejected (already used, expired, or opened early by an email
 // scanner / mail app), Supabase puts error_code=otp_expired in the URL hash. Explain it in
