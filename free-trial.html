@@ -169,7 +169,7 @@ function startTrial(form){
     localStorage.setItem('bloupi_prefill_email',email);
     localStorage.setItem('bloupi_promo','BLOUPIFREETRIAL');
   }catch(e){}
-  try{if(typeof fbq==='function')fbq('track','InitiateCheckout',{content_name:'free-trial-stay22'});}catch(e){}
+  try{if(typeof fbq==='function')fbq('track','InitiateCheckout',{content_name:'free-trial-'+(new URLSearchParams(location.search).get('src')||'direct')});}catch(e){}
   window.location.href='dashboard.html?start=trial';
   return false;
 }
