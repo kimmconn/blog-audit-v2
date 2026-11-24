@@ -178,8 +178,10 @@ src="https://www.facebook.com/tr?id=4582628865350058&ev=PageView&noscript=1"
  <div id="authGate" class="auth-gate">
   <div class="auth-gate-panel">
     <h1 style="margin-bottom:4px">bloupi</h1>
+    <div id="authIntro">
     <p class="subtitle" style="margin-bottom:6px">Create your account or sign in</p>
-    <p style="font-size:12px;color:var(--text2);margin:0 0 16px;line-height:1.5">New or returning, it's the same box. No password: we email you a login code.</p>
+    <p style="font-size:12px;color:var(--text2);margin:0 0 16px;line-height:1.5">Enter your email and we'll send you a login code. No password to remember. You'll stay signed in on this browser, and on a new device we'll just email you a fresh code.</p>
+    </div>
     <div id="authGateContent">
       <input type="email" id="authEmail" placeholder="you@email.com" style="width:100%;margin-bottom:10px" onkeydown="if(event.key==='Enter')sendMagicLink()" />
       <button class="auth-btn-primary" style="width:100%" onclick="sendMagicLink()">Email me a login code</button>
@@ -217,6 +219,7 @@ async function sendMagicLink(){
   if(error){msg.textContent='Error: '+error.message;}
   else{
     window._pendingEmail=email;
+    const intro=document.getElementById('authIntro');if(intro)intro.style.display='none';
     const safeEmail=email.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     document.getElementById('authGateContent').innerHTML=`
       <div style="font-size:13px;margin-bottom:14px">✓ We emailed a login code to <strong>${safeEmail}</strong>. Type it below (check spam if it doesn't show up in a minute). You can also click the link in the email instead.</div>
@@ -336,6 +339,7 @@ async function checkAuth(){
   }
 }
 function showAccessEndedScreen(userId,email,reason){
+  const _i=document.getElementById('authIntro');if(_i)_i.style.display='none';
   const authGateEl=document.getElementById('authGate'),appEl=document.querySelector('.app');
   if(authGateEl)authGateEl.style.display='flex';
   if(appEl)appEl.style.display='none';
@@ -351,6 +355,7 @@ function showAccessEndedScreen(userId,email,reason){
   `;
 }
 function showPlanScreen(userId,email){
+  const _i=document.getElementById('authIntro');if(_i)_i.style.display='none';
   const authGateEl=document.getElementById('authGate'),appEl=document.querySelector('.app');
   if(authGateEl)authGateEl.style.display='flex';
   if(appEl)appEl.style.display='none';
