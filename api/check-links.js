@@ -1,3 +1,4 @@
+import { authenticate, isBlockedUrl } from '../lib/auth.js';
 import { Redis } from '@upstash/redis';
 
 let redis;
@@ -18,9 +19,12 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const auth = await authenticate(req, res, { access: 'scans' });
+  if (!auth) return;
 
   const { postUrl, postId, siteUrl, forceRefresh } = req.body;
   if (!postUrl) return res.status(400).json({ error: 'Missing postUrl' });
+  if (!siteUrl || isBlockedUrl(siteUrl)) return res.status(400).json({ error: 'Invalid site URL' });
 
   const cacheKey = `links:${siteUrl}:${postId}`;
   const kv = getRedis();

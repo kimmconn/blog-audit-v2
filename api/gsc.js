@@ -1,3 +1,4 @@
+import { authenticate } from '../lib/auth.js';
 // GSC data fetcher - gets clicks, impressions, CTR per URL
 // Also fetches top keywords per page for keyword volume lookups
 async function refreshAccessToken(userId) {
@@ -44,7 +45,10 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-const { siteUrl, accessToken, startDate, endDate, includeKeywords, pageUrls, userId } = req.body;  if (!siteUrl || !accessToken) return res.status(400).json({ error: 'Missing siteUrl or accessToken' });
+  const auth = await authenticate(req, res, { access: 'scans' });
+  if (!auth) return;
+  const userId = auth.userId;
+const { siteUrl, accessToken, startDate, endDate, includeKeywords, pageUrls } = req.body;  if (!siteUrl || !accessToken) return res.status(400).json({ error: 'Missing siteUrl or accessToken' });
   const start = startDate || (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return d.toISOString().split('T')[0]; })();
   const end = endDate || new Date().toISOString().split('T')[0];
   let currentToken = accessToken;

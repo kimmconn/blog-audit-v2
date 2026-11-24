@@ -1,3 +1,4 @@
+import { authenticate } from '../lib/auth.js';
 import { Redis } from '@upstash/redis';
 let redis;
 function getRedis() {
@@ -221,8 +222,11 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-const { postId, postUrl, postTitle, siteUrl, gscData, brokenLinks, gscKeywords, forceRefresh, userId } = req.body;
+const { postId, postUrl, postTitle, siteUrl, gscData, brokenLinks, gscKeywords, forceRefresh } = req.body;
 if (!postId || !siteUrl) return res.status(400).json({ error: 'Missing postId or siteUrl' });
+const auth = await authenticate(req, res, { access: 'reports' });
+if (!auth) return;
+const userId = auth.userId;
 if (!userId) return res.status(400).json({ error: 'Missing userId' });
 const { createClient } = await import('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);

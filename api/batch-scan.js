@@ -1,3 +1,4 @@
+import { authenticate, isBlockedUrl } from '../lib/auth.js';
 import { Redis } from '@upstash/redis';
 let redis;
 function getRedis() {
@@ -17,8 +18,11 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const auth = await authenticate(req, res, { access: 'scans' });
+  if (!auth) return;
   const { postId, postUrl, postTitle, siteUrl, forceRefresh } = req.body;
   if (!postId || !siteUrl) return res.status(400).json({ error: 'Missing postId or siteUrl' });
+  if (isBlockedUrl(siteUrl)) return res.status(400).json({ error: 'Invalid site URL' });
   const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
   if (!ANTHROPIC_API_KEY) return res.status(500).json({ error: 'Anthropic API key not configured' });
   const cacheKey = `scan:${siteUrl}:${postId}`;

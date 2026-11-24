@@ -1,3 +1,4 @@
+import { authenticate } from '../lib/auth.js';
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
@@ -5,7 +6,10 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  const { siteUrl, page = 1, perPage = 100, userId } = req.query;
+  const auth = await authenticate(req, res, { access: 'scans' });
+  if (!auth) return;
+  const userId = auth.userId;
+  const { siteUrl, page = 1, perPage = 100 } = req.query;
   if (!siteUrl) return res.status(400).json({ error: 'Missing siteUrl' });
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
 const cleanUrl = siteUrl.replace(/\/$/, '');

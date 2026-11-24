@@ -1,3 +1,4 @@
+import { authenticate } from '../lib/auth.js';
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
@@ -5,7 +6,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-const { code, userId, email, agreedTerms } = req.body || {};
+const auth = await authenticate(req, res);
+  if (!auth) return;
+  const { code, agreedTerms } = req.body || {};
+  const userId = auth.userId;
+  const email = auth.user?.email || req.body?.email;
   if (!code || !userId || !email) {
     return res.status(400).json({ error: 'Missing code, userId, or email' });
   }
@@ -14,6 +19,12 @@ const { code, userId, email, agreedTerms } = req.body || {};
   }
 
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
+
+  // Never let an invite code overwrite a paid plan with a trial.
+  const { data: existing } = await supabase.from('profiles').select('tier, stripe_subscription_id').eq('id', userId).maybeSingle();
+  if (existing?.stripe_subscription_id && existing.tier !== 'cancelled') {
+    return res.status(400).json({ error: "Your account already has an active plan, so you don't need an invite code." });
+  }
 
   const { data: inviteCode, error: lookupError } = await supabase
     .from('invite_codes')
