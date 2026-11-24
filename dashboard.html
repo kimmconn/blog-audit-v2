@@ -178,10 +178,11 @@ src="https://www.facebook.com/tr?id=4582628865350058&ev=PageView&noscript=1"
  <div id="authGate" class="auth-gate">
   <div class="auth-gate-panel">
     <h1 style="margin-bottom:4px">bloupi</h1>
-    <p class="subtitle" style="margin-bottom:20px">Sign in to your account</p>
+    <p class="subtitle" style="margin-bottom:6px">Create your account or sign in</p>
+    <p style="font-size:12px;color:var(--text2);margin:0 0 16px;line-height:1.5">New or returning, it's the same box. No password: we email you a login code.</p>
     <div id="authGateContent">
-      <input type="email" id="authEmail" placeholder="you@email.com" style="width:100%;margin-bottom:10px" />
-      <button class="auth-btn-primary" style="width:100%" onclick="sendMagicLink()">Send magic link</button>
+      <input type="email" id="authEmail" placeholder="you@email.com" style="width:100%;margin-bottom:10px" onkeydown="if(event.key==='Enter')sendMagicLink()" />
+      <button class="auth-btn-primary" style="width:100%" onclick="sendMagicLink()">Email me a login code</button>
       <div id="authMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
     </div>
   </div>
@@ -218,9 +219,9 @@ async function sendMagicLink(){
     window._pendingEmail=email;
     const safeEmail=email.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     document.getElementById('authGateContent').innerHTML=`
-      <div style="font-size:13px;margin-bottom:14px">✓ Check your inbox — we sent a sign-in email to <strong>${safeEmail}</strong>. Click the link in it, <em>or</em> type the code from the email below.</div>
+      <div style="font-size:13px;margin-bottom:14px">✓ We emailed a login code to <strong>${safeEmail}</strong>. Type it below (check spam if it doesn't show up in a minute). You can also click the link in the email instead.</div>
       <input type="text" id="authCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Code from the email" style="width:100%;margin-bottom:10px;letter-spacing:2px" onkeydown="if(event.key==='Enter')verifyCode()" />
-      <button class="auth-btn-primary" style="width:100%" onclick="verifyCode()">Sign in with code</button>
+      <button class="auth-btn-primary" style="width:100%" onclick="verifyCode()">Continue</button>
       <div id="authCodeMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
       <div style="text-align:center;margin-top:14px"><button type="button" onclick="window.location.reload()" style="background:none;border:none;color:var(--text2);font-size:12px;text-decoration:underline;cursor:pointer">Use a different email / send a new email</button></div>`;
     if(typeof fbq==='function')fbq('track','Lead');
@@ -320,6 +321,7 @@ async function checkAuth(){
   window._authedUserId=session.user.id;
   if(authGateEl)authGateEl.style.display='none';
   if(appEl)appEl.style.display='block';
+  try{localStorage.removeItem('bloupi_promo');}catch(e){}
   if(profile.site_url){
     const urlInput=document.getElementById('urlInput');
     if(urlInput&&!urlInput.value)urlInput.value=profile.site_url;
@@ -352,6 +354,22 @@ function showPlanScreen(userId,email){
   const authGateEl=document.getElementById('authGate'),appEl=document.querySelector('.app');
   if(authGateEl)authGateEl.style.display='flex';
   if(appEl)appEl.style.display='none';
+  let savedPromo='';
+  try{savedPromo=localStorage.getItem('bloupi_promo')||'';}catch(e){}
+  if(savedPromo){
+    // Free-trial visitors get the Reports plan with their code already applied: one button to checkout.
+    document.getElementById('authGateContent').innerHTML=`
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">You're signed in as <strong>${email}</strong>.</p>
+    <p style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">🎉 Your free trial is ready</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">Free trial code <strong>${savedPromo}</strong> will be applied at checkout, with the full Reports plan: every scan, plus customizable AI update reports for each post.</p>
+    <input type="hidden" id="promoInput" value="${savedPromo}" />
+    <button class="btn btn-primary" style="width:100%" onclick="startSubscribe('${userId}','${email}','reports')">Start my free trial</button>
+    <div style="font-size:11px;color:var(--text2);background:var(--bg2);border-radius:10px;padding:9px 12px;margin:12px 0 10px;line-height:1.55">💳 <strong>A card is required.</strong> A paid plan begins automatically after your 30-day free trial unless you cancel first ($35/mo Reports). Cancel any time: <strong>Settings, then Manage subscription</strong>.</div>
+    <div style="text-align:center;font-size:11px;color:var(--text3)">Only want the Dashboard ($20/mo)? <button type="button" onclick="startSubscribe('${userId}','${email}','dashboard')" style="background:none;border:none;padding:0;color:var(--accent);font-size:11px;text-decoration:underline;cursor:pointer">Start with that instead</button> &middot; <button type="button" onclick="try{localStorage.removeItem('bloupi_promo')}catch(e){};showPlanScreen('${userId}','${email}')" style="background:none;border:none;padding:0;color:var(--accent);font-size:11px;text-decoration:underline;cursor:pointer">No code</button></div>
+    <div id="subMsg" style="font-size:12px;color:var(--text2);margin-top:10px"></div>
+    `;
+    return;
+  }
   document.getElementById('authGateContent').innerHTML=`
     <p style="font-size:12px;color:var(--text2);margin-bottom:4px">You're signed in as <strong>${email}</strong>. Choose a plan to get started.</p>
     <p style="font-size:9px;color:var(--text3);margin-bottom:6px">Account ID: ${userId}</p>
@@ -455,6 +473,22 @@ async function startSubscribe(userId,email,tier){
     else{msg.textContent=data.error||'Something went wrong.';}
   }catch(e){msg.textContent='Something went wrong. Try again.';}
 }
+// Arriving from the free-trial landing page: it saved the email and trial code in this browser.
+// Fill the email and send the login code automatically, so the visitor goes straight to the code box.
+(function trialLanding(){
+  try{
+    const p=new URLSearchParams(window.location.search);
+    if(p.get('start')!=='trial')return;
+    localStorage.setItem('bloupi_promo','BLOUPIFREETRIAL');
+    const e=localStorage.getItem('bloupi_prefill_email');
+    localStorage.removeItem('bloupi_prefill_email');
+    window.history.replaceState(null,'',window.location.pathname);
+    if(e){
+      const el=document.getElementById('authEmail');
+      if(el){el.value=e;setTimeout(()=>{if(!window._authedUserId)sendMagicLink();},400);}
+    }
+  }catch(err){}
+})();
 checkAuth();
 // Supabase docs warn against calling other supabase methods directly inside this callback
 // (it can deadlock on the auth lock), so defer the check to the next tick.
