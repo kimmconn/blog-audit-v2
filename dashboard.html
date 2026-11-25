@@ -35,10 +35,13 @@ src="https://www.facebook.com/tr?id=4582628865350058&ev=PageView&noscript=1"
   .metric-label{font-size:12px;color:var(--text2);margin-bottom:5px}
   .metric-value{font-family:'Baloo 2',sans-serif;font-size:26px;font-weight:700;color:var(--navy)}
   .metric-sub{font-size:11px;color:var(--text3);margin-top:2px}
-  .tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.25rem;gap:4px}
-  .tab{font-size:13px;padding:9px 18px;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-top:none;border-left:none;border-right:none;font-weight:600;border-radius:8px 8px 0 0}
-  .tab:hover{color:var(--navy);background:var(--bg2)}
-  .tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:700}
+  .tabs{display:flex;flex-wrap:wrap;border-bottom:2px solid #c9d4f0;margin-bottom:1.25rem;gap:6px;padding-top:6px}
+  .tab{font-size:13px;padding:10px 20px;cursor:pointer;color:var(--navy);background:#eef2fc;border:1.5px solid #c9d4f0;border-bottom:none;margin-bottom:-2px;font-weight:600;border-radius:12px 12px 0 0;box-shadow:inset 0 -6px 8px -8px rgba(36,87,224,0.25);transition:background .12s,transform .12s}
+  .tab:hover{background:#e0e8fb;transform:translateY(-1px)}
+  .tab.active{color:var(--accent);background:#fff;border-color:#c9d4f0;border-bottom:2px solid #fff;font-weight:700;box-shadow:none}
+  .tab.tab-nudge{animation:tabNudge 1.3s ease-in-out infinite;border-color:var(--accent);position:relative}
+  .tab.tab-nudge::after{content:'👆 click here';position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;white-space:nowrap;font-size:11px;font-weight:700;color:#fff;background:var(--accent);padding:3px 9px;border-radius:999px;z-index:5}
+  @keyframes tabNudge{0%,100%{box-shadow:0 0 0 0 rgba(36,87,224,0.5)}50%{box-shadow:0 0 0 7px rgba(36,87,224,0)}}
   .panel{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 12px 30px -22px rgba(22,37,92,0.35)}
   .panel-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:700;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .tag{font-size:11px;padding:2px 8px;border-radius:var(--radius);background:var(--bg2);color:var(--text2)}
@@ -1189,7 +1192,7 @@ function scoreColor(s){return s>=90?'#E24B4A':s>=60?'#BA7517':s>=30?'#378ADD':'#
 function healthColor(pct){return pct>=70?'#E24B4A':pct>=40?'#BA7517':pct>=20?'#378ADD':'#639922'}
 function fmtNum(n){if(!n)return'—';if(n>=10000)return Math.round(n/1000)+'k';if(n>=1000)return(n/1000).toFixed(1)+'k';return n}
 function fmtPos(p){if(!p||p===0)return'—';return p.toFixed(1)}
-function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing','updated'].forEach(id=>{const e=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(e)e.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings'){renderWeights();renderGlossary();renderSubscriptionPanel();}if(name==='updated')renderUpdatedTab();}
+function switchTab(name,el){if(name==='connect'){window._visitedConnect=true;const _n=document.querySelector('.tab-nudge');if(_n)_n.classList.remove('tab-nudge');}document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing','updated'].forEach(id=>{const e=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(e)e.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings'){renderWeights();renderGlossary();renderSubscriptionPanel();}if(name==='updated')renderUpdatedTab();}
 function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('');}
 function resetWeights(){weights={age:6,trafficHealth:25,fallenOffMap:16,positionOpportunity:20,brokenLinks:8,venueIssues:16,ctrGap:9,clarityGap:8};renderWeights();}
 function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value);});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
@@ -1197,19 +1200,22 @@ function updateSetup(){
   const el=document.getElementById('setupChecklist');if(!el)return;
   const dim=on=>{const m=document.querySelector('.metrics'),s=document.getElementById('searchInput'),t=s&&s.closest('.panel');[m,t].forEach(x=>{if(x){x.style.opacity=on?'0.35':'';x.style.pointerEvents=on?'none':'';}});};
   if(posts.length===0||window._isDemo){el.style.display='none';dim(false);return;}
+  const _t=document.querySelectorAll('.tabs .tab')[1];
   const steps=[
     {label:'Crawl your WordPress blog',done:true},
     {label:'Connect Google Search Console',done:posts.some(p=>p.gscChecked||p.impressions>0),act:gscToken?'loadGSCData()':"switchTab('connect',document.querySelectorAll('.tab')[1])",btn:gscToken?'Load data':'Connect'},
     {label:'Run the link scan',done:posts.some(p=>p.linksScanned),act:'startLinkScan()',btn:'Run'},
     {label:'Run the AI scan',done:posts.some(p=>p.aiScanned),act:'startAIScan(false)',btn:'Run'},
-    {label:'Run the keyword volume scan',done:!!window._kwDone,act:'startKWScan(false)',btn:'Run'}
+    {label:'Run the keyword volume scan (needs Search Console connected first)',done:!!window._kwDone,act:'startKWScan(false)',btn:'Run'}
   ];
   const n=steps.filter(s=>s.done).length;
-  if(n===steps.length){el.style.display='none';dim(false);return;}
+  if(n===steps.length){el.style.display='none';dim(false);if(_t)_t.classList.remove('tab-nudge');return;}
   const rows=steps.map(s=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;color:${s.done?'var(--text2)':'var(--text)'}"><span style="width:16px">${s.done?'✓':'○'}</span><span style="flex:1">${s.label}</span>${s.done?'':`<button class="btn btn-sm" onclick="${s.act}">${s.btn}</button>`}</div>`).join('');
   const skip=window._setupSkip;
+  const dsTab=document.querySelectorAll('.tabs .tab')[1];
+  if(dsTab)dsTab.classList.toggle('tab-nudge',!window._visitedConnect);
   el.style.display='block';
-  el.innerHTML=`<div style="background:#fff8e6;border:1px solid #f0d9a0;border-radius:12px;padding:14px 16px;margin-bottom:1rem"><div style="font-size:13.5px;font-weight:700;margin-bottom:4px">Finish setup: ${n} of 5 steps done</div><div style="font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.5">Your results are only accurate once all five are done. Until then, urgency scores and opportunities are incomplete, and posts can look less urgent than they really are. Scans are saved for 30 days, so you won't repeat the work every visit.</div>${rows}${skip?'':`<div style="margin-top:8px"><button type="button" onclick="window._setupSkip=true;updateSetup()" style="background:none;border:none;padding:0;color:var(--text3);font-size:11px;text-decoration:underline;cursor:pointer">Show my incomplete results anyway (not recommended)</button></div>`}</div>`;
+  el.innerHTML=`<div style="background:#fff8e6;border:1px solid #f0d9a0;border-radius:12px;padding:14px 16px;margin-bottom:1rem"><div style="font-size:13.5px;font-weight:700;margin-bottom:4px">Finish setup: ${n} of 5 steps done</div><div style="font-size:12.5px;font-weight:600;margin-bottom:6px">👉 Click the <strong>Data sources</strong> tab above to connect Search Console and run your scans, or use the buttons below.</div><div style="font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.5">Your results are only accurate once all five are done. Until then, urgency scores and opportunities are incomplete, and posts can look less urgent than they really are. Scan results are cached for 30 days, so repeat scans on later visits run much faster.</div>${rows}${skip?'':`<div style="margin-top:8px"><button type="button" onclick="window._setupSkip=true;updateSetup()" style="background:none;border:none;padding:0;color:var(--text3);font-size:11px;text-decoration:underline;cursor:pointer">Show my incomplete results anyway (not recommended)</button></div>`}</div>`;
   dim(!skip);
 }
 function updateMetrics(){
@@ -1463,7 +1469,7 @@ async function startAIScan(forceRefresh=false){
   posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
 }
 async function startKWScan(forceRefresh=false){
-  if(posts.length===0){alert('Please crawl your blog and load GSC data first!');return;}
+  if(posts.length===0){alert('Please crawl your blog first, then connect Search Console.');return;}
   if(forceRefresh){
     const{data:{session}}=await sb.auth.getSession();
     if(!session){alert('Please sign in first.');return;}
@@ -1480,7 +1486,7 @@ async function startKWScan(forceRefresh=false){
     }
   }
   const postsWithKeywords=posts.filter(p=>p.gscKeywords&&p.gscKeywords.length>0);
-  if(postsWithKeywords.length===0){alert('No keyword data found. Please load GSC data first.');return;}
+  if(postsWithKeywords.length===0){alert('Your Search Console data is still loading, or Search Console isn\'t connected yet. Connect it in the Data sources tab, give it a few minutes to finish loading, then run the keyword scan again.');return;}
   const banner=document.getElementById('kwScanBanner');
   const statusEl=document.getElementById('kwScanStatus');
   banner.className='scan-banner';banner.style.display='flex';
