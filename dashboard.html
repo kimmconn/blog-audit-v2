@@ -46,6 +46,13 @@ src="https://www.facebook.com/tr?id=4582628865350058&ev=PageView&noscript=1"
   .progress-bar.indeterminate .progress-fill{width:35%!important;background:#f0b429;animation:waitSlide 1.2s ease-in-out infinite}
   @keyframes waitFlash{0%,100%{opacity:1}50%{opacity:.45}}
   @keyframes waitSlide{0%{margin-left:-35%}100%{margin-left:100%}}
+  .scan-banner:not(.scan-complete),.gsc-banner.gsc-loading{position:relative;overflow:hidden;padding-right:120px;min-height:60px}
+  .scan-banner:not(.scan-complete)::before,.gsc-banner.gsc-loading::before{content:'';position:absolute;left:0;bottom:0;height:3px;width:30%;background:linear-gradient(90deg,transparent,#f0b429,#2457e0,transparent);animation:waitSlide2 1.4s ease-in-out infinite}
+  .scan-banner:not(.scan-complete)::after,.gsc-banner.gsc-loading::after{content:'';position:absolute;right:10px;bottom:4px;width:100px;height:52px;background:url('assets/bloupi-mascot-small.png') center/contain no-repeat;animation:bloupiBop .9s ease-in-out infinite}
+  @keyframes waitSlide2{0%{left:-30%}100%{left:100%}}
+  @keyframes bloupiBop{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-8px) rotate(4deg)}}
+  .btn-nudge{position:relative;margin-bottom:26px!important;box-shadow:0 0 0 0 rgba(36,87,224,0.5);animation:tabNudge 1.3s ease-in-out infinite}
+  .btn-nudge::after{content:'👆 click here';position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:5px;white-space:nowrap;font-size:11px;font-weight:700;color:#fff;background:var(--accent);padding:3px 9px;border-radius:999px;z-index:5;pointer-events:none}
   @keyframes tabNudge{0%,100%{box-shadow:0 0 0 0 rgba(36,87,224,0.5)}50%{box-shadow:0 0 0 7px rgba(36,87,224,0)}}
   .panel{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 12px 30px -22px rgba(22,37,92,0.35)}
   .panel-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:700;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -854,8 +861,9 @@ async function loadGSCData(){
   if(!gscToken||posts.length===0)return;
   const siteUrl=document.getElementById('urlInput').value.trim().replace(/\/$/,'');
   const banner=document.getElementById('gscBanner');
-  banner.className='gsc-banner';
-  banner.innerHTML=`<span>⏳ Loading GSC traffic data...</span>`;
+  window._gscLoading=true;
+  banner.className='gsc-banner gsc-loading';
+  banner.innerHTML=`<span>⏳ Loading Google Search Console data (step 1 of 2: traffic). This can take up to 5 minutes for big blogs.</span>`;
   const{data:{session}}=await sb.auth.getSession();
   const userId=session?.user?.id;
   try{
@@ -867,7 +875,7 @@ async function loadGSCData(){
       fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:midDate.toISOString().split('T')[0],endDate,userId})}),
       fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:startDate.toISOString().split('T')[0],endDate:midDate.toISOString().split('T')[0],userId})})
     ]);
-    if(!recentRes.ok){const e=await recentRes.json().catch(()=>({}));if(recentRes.status===401){gscToken=null;banner.innerHTML=`<span style="color:var(--red-text)">GSC token expired — please reconnect.</span>`;updateGSCUI(false);return;}throw new Error(e.error||`HTTP ${recentRes.status}`);}
+    if(!recentRes.ok){const e=await recentRes.json().catch(()=>({}));if(recentRes.status===401){gscToken=null;window._gscLoading=false;banner.className='gsc-banner gsc-connected';banner.innerHTML=`<span style="color:var(--red-text)">GSC token expired — please reconnect.</span>`;updateGSCUI(false);return;}throw new Error(e.error||`HTTP ${recentRes.status}`);}
     const recentData=await recentRes.json(),olderData=olderRes.ok?await olderRes.json():{rows:[]};
     if(recentData.refreshedAccessToken)gscToken=recentData.refreshedAccessToken;
     const recentMap={},olderMap={};
@@ -898,8 +906,8 @@ async function loadGSCData(){
     for(let i=0;i<urlList.length;i+=BATCH_SIZE){
       const batch=urlList.slice(i,i+BATCH_SIZE);
       const progress=Math.round((i/urlList.length)*100);
-      banner.className='gsc-banner gsc-connected';
-      banner.innerHTML=`<span>🔑 Loading keywords... ${progress}% (${i}/${urlList.length} posts)</span>`;
+      banner.className='gsc-banner gsc-loading';
+      banner.innerHTML=`<span>⏳ Loading Google Search Console data (step 2 of 2: each post's search queries) — ${progress}% (${i}/${urlList.length} posts). Up to 5 minutes for big blogs. The keyword scan needs this to finish first.</span>`;
       try{
         const res=await fetch(GSC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({siteUrl,accessToken:gscToken,startDate:kwStartDate.toISOString().split('T')[0],endDate,includeKeywords:true,pageUrls:batch,userId})});
         if(res.ok){const data=await res.json();if(data.refreshedAccessToken)gscToken=data.refreshedAccessToken;Object.assign(combinedKwMap,data.keywordsByPage||{});}
@@ -912,9 +920,11 @@ async function loadGSCData(){
     });
     posts.sort((a,b)=>b.score-a.score);
     banner.className='gsc-banner gsc-connected';
-    banner.innerHTML=`<span>✓ GSC data loaded — ${matched} of ${posts.length} posts matched, keywords loaded</span><button class="btn btn-sm" style="margin-left:auto" onclick="loadGSCData()">Refresh →</button>`;
+    banner.innerHTML=`<span>✓ Search Console data loaded — ${matched} of ${posts.length} posts matched. You can run the keyword scan now.</span><button class="btn btn-sm" style="margin-left:auto" onclick="loadGSCData()">Refresh →</button>`;
     updateMetrics();renderTable();renderIndexingTab();
-  }catch(e){banner.innerHTML=`<span style="color:var(--red-text)">Error: ${e.message}</span>`;}
+    window._gscLoading=false;
+    if(window._kwQueued){window._kwQueued=false;startKWScan(false);}
+  }catch(e){window._gscLoading=false;banner.className='gsc-banner gsc-connected';banner.innerHTML=`<span style="color:var(--red-text)">Error: ${e.message}</span>`;}
 }
 function floors(){return{bc:parseInt(document.getElementById('fBrokenCrit')?.value||10),vc:parseInt(document.getElementById('fVenueCrit')?.value||2),bb:parseInt(document.getElementById('fBrokenBoost')?.value||20),vb:parseInt(document.getElementById('fVenueBoost')?.value||15)};}
 function calcScore(p){
@@ -1177,7 +1187,7 @@ async function startLinkScan(){
   const postsToScan=[...posts],CONCURRENT=5;
   for(let i=0;i<postsToScan.length;i+=CONCURRENT){
     const batch=postsToScan.slice(i,i+CONCURRENT);
-    banner.innerHTML=`<span>🔍 Scanning for link issues — ${scanned} of ${postsToScan.length} posts checked, ${totalBroken} potential issues found...</span>`;
+    banner.innerHTML=`<span>🔍 Scanning for link issues — ${scanned} of ${postsToScan.length} posts checked, ${totalBroken} potential issues found... (up to 5 minutes for big blogs)</span>`;
     await Promise.allSettled(batch.map(async(post)=>{
       try{const res=await fetch(LINKS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({postUrl:post.url,postId:post.id,siteUrl})});
       if(res.ok){const data=await res.json();post.brokenLinks=data.brokenCount||0;post.brokenLinkUrls=data.brokenLinks||[];if(data.brokenCount>0){const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;totalBroken+=data.brokenCount;}post.linksScanned=true;}}catch(e){}
@@ -1197,7 +1207,7 @@ function scoreColor(s){return s>=90?'#E24B4A':s>=60?'#BA7517':s>=30?'#378ADD':'#
 function healthColor(pct){return pct>=70?'#E24B4A':pct>=40?'#BA7517':pct>=20?'#378ADD':'#639922'}
 function fmtNum(n){if(!n)return'—';if(n>=10000)return Math.round(n/1000)+'k';if(n>=1000)return(n/1000).toFixed(1)+'k';return n}
 function fmtPos(p){if(!p||p===0)return'—';return p.toFixed(1)}
-function switchTab(name,el){if(name==='connect'){window._visitedConnect=true;const _n=document.querySelector('.tab-nudge');if(_n)_n.classList.remove('tab-nudge');}document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing','updated'].forEach(id=>{const e=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(e)e.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings'){renderWeights();renderGlossary();renderSubscriptionPanel();}if(name==='updated')renderUpdatedTab();}
+function switchTab(name,el){if(name==='connect'){window._visitedConnect=true;const _n=document.querySelector('.tab-nudge');if(_n)_n.classList.remove('tab-nudge');setTimeout(()=>{try{updateSetup();}catch(e){}},0);}document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing','updated'].forEach(id=>{const e=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(e)e.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings'){renderWeights();renderGlossary();renderSubscriptionPanel();}if(name==='updated')renderUpdatedTab();}
 function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('');}
 function resetWeights(){weights={age:6,trafficHealth:25,fallenOffMap:16,positionOpportunity:20,brokenLinks:8,venueIssues:16,ctrGap:9,clarityGap:8};renderWeights();}
 function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value);});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
@@ -1217,6 +1227,11 @@ function updateSetup(){
   if(n===steps.length){el.style.display='none';dim(false);if(_t)_t.classList.remove('tab-nudge');return;}
   const rows=steps.map(s=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;color:${s.done?'var(--text2)':'var(--text)'}"><span style="width:16px">${s.done?'✓':'○'}</span><span style="flex:1">${s.label}</span>${s.done?'':`<button class="btn btn-sm" onclick="${s.act}">${s.btn}</button>`}</div>`).join('');
   const skip=window._setupSkip;
+  const nudge=(sel,on)=>{const b=document.querySelector(sel);if(b)b.classList.toggle('btn-nudge',!!on&&!!window._visitedConnect);};
+  nudge('#gscStatus button[onclick*="connectGSC"]',!steps[1].done&&!gscToken);
+  nudge('#linkScanStatus .btn-primary',!steps[2].done);
+  nudge('#aiScanStatus .btn-primary',!steps[3].done);
+  nudge('#kwScanStatus .btn-primary',!steps[4].done);
   const dsTab=document.querySelectorAll('.tabs .tab')[1];
   if(dsTab)dsTab.classList.toggle('tab-nudge',!window._visitedConnect);
   el.style.display='block';
@@ -1464,7 +1479,7 @@ async function startAIScan(forceRefresh=false){
   const postsToScan=[...posts],CONCURRENT=3;
   for(let i=0;i<postsToScan.length;i+=CONCURRENT){
     const batch=postsToScan.slice(i,i+CONCURRENT);
-    banner.innerHTML=`<span>🤖 AI scanning posts — ${scanned} of ${postsToScan.length} done, ${totalVenue} venue issues + ${totalOutdated} outdated items + ${totalClarity} clarity flags found...</span>`;
+    banner.innerHTML=`<span>🤖 AI scanning posts — ${scanned} of ${postsToScan.length} done, ${totalVenue} venue issues + ${totalOutdated} outdated items + ${totalClarity} clarity flags found... (can take up to 5 minutes depending on how many posts you have)</span>`;
     await Promise.allSettled(batch.map(async(post)=>{
       try{const res=await fetch(BATCH_SCAN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({postId:post.id,postUrl:post.url,postTitle:post.title,siteUrl,forceRefresh})});
       if(res.ok){const data=await res.json();if(!data.error){post.venueIssues=data.venueIssues||0;post.outdatedCount=data.outdatedCount||0;post.hasOldCurrency=data.hasOldCurrency||false;post.hasCovid=data.hasCovid||false;post.hasOldPrices=data.hasOldPrices||false;post.clarityScore=data.clarityScore||0;post.clarityFlags=data.clarityFlags||[];post.aiScanned=true;if(data.venueIssues>0||data.outdatedCount>0||data.clarityScore>0){const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;totalVenue+=data.venueIssues;totalOutdated+=data.outdatedCount;if(data.clarityScore>=5)totalClarity++;}}}}catch(e){}
@@ -1495,11 +1510,20 @@ async function startKWScan(forceRefresh=false){
     }
   }
   const postsWithKeywords=posts.filter(p=>p.gscKeywords&&p.gscKeywords.length>0);
-  if(postsWithKeywords.length===0){alert('Your Search Console data is still loading, or Search Console isn\'t connected yet. Connect it in the Data sources tab, give it a few minutes to finish loading, then run the keyword scan again.');return;}
+  if(postsWithKeywords.length===0){
+    if(window._gscLoading){
+      window._kwQueued=true;
+      const qb=document.getElementById('kwScanBanner');
+      qb.className='scan-banner';qb.style.display='flex';
+      qb.innerHTML='<span>⏳ Queued: your keyword scan will start automatically as soon as Search Console data finishes loading. Nothing else to click. Up to 5 minutes for big blogs.</span>';
+      return;
+    }
+    alert('Search Console isn\'t connected yet, or it has no keyword data. Connect it in the Data sources tab, wait for it to finish loading, then run the keyword scan again.');return;
+  }
   const banner=document.getElementById('kwScanBanner');
   const statusEl=document.getElementById('kwScanStatus');
   banner.className='scan-banner';banner.style.display='flex';
-  banner.innerHTML='<span>🔍 Looking up keyword volumes...</span>';
+  banner.innerHTML='<span>🔍 Looking up monthly search volume for your keywords... (up to a few minutes)</span>';
   statusEl.innerHTML='<span class="tag">Scanning...</span>';
   try{
     const allKws=new Set();
