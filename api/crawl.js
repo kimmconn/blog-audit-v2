@@ -32,9 +32,10 @@ const cleanUrl = siteUrl.replace(/\/$/, '');
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
   const { data: profile } = await supabase.from('profiles').select('site_url, tier').eq('id', userId).single();
 
+  let needRegister = false;
   if (profile?.tier !== 'owner') {
     if (!profile?.site_url) {
-      await supabase.from('profiles').update({ site_url: cleanUrl }).eq('id', userId);
+      needRegister = true; // saved only after the site actually returns posts (see below)
     } else if (normalize(profile.site_url) !== normalize(cleanUrl)) {
       return res.status(403).json({ error: `Your account is registered to ${profile.site_url}. To manage another blog, you'll need a separate subscription.` });
     }
@@ -47,6 +48,9 @@ const cleanUrl = siteUrl.replace(/\/$/, '');
       const r = await fetch(buildUrl(base), { headers: { 'User-Agent': 'BlogAuditTool/1.0' }, signal: AbortSignal.timeout(30000) });
       if (!r.ok) { lastError = `HTTP ${r.status}`; continue; }
       const posts = await r.json();
+      if (needRegister && Array.isArray(posts) && posts.length > 0) {
+        await supabase.from('profiles').update({ site_url: cleanUrl }).eq('id', userId);
+      }
       const total = r.headers.get('X-WP-Total');
       const pages = r.headers.get('X-WP-TotalPages');
       if (total) res.setHeader('X-WP-Total', total);
@@ -54,5 +58,8 @@ const cleanUrl = siteUrl.replace(/\/$/, '');
       return res.status(200).json(posts);
     } catch(e) { lastError = e.message; }
   }
-  return res.status(504).json({ error: `Failed: ${lastError}` });
+  if (lastError && /^HTTP (4\d\d)/.test(lastError)) {
+    return res.status(422).json({ error: "We couldn't find a WordPress posts feed on this site. Bloupi currently works with WordPress blogs only, so this site may be on another platform (Squarespace, Wix, Ghost, a custom site, etc.). If it is WordPress, check that the URL matches exactly how your blog appears in your browser." });
+  }
+  return res.status(504).json({ error: `We couldn't reach that site (${lastError}). Check the URL and try again in a minute.` });
 }

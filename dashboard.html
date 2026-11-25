@@ -503,6 +503,7 @@ sb.auth.onAuthStateChange((event,session)=>{setTimeout(()=>checkAuth(),0);});
   <h1>Bloupi</h1>
   <p class="subtitle">Catalog, score, and prioritize your posts for updates <button type="button" class="tour-replay" onclick="window.startBloupiTour&&window.startBloupiTour()">Take the tour</button></p>
   <div id="trialBanner" style="display:none;margin-bottom:1rem"></div>
+  <div id="setupChecklist" style="display:none"></div>
   <div class="metrics">
     <div class="metric"><div class="metric-label">Total posts</div><div class="metric-value" id="mTotal">—</div><div class="metric-sub">cataloged</div></div>
     <div class="metric"><div class="metric-label">Critical urgency</div><div class="metric-value" id="mCritical" style="color:var(--red-text)">—</div><div class="metric-sub">need immediate update</div></div>
@@ -1192,6 +1193,25 @@ function switchTab(name,el){document.querySelectorAll('.tab').forEach(t=>t.class
 function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('');}
 function resetWeights(){weights={age:6,trafficHealth:25,fallenOffMap:16,positionOpportunity:20,brokenLinks:8,venueIssues:16,ctrGap:9,clarityGap:8};renderWeights();}
 function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value);});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
+function updateSetup(){
+  const el=document.getElementById('setupChecklist');if(!el)return;
+  const dim=on=>{const m=document.querySelector('.metrics'),s=document.getElementById('searchInput'),t=s&&s.closest('.panel');[m,t].forEach(x=>{if(x){x.style.opacity=on?'0.35':'';x.style.pointerEvents=on?'none':'';}});};
+  if(posts.length===0||window._isDemo){el.style.display='none';dim(false);return;}
+  const steps=[
+    {label:'Crawl your WordPress blog',done:true},
+    {label:'Connect Google Search Console',done:posts.some(p=>p.gscChecked||p.impressions>0),act:gscToken?'loadGSCData()':"switchTab('connect',document.querySelectorAll('.tab')[1])",btn:gscToken?'Load data':'Connect'},
+    {label:'Run the link scan',done:posts.some(p=>p.linksScanned),act:'startLinkScan()',btn:'Run'},
+    {label:'Run the AI scan',done:posts.some(p=>p.aiScanned),act:'startAIScan(false)',btn:'Run'},
+    {label:'Run the keyword volume scan',done:!!window._kwDone,act:'startKWScan(false)',btn:'Run'}
+  ];
+  const n=steps.filter(s=>s.done).length;
+  if(n===steps.length){el.style.display='none';dim(false);return;}
+  const rows=steps.map(s=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;color:${s.done?'var(--text2)':'var(--text)'}"><span style="width:16px">${s.done?'✓':'○'}</span><span style="flex:1">${s.label}</span>${s.done?'':`<button class="btn btn-sm" onclick="${s.act}">${s.btn}</button>`}</div>`).join('');
+  const skip=window._setupSkip;
+  el.style.display='block';
+  el.innerHTML=`<div style="background:#fff8e6;border:1px solid #f0d9a0;border-radius:12px;padding:14px 16px;margin-bottom:1rem"><div style="font-size:13.5px;font-weight:700;margin-bottom:4px">Finish setup: ${n} of 5 steps done</div><div style="font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.5">Your results are only accurate once all five are done. Until then, urgency scores and opportunities are incomplete, and posts can look less urgent than they really are. Scans are saved for 30 days, so you won't repeat the work every visit.</div>${rows}${skip?'':`<div style="margin-top:8px"><button type="button" onclick="window._setupSkip=true;updateSetup()" style="background:none;border:none;padding:0;color:var(--text3);font-size:11px;text-decoration:underline;cursor:pointer">Show my incomplete results anyway (not recommended)</button></div>`}</div>`;
+  dim(!skip);
+}
 function updateMetrics(){
   const active=posts.filter(p=>!dismissedUrls.has(p.url));
   document.getElementById('mTotal').textContent=active.length;
@@ -1200,6 +1220,7 @@ function updateMetrics(){
   document.getElementById('mOpportunity').textContent=active.filter(p=>p.flags&&p.flags.some(f=>f.type==='opportunity')).length;
   const notIndexed=active.filter(p=>p.flags&&p.flags.some(f=>f.type==='notindexed')).length;
   if(notIndexed>0){const el=document.getElementById('mStale');if(el&&el.nextElementSibling)el.nextElementSibling.textContent=`not updated recently • ${notIndexed} not in GSC`;}
+  try{updateSetup();}catch(e){}
 }
 function getFiltered(){
   const s=document.getElementById('searchInput').value.toLowerCase(),u=document.getElementById('fUrgency').value,a=document.getElementById('fAge').value,fl=document.getElementById('fFlag').value,so=document.getElementById('fSort').value;
@@ -1368,17 +1389,18 @@ async function startCrawl(){
   const crawlBtn=document.getElementById('crawlBtn');
   if(crawlBtn)crawlBtn.disabled=true;
   const uid=encodeURIComponent(session.user.id);
-  sb.from('profiles').update({site_url:url}).eq('id',session.user.id).then(()=>{});
   document.getElementById('progressWrap').style.display='block';
   document.getElementById('crawlStatus').textContent='crawling...';
   document.getElementById('crawlStatus').className='tag';
   document.getElementById('emptyState').style.display='none';
+  window._isDemo=false;
   posts=[];setProgress(0,1,'Connecting to WordPress...');
   try{
     const r1=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=1&perPage=100&userId=${uid}`);
     if(!r1.ok){const e=await r1.json().catch(()=>({}));throw new Error(e.error||`HTTP ${r1.status}`);}
     const total=parseInt(r1.headers.get('X-WP-Total')||'0'),totalPages=parseInt(r1.headers.get('X-WP-TotalPages')||'1');
     processBatch(await r1.json());setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);
+    if(posts.length>0)sb.from('profiles').update({site_url:url}).eq('id',session.user.id).then(()=>{});
     for(let p=2;p<=Math.min(totalPages,10);p++){const r=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=${p}&perPage=100&userId=${uid}`);if(!r.ok)break;processBatch(await r.json());setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);}
     posts.sort((a,b)=>b.score-a.score);
     setProgress(posts.length,posts.length,`Done! ${posts.length} posts cataloged.`);
@@ -1395,6 +1417,7 @@ function loadDemo(){
   const data=[{t:"Best Cafes in Canggu Bali",age:36,bl:2,vi:3,rc:280,oc:3200,ri:18000,oi:45000,pos:14.2},{t:"Sailing Croatia Complete Guide",age:30,bl:1,vi:0,rc:5100,oc:5400,ri:36000,oi:38000,pos:3.2},{t:"Hidden Gems in Central Italy",age:12,bl:9,vi:1,rc:180,oc:420,ri:24000,oi:31000,pos:17.4},{t:"Top Beaches in Bali",age:28,bl:1,vi:2,rc:1100,oc:4300,ri:22000,oi:41000,pos:12.6},{t:"Nusa Lembongan Complete Guide",age:48,bl:2,vi:3,rc:120,oc:3600,ri:8000,oi:39000,pos:24.1},{t:"Best Restaurants in Seminyak",age:16,bl:1,vi:4,rc:2100,oc:2800,ri:15000,oi:19000,pos:5.4},{t:"Burning Man Survival Guide",age:24,bl:10,vi:0,rc:210,oc:430,ri:9000,oi:15000,pos:18.3},{t:"Tulum Travel Guide",age:36,bl:2,vi:2,rc:2800,oc:5100,ri:38000,oi:61000,pos:7.2},{t:"50 Epic Places Melbourne",age:36,bl:35,vi:0,rc:8,oc:3600,ri:11000,oi:39000,pos:17.9},{t:"Digital Nomad Guide Bali",age:18,bl:0,vi:1,rc:1400,oc:1600,ri:28000,oi:33000,pos:4.9},{t:"Things That Surprised Me Istanbul",age:8,bl:0,vi:0,rc:3800,oc:2100,ri:44000,oi:31000,pos:3.8},{t:"My Week in Ubud",age:30,bl:0,vi:0,rc:12,oc:18,ri:40,oi:60,pos:31.0}];
   posts=data.map((d,i)=>{const declinePct=d.oc>10?Math.max(0,Math.round(((d.oc-d.rc)/d.oc)*100)):0;const p={id:i+1,title:d.t,url:`https://www.adventuresnsunsets.com/${d.t.toLowerCase().replace(/\s+/g,'-')}`,ageMonths:d.age,lastModified:new Date(Date.now()-d.age*30*24*60*60*1000).toISOString(),traffic:d.rc,impressions:d.ri,ctr:d.ri>0?d.rc/d.ri:0,position:d.pos,recentClicks:d.rc,olderClicks:d.oc,recentImpressions:d.ri,olderImpressions:d.oi,trafficDeclinePct:declinePct,brokenLinks:d.bl,venueIssues:d.vi,brokenLinkUrls:[],linksScanned:d.bl>0,gscKeywords:[],flags:[]};const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;return p;});
   posts.sort((a,b)=>b.score-a.score);
+  window._isDemo=true;
   document.getElementById('crawlStatus').textContent='demo loaded';
   document.getElementById('crawlStatus').className='tag tag-ok';
   document.getElementById('progressWrap').style.display='none';
@@ -1484,6 +1507,7 @@ async function startKWScan(forceRefresh=false){
       }catch(e){}
     }
     let totalUpdated=0;
+    window._kwDone=true;
     // Words too common across all your titles (things, best, guide, hotels...) can't
     // reliably identify what a post is actually about — build that exclusion list once
     // from the whole catalog so picking a "top keyword" isn't fooled by filler words.

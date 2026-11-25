@@ -4,6 +4,63 @@ import { buffer } from 'micro';
 
 export const config = { api: { bodyParser: false } };
 
+// Welcome email via Resend. Never throws: if the key is missing or sending fails, we log it and
+// carry on, so a failed email can never break the subscription itself.
+async function sendWelcomeEmail(stripe, session, tier) {
+  try {
+    const apiKey = process.env.RESEND_API_KEY;
+    const to = session.customer_email || session.customer_details?.email;
+    if (!apiKey || !to) {
+      if (!apiKey) console.warn('[welcome-email] RESEND_API_KEY not set, skipping');
+      return;
+    }
+    let trialEnd = null;
+    if (session.subscription) {
+      const sub = await stripe.subscriptions.retrieve(session.subscription);
+      if (sub.status === 'trialing' && sub.trial_end) trialEnd = new Date(sub.trial_end * 1000);
+    }
+    const price = tier === 'reports' ? '$35' : '$20';
+    const planName = tier === 'reports' ? 'Reports' : 'Dashboard';
+    const trialLine = trialEnd
+      ? `Your free trial runs until ${trialEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}. After that, your card is charged automatically (${price}/month for ${planName}) unless you cancel first. To cancel, sign in, open Settings, then Manage subscription.`
+      : `Your ${planName} plan is ${price}/month. You can cancel any time: sign in, open Settings, then Manage subscription.`;
+    const text = [
+      "Hi! I'm Kimmie, the travel blogger who built Bloupi. Thanks for signing up, it means a lot.",
+      '',
+      "Here's the quickest way to get value:",
+      '1. Sign in at https://www.bloupiforbloggers.com/dashboard.html and scan your blog.',
+      '2. Connect Google Search Console so Bloupi can score your posts with your real data.',
+      '3. Start with the post at the top of your ranked list, and mark it Done once you have updated it.',
+      '',
+      tier === 'reports' ? "Your update reports are customizable, so tick whatever you want included." : '',
+      trialLine,
+      '',
+      'Reply to this email any time. It comes straight to me.',
+      '',
+      'Kimmie',
+    ].filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n');
+    const html = text
+      .split('\n\n')
+      .map(p => `<p style="margin:0 0 14px;line-height:1.6">${p.replace(/\n/g, '<br>')}</p>`)
+      .join('');
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: process.env.EMAIL_FROM || 'Kimmie at Bloupi <hello@bloupiforbloggers.com>',
+        reply_to: process.env.EMAIL_REPLY_TO || 'hello@bloupiforbloggers.com',
+        to: [to],
+        subject: 'Welcome to Bloupi, here is how to start',
+        text,
+        html: `<div style="font-family:Arial,sans-serif;font-size:15px;color:#222;max-width:560px">${html}</div>`,
+      }),
+    });
+    if (!r.ok) console.error('[welcome-email] Resend error', r.status, await r.text());
+  } catch (e) {
+    console.error('[welcome-email] failed:', e.message);
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -34,6 +91,7 @@ if (event.type === 'checkout.session.completed') {
         subscribed_at: new Date().toISOString(),
       });
       if (upsertError) console.error('Profile upsert failed:', upsertError, 'for userId:', userId);
+      else await sendWelcomeEmail(stripe, session, tier);
     }
   }
 
