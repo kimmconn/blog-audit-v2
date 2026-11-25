@@ -39,6 +39,8 @@ src="https://www.facebook.com/tr?id=4582628865350058&ev=PageView&noscript=1"
   .tab{font-size:13px;padding:10px 20px;cursor:pointer;color:var(--navy);background:#eef2fc;border:1.5px solid #c9d4f0;border-bottom:none;margin-bottom:-2px;font-weight:600;border-radius:12px 12px 0 0;box-shadow:inset 0 -6px 8px -8px rgba(36,87,224,0.25);transition:background .12s,transform .12s}
   .tab:hover{background:#e0e8fb;transform:translateY(-1px)}
   .tab.active{color:var(--accent);background:#fff;border-color:#c9d4f0;border-bottom:2px solid #fff;font-weight:700;box-shadow:none}
+  .desktop-note{display:none;background:#fff8e6;border:1px solid #f0d9a0;border-radius:12px;padding:10px 14px;margin-bottom:1rem;font-size:12.5px;line-height:1.5;position:relative}
+  @media(max-width:768px){.desktop-note{display:block}}
   .tab.tab-nudge{animation:tabNudge 1.3s ease-in-out infinite;border-color:var(--accent);position:relative}
   .tab.tab-nudge::after{content:var(--nudge-text,'👆 click here');position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;white-space:nowrap;font-size:11px;font-weight:700;color:#fff;background:var(--accent);padding:3px 9px;border-radius:999px;z-index:5}
   .waiting-msg{color:#8a5a00!important;font-weight:600;animation:waitFlash 1.2s ease-in-out infinite}
@@ -198,6 +200,7 @@ src="https://www.facebook.com/tr?id=4582628865350058&ev=PageView&noscript=1"
   <div class="auth-gate-panel">
     <h1 style="margin-bottom:4px">bloupi</h1>
     <div id="authIntro">
+    <p class="desktop-note" style="margin-bottom:10px">💻 Best on a laptop or desktop.</p>
     <p class="subtitle" style="margin-bottom:6px">Create your account or sign in</p>
     <p style="font-size:12px;color:var(--text2);margin:0 0 16px;line-height:1.5">Enter your email and we'll send you a login code. No password to remember. You'll stay signed in on this browser, and on a new device we'll just email you a fresh code.</p>
     </div>
@@ -522,6 +525,7 @@ sb.auth.onAuthStateChange((event,session)=>{setTimeout(()=>checkAuth(),0);});
   <h1>Bloupi</h1>
   <p class="subtitle">Catalog, score, and prioritize your posts for updates <button type="button" class="tour-replay" onclick="window.startBloupiTour&&window.startBloupiTour()">Take the tour</button></p>
   <div id="trialBanner" style="display:none;margin-bottom:1rem"></div>
+  <div class="desktop-note" id="desktopNote">📱 <strong>Bloupi works best on a laptop or desktop.</strong> The post table is wide. <button type="button" onclick="document.getElementById('desktopNote').style.display='none'" style="background:none;border:none;padding:0;margin-left:6px;text-decoration:underline;cursor:pointer;font-size:12px;color:var(--text2)">Dismiss</button></div>
   <div id="setupChecklist" style="display:none"></div>
   <div class="metrics">
     <div class="metric"><div class="metric-label">Total posts</div><div class="metric-value" id="mTotal">—</div><div class="metric-sub">cataloged</div></div>

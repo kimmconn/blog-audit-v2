@@ -33,7 +33,9 @@ src="https://www.facebook.com/tr?id=4582628865350058&ev=PageView&noscript=1"
   .trial-form input{flex:1 1 240px;min-width:0;font-family:'Inter',sans-serif;font-size:16px;padding:16px 20px;border-radius:999px;border:1.5px solid #cfd8f3;background:#fff;color:#14152b}
   .trial-form input:focus{outline:none;border-color:#2457e0}
   .fine{font-size:12.5px;line-height:1.55;color:#6a6d80;margin:14px auto 0;max-width:520px}
+  .desktop-note{display:none;font-size:12.5px;line-height:1.5;color:#33354a;background:#fff;border:1px solid #cfd8f3;border-radius:12px;padding:10px 14px;margin:14px auto 0;max-width:520px}
   @media(max-width:720px){
+    .desktop-note{display:block}
     .about-row{flex-direction:column;text-align:center!important}
     .hero-h1{font-size:32px!important}
     .grid3{grid-template-columns:1fr!important}
@@ -64,6 +66,7 @@ src="https://www.facebook.com/tr?id=4582628865350058&ev=PageView&noscript=1"
       <input type="email" name="email" required placeholder="Your email" autocomplete="email" aria-label="Your email" />
       <button type="submit" class="cta-btn">Start my free trial</button>
     </form>
+    <div class="desktop-note">💻 <strong>Best on a laptop or desktop.</strong> Sign up now, and open your dashboard when you're at your computer.</div>
     <p class="fine"><strong>Works with WordPress blogs only</strong> for now.</p>
     <p class="fine" style="margin-top:6px">We'll email you a login code. No password needed. Free trial code <strong>BLOUPIFREETRIAL</strong> is applied for you.</p>
     <p class="fine" style="margin-top:8px">** A paid plan starts after the free trial and a card is required. Cancel any time from your dashboard before the trial ends and you won't be charged.</p>
