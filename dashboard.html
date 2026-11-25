@@ -41,6 +41,11 @@ src="https://www.facebook.com/tr?id=4582628865350058&ev=PageView&noscript=1"
   .tab.active{color:var(--accent);background:#fff;border-color:#c9d4f0;border-bottom:2px solid #fff;font-weight:700;box-shadow:none}
   .tab.tab-nudge{animation:tabNudge 1.3s ease-in-out infinite;border-color:var(--accent);position:relative}
   .tab.tab-nudge::after{content:'👆 click here';position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;white-space:nowrap;font-size:11px;font-weight:700;color:#fff;background:var(--accent);padding:3px 9px;border-radius:999px;z-index:5}
+  .waiting-msg{color:#8a5a00!important;font-weight:600;animation:waitFlash 1.2s ease-in-out infinite}
+  .progress-bar.indeterminate{overflow:hidden;position:relative}
+  .progress-bar.indeterminate .progress-fill{width:35%!important;background:#f0b429;animation:waitSlide 1.2s ease-in-out infinite}
+  @keyframes waitFlash{0%,100%{opacity:1}50%{opacity:.45}}
+  @keyframes waitSlide{0%{margin-left:-35%}100%{margin-left:100%}}
   @keyframes tabNudge{0%,100%{box-shadow:0 0 0 0 rgba(36,87,224,0.5)}50%{box-shadow:0 0 0 7px rgba(36,87,224,0)}}
   .panel{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 12px 30px -22px rgba(22,37,92,0.35)}
   .panel-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:700;color:var(--navy);margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -1400,9 +1405,13 @@ async function startCrawl(){
   document.getElementById('crawlStatus').className='tag';
   document.getElementById('emptyState').style.display='none';
   window._isDemo=false;
-  posts=[];setProgress(0,1,'Connecting to WordPress...');
+  posts=[];setProgress(0,1,'Connecting to your WordPress site... this can take up to a minute for big blogs. Please keep this tab open.');
+  const _pb=document.querySelector('#progressWrap .progress-bar'),_sm=document.getElementById('statusMsg');
+  if(_pb)_pb.classList.add('indeterminate');if(_sm)_sm.classList.add('waiting-msg');
+  const _stopWait=()=>{if(_pb)_pb.classList.remove('indeterminate');if(_sm)_sm.classList.remove('waiting-msg');};
   try{
     const r1=await fetch(`${PROXY_URL}?siteUrl=${encodeURIComponent(url)}&page=1&perPage=100&userId=${uid}`);
+    _stopWait();
     if(!r1.ok){const e=await r1.json().catch(()=>({}));throw new Error(e.error||`HTTP ${r1.status}`);}
     const total=parseInt(r1.headers.get('X-WP-Total')||'0'),totalPages=parseInt(r1.headers.get('X-WP-TotalPages')||'1');
     processBatch(await r1.json());setProgress(posts.length,total,`Fetched ${posts.length} of ${total} posts...`);
@@ -1415,7 +1424,7 @@ async function startCrawl(){
     page=1;updateMetrics();renderTable();
     if(gscToken){showGSCBanner(true);loadGSCData();}
   }catch(e){document.getElementById('statusMsg').textContent='Error: '+e.message;document.getElementById('crawlStatus').textContent='error';document.getElementById('crawlStatus').className='tag tag-err';}
-  finally{crawlRunning=false;if(crawlBtn)crawlBtn.disabled=false;}
+  finally{_stopWait();crawlRunning=false;if(crawlBtn)crawlBtn.disabled=false;}
 }
 function processBatch(batch){const existingIds=new Set(posts.map(p=>p.id));batch.forEach(p=>{if(existingIds.has(p.id))return;existingIds.add(p.id);const title=(p.title?.rendered||p.slug||'Untitled').replace(/<[^>]+>/g,'');const ageMonths=monthsAgo(p.modified||p.date);const post={id:p.id,title,url:p.link,ageMonths,lastModified:p.modified||p.date,traffic:0,impressions:0,ctr:0,position:0,recentClicks:0,olderClicks:0,recentImpressions:0,olderImpressions:0,trafficDeclinePct:0,brokenLinks:0,venueIssues:0,outdatedCount:0,brokenLinkUrls:[],linksScanned:false,aiScanned:false,venueConfirmed:false,gscChecked:false,gscKeywords:[],flags:[]};const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;posts.push(post);});}
 function setProgress(done,total,msg){const pct=total>0?Math.round((done/total)*100):50;document.getElementById('progressFill').style.width=pct+'%';document.getElementById('statusMsg').textContent=msg;}
