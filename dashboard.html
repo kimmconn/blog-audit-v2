@@ -40,7 +40,7 @@ src="https://www.facebook.com/tr?id=4582628865350058&ev=PageView&noscript=1"
   .tab:hover{background:#e0e8fb;transform:translateY(-1px)}
   .tab.active{color:var(--accent);background:#fff;border-color:#c9d4f0;border-bottom:2px solid #fff;font-weight:700;box-shadow:none}
   .tab.tab-nudge{animation:tabNudge 1.3s ease-in-out infinite;border-color:var(--accent);position:relative}
-  .tab.tab-nudge::after{content:'👆 click here';position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;white-space:nowrap;font-size:11px;font-weight:700;color:#fff;background:var(--accent);padding:3px 9px;border-radius:999px;z-index:5}
+  .tab.tab-nudge::after{content:var(--nudge-text,'👆 click here');position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;white-space:nowrap;font-size:11px;font-weight:700;color:#fff;background:var(--accent);padding:3px 9px;border-radius:999px;z-index:5}
   .waiting-msg{color:#8a5a00!important;font-weight:600;animation:waitFlash 1.2s ease-in-out infinite}
   .progress-bar.indeterminate{overflow:hidden;position:relative}
   .progress-bar.indeterminate .progress-fill{width:35%!important;background:#f0b429;animation:waitSlide 1.2s ease-in-out infinite}
@@ -638,6 +638,14 @@ sb.auth.onAuthStateChange((event,session)=>{setTimeout(()=>checkAuth(),0);});
     </div>
   </div>
   <div id="tabSettings" style="display:none">
+    <div style="background:#eef2fc;border:1px solid #c9d4f0;border-radius:12px;padding:12px 16px;margin-bottom:1rem;font-size:12.5px;line-height:1.65;color:var(--text)">
+      <strong>👋 Here's what's on this page:</strong>
+      <ul style="margin:6px 0 0;padding-left:18px">
+        <li><strong>Your subscription</strong> (first section): manage your plan, update your card, or cancel any time.</li>
+        <li><strong>Scoring and thresholds</strong> (the sliders and rules below): customize how posts are ranked for your blog.</li>
+        <li><strong>Glossary</strong> (scroll to the very bottom): what every flag and badge means, if anything is confusing.</li>
+      </ul>
+    </div>
     <div class="panel">
       <div class="panel-title">Your subscription</div>
       <div id="subscriptionPanelBody"><p class="note">Loading...</p></div>
@@ -1191,7 +1199,7 @@ async function startLinkScan(){
   const postsToScan=[...posts],CONCURRENT=5;
   for(let i=0;i<postsToScan.length;i+=CONCURRENT){
     const batch=postsToScan.slice(i,i+CONCURRENT);
-    banner.innerHTML=`<span>🔍 Scanning for link issues — ${scanned} of ${postsToScan.length} posts checked, ${totalBroken} potential issues found... (up to 5 minutes for big blogs)</span>`;
+    banner.innerHTML=`<span>🔍 Scanning for broken links — ${scanned} of ${postsToScan.length} posts checked, ${totalBroken} potential issues found... (up to 5 minutes for big blogs)</span>`;
     await Promise.allSettled(batch.map(async(post)=>{
       try{const res=await fetch(LINKS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({postUrl:post.url,postId:post.id,siteUrl})});
       if(res.ok){const data=await res.json();post.brokenLinks=data.brokenCount||0;post.brokenLinkUrls=data.brokenLinks||[];if(data.brokenCount>0){const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;totalBroken+=data.brokenCount;}post.linksScanned=true;}}catch(e){}
@@ -1201,8 +1209,8 @@ async function startLinkScan(){
   }
   scanRunning=false;
   banner.className='scan-banner scan-complete';
-  banner.innerHTML=`<span>✓ Link scan complete — ${scanned} posts scanned, ${totalBroken} potential issues found</span><button class="btn btn-sm" style="margin-left:auto" onclick="startLinkScan()">Rescan →</button>`;
-  statusEl.innerHTML=`<span class="tag tag-ok">✓ ${totalBroken} potential issues found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startLinkScan()">Rescan</button>`;
+  banner.innerHTML=`<span>✓ Broken link scan complete — ${scanned} posts scanned, ${totalBroken} potential issues found</span>`;
+  statusEl.innerHTML=`<span class="tag tag-ok">✓ ${totalBroken} potential issues found</span><button class="btn btn-sm" style="margin-left:8px" onclick="startLinkScan()" title="Only needed after you've fixed links. Results are cached for 30 days.">Force rescan</button>`;
   posts.sort((a,b)=>b.score-a.score);updateMetrics();renderTable();
 }
 function monthsAgo(d){return d?Math.round((Date.now()-new Date(d))/(1000*60*60*24*30)):36}
@@ -1226,7 +1234,7 @@ function updateSetup(){
     {label:'Connect Google Search Console',done:posts.some(p=>p.gscChecked||p.impressions>0),act:gscToken?'loadGSCData()':"switchTab('connect',document.querySelectorAll('.tab')[1])",btn:gscToken?'Load data':'Connect'},
     {label:'Run the link scan',done:posts.some(p=>p.linksScanned),act:'startLinkScan()',btn:'Run'},
     {label:'Run the AI scan',done:posts.some(p=>p.aiScanned),act:'startAIScan(false)',btn:'Run'},
-    {label:'Run the keyword volume scan (needs Search Console connected first)',done:!!window._kwDone,act:'startKWScan(false)',btn:'Run'}
+    {label:'Run the keyword volume scan (needs Search Console connected first)',done:!!window._kwDone,queued:!!window._kwQueued,act:'startKWScan(false)',btn:'Run'}
   ];
   const n=steps.filter(s=>s.done).length;
   if(n===steps.length){
@@ -1235,16 +1243,16 @@ function updateSetup(){
     el.style.display='block';
     el.innerHTML=`<div class="finish-card"><button type="button" onclick="dismissFinish()" aria-label="Dismiss" style="position:absolute;top:8px;right:10px;background:none;border:none;font-size:16px;cursor:pointer;color:var(--text2)">×</button><div style="font-size:14px;font-weight:700;margin-bottom:4px">🎉 All five scans are done. Your results are ready!</div><div style="font-size:12.5px;line-height:1.6;color:var(--text)">Two good next steps: <strong>pick a post and click its ✨ Report button</strong> (you'll get a customizable report with checkboxes, so include only what you want), or open the <strong>Settings</strong> tab to <strong>customize your scoring</strong> and see a glossary of every flag.</div></div>`;
     document.body.classList.add('finish-hint');
-    const st=document.querySelectorAll('.tabs .tab')[2];if(st&&!window._visitedSettings)st.classList.add('tab-nudge');
+    const st=document.querySelectorAll('.tabs .tab')[2];if(st&&!window._visitedSettings){st.style.setProperty('--nudge-text',"'👆 scoring options, glossary & billing'");st.classList.add('tab-nudge');}
     return;
   }
-  const rows=steps.map(s=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;color:${s.done?'var(--text2)':'var(--text)'}"><span style="width:16px">${s.done?'✓':'○'}</span><span style="flex:1">${s.label}</span>${s.done?'':`<button class="btn btn-sm" onclick="${s.act}">${s.btn}</button>`}</div>`).join('');
+  const rows=steps.map(s=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;color:${s.done?'var(--text2)':'var(--text)'}"><span style="width:16px">${s.done?'✓':'○'}</span><span style="flex:1">${s.label}</span>${s.done?'':(s.queued?'<span class="tag">⏳ Queued, starts automatically</span>':`<button class="btn btn-sm" onclick="${s.act}">${s.btn}</button>`)}</div>`).join('');
   const skip=window._setupSkip;
   const nudge=(sel,on)=>{const b=document.querySelector(sel);if(b)b.classList.toggle('btn-nudge',!!on&&!!window._visitedConnect);};
   nudge('#gscStatus button[onclick*="connectGSC"]',!steps[1].done&&!gscToken);
   nudge('#linkScanStatus .btn-primary',!steps[2].done);
   nudge('#aiScanStatus .btn-primary',!steps[3].done);
-  nudge('#kwScanStatus .btn-primary',!steps[4].done);
+  nudge('#kwScanStatus .btn-primary',!steps[4].done&&!window._kwQueued);
   const dsTab=document.querySelectorAll('.tabs .tab')[1];
   if(dsTab)dsTab.classList.toggle('tab-nudge',!window._visitedConnect);
   el.style.display='block';
@@ -1529,9 +1537,20 @@ async function startKWScan(forceRefresh=false){
       const qb=document.getElementById('kwScanBanner');
       qb.className='scan-banner';qb.style.display='flex';
       qb.innerHTML='<span>⏳ Queued: your keyword scan will start automatically as soon as Search Console data finishes loading. Nothing else to click. Up to 5 minutes for big blogs.</span>';
+      const ks=document.getElementById('kwScanStatus');
+      if(ks)ks.innerHTML='<span class="tag">⏳ Queued: starts automatically when Search Console finishes loading (up to 5 minutes). Nothing else to click.</span>';
+      try{updateSetup();}catch(e){}
       return;
     }
-    alert('Search Console isn\'t connected yet, or it has no keyword data. Connect it in the Data sources tab, wait for it to finish loading, then run the keyword scan again.');return;
+    const why=!gscToken
+      ?'Connect Google Search Console first (Data sources tab). The keyword scan uses the search queries it provides.'
+      :'Search Console finished loading, but it returned no search queries for your posts. This can happen if the URL you crawled does not exactly match your Search Console property (with or without www, http vs https), or for a brand-new site. Try the Refresh button in the Search Console banner, or crawl again with the exact URL.';
+    console.log('[kw] cannot start',{gscToken:!!gscToken,gscLoading:!!window._gscLoading});
+    const eb=document.getElementById('kwScanBanner');
+    if(eb){eb.className='scan-banner';eb.style.display='flex';eb.innerHTML='<span>⚠️ '+why+'</span>';}
+    const es=document.getElementById('kwScanStatus');
+    if(es)es.innerHTML='<span class="tag">⚠️ '+why+'</span><button class="btn btn-sm btn-primary" style="margin-left:8px" onclick="startKWScan()">Try again</button>';
+    return;
   }
   const banner=document.getElementById('kwScanBanner');
   const statusEl=document.getElementById('kwScanStatus');
