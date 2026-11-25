@@ -1199,7 +1199,7 @@ async function startLinkScan(){
   const postsToScan=[...posts],CONCURRENT=5;
   for(let i=0;i<postsToScan.length;i+=CONCURRENT){
     const batch=postsToScan.slice(i,i+CONCURRENT);
-    banner.innerHTML=`<span>🔍 Scanning for broken links — ${scanned} of ${postsToScan.length} posts checked, ${totalBroken} potential issues found... (up to 5 minutes for big blogs)</span>`;
+    banner.innerHTML=`<span>🔍 Scanning for broken links — ${scanned} of ${postsToScan.length} posts checked, ${totalBroken} potential issues found... (up to 5 minutes on your first scan; repeat scans are much faster)</span>`;
     await Promise.allSettled(batch.map(async(post)=>{
       try{const res=await fetch(LINKS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({postUrl:post.url,postId:post.id,siteUrl})});
       if(res.ok){const data=await res.json();post.brokenLinks=data.brokenCount||0;post.brokenLinkUrls=data.brokenLinks||[];if(data.brokenCount>0){const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;totalBroken+=data.brokenCount;}post.linksScanned=true;}}catch(e){}
@@ -1500,7 +1500,7 @@ async function startAIScan(forceRefresh=false){
   const postsToScan=[...posts],CONCURRENT=3;
   for(let i=0;i<postsToScan.length;i+=CONCURRENT){
     const batch=postsToScan.slice(i,i+CONCURRENT);
-    banner.innerHTML=`<span>🤖 AI scanning posts — ${scanned} of ${postsToScan.length} done, ${totalVenue} venue issues + ${totalOutdated} outdated items + ${totalClarity} clarity flags found... (can take up to 5 minutes depending on how many posts you have)</span>`;
+    banner.innerHTML=`<span>🤖 AI scanning posts — ${scanned} of ${postsToScan.length} done, ${totalVenue} venue issues + ${totalOutdated} outdated items + ${totalClarity} clarity flags found... (up to 5 minutes on your first scan, depending on how many posts you have; repeat scans are much faster)</span>`;
     await Promise.allSettled(batch.map(async(post)=>{
       try{const res=await fetch(BATCH_SCAN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({postId:post.id,postUrl:post.url,postTitle:post.title,siteUrl,forceRefresh})});
       if(res.ok){const data=await res.json();if(!data.error){post.venueIssues=data.venueIssues||0;post.outdatedCount=data.outdatedCount||0;post.hasOldCurrency=data.hasOldCurrency||false;post.hasCovid=data.hasCovid||false;post.hasOldPrices=data.hasOldPrices||false;post.clarityScore=data.clarityScore||0;post.clarityFlags=data.clarityFlags||[];post.aiScanned=true;if(data.venueIssues>0||data.outdatedCount>0||data.clarityScore>0){const r=calcScore(post);post.score=r.score;post.urgency=r.urgency;post.hardFloor=r.hardFloor;post.flags=r.flags;totalVenue+=data.venueIssues;totalOutdated+=data.outdatedCount;if(data.clarityScore>=5)totalClarity++;}}}}catch(e){}
@@ -1536,9 +1536,9 @@ async function startKWScan(forceRefresh=false){
       window._kwQueued=true;
       const qb=document.getElementById('kwScanBanner');
       qb.className='scan-banner';qb.style.display='flex';
-      qb.innerHTML='<span>⏳ Queued: your keyword scan will start automatically as soon as Search Console data finishes loading. Nothing else to click. Up to 5 minutes for big blogs.</span>';
+      qb.innerHTML='<span>⏳ Queued: your keyword scan will start automatically as soon as Search Console data finishes loading. Nothing else to click. Up to 5 minutes on your first scan.</span>';
       const ks=document.getElementById('kwScanStatus');
-      if(ks)ks.innerHTML='<span class="tag">⏳ Queued: starts automatically when Search Console finishes loading (up to 5 minutes). Nothing else to click.</span>';
+      if(ks)ks.innerHTML='<span class="tag">⏳ Queued: starts automatically when Search Console finishes loading (up to 5 minutes on your first scan). Nothing else to click.</span>';
       try{updateSetup();}catch(e){}
       return;
     }
