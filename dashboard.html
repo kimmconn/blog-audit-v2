@@ -51,6 +51,10 @@ src="https://www.facebook.com/tr?id=4582628865350058&ev=PageView&noscript=1"
   .scan-banner:not(.scan-complete)::after,.gsc-banner.gsc-loading::after{content:'';position:absolute;right:10px;bottom:4px;width:100px;height:52px;background:url('assets/bloupi-mascot-small.png') center/contain no-repeat;animation:bloupiBop .9s ease-in-out infinite}
   @keyframes waitSlide2{0%{left:-30%}100%{left:100%}}
   @keyframes bloupiBop{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-8px) rotate(4deg)}}
+  body.finish-hint tbody tr:first-child .col-action .report-btn:first-of-type{position:relative;animation:tabNudge 1.3s ease-in-out infinite;border-color:var(--accent)}
+  body.finish-hint tbody tr:first-child .col-action .report-btn:first-of-type::after{content:'👆 try this';position:absolute;left:100%;top:50%;transform:translateY(-50%);margin-left:8px;white-space:nowrap;font-size:11px;font-weight:700;color:#fff;background:var(--accent);padding:3px 9px;border-radius:999px;z-index:5;pointer-events:none}
+  .finish-card{background:#eafaf1;border:1px solid #9fdcb8;border-radius:12px;padding:14px 16px;margin-bottom:1rem;position:relative;animation:finishPop .5s ease-out}
+  @keyframes finishPop{0%{transform:scale(.96);opacity:0}100%{transform:scale(1);opacity:1}}
   .btn-nudge{position:relative;margin-bottom:26px!important;box-shadow:0 0 0 0 rgba(36,87,224,0.5);animation:tabNudge 1.3s ease-in-out infinite}
   .btn-nudge::after{content:'👆 click here';position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:5px;white-space:nowrap;font-size:11px;font-weight:700;color:#fff;background:var(--accent);padding:3px 9px;border-radius:999px;z-index:5;pointer-events:none}
   @keyframes tabNudge{0%,100%{box-shadow:0 0 0 0 rgba(36,87,224,0.5)}50%{box-shadow:0 0 0 7px rgba(36,87,224,0)}}
@@ -1207,10 +1211,11 @@ function scoreColor(s){return s>=90?'#E24B4A':s>=60?'#BA7517':s>=30?'#378ADD':'#
 function healthColor(pct){return pct>=70?'#E24B4A':pct>=40?'#BA7517':pct>=20?'#378ADD':'#639922'}
 function fmtNum(n){if(!n)return'—';if(n>=10000)return Math.round(n/1000)+'k';if(n>=1000)return(n/1000).toFixed(1)+'k';return n}
 function fmtPos(p){if(!p||p===0)return'—';return p.toFixed(1)}
-function switchTab(name,el){if(name==='connect'){window._visitedConnect=true;const _n=document.querySelector('.tab-nudge');if(_n)_n.classList.remove('tab-nudge');setTimeout(()=>{try{updateSetup();}catch(e){}},0);}document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing','updated'].forEach(id=>{const e=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(e)e.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings'){renderWeights();renderGlossary();renderSubscriptionPanel();}if(name==='updated')renderUpdatedTab();}
+function switchTab(name,el){if(name==='settings'){window._visitedSettings=true;const _s=document.querySelectorAll('.tabs .tab')[2];if(_s)_s.classList.remove('tab-nudge');}if(name==='connect'){window._visitedConnect=true;const _n=document.querySelector('.tab-nudge');if(_n)_n.classList.remove('tab-nudge');setTimeout(()=>{try{updateSetup();}catch(e){}},0);}document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');['catalog','connect','settings','indexing','updated'].forEach(id=>{const e=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1));if(e)e.style.display='none';});document.getElementById('tab'+name.charAt(0).toUpperCase()+name.slice(1)).style.display='block';if(name==='settings'){renderWeights();renderGlossary();renderSubscriptionPanel();}if(name==='updated')renderUpdatedTab();}
 function renderWeights(){document.getElementById('weightsUI').innerHTML=Object.entries(weights).map(([k,v])=>`<div class="weight-row"><span class="weight-label">${wLabels[k]}</span><input type="range" min="0" max="40" step="1" value="${v}" id="w_${k}" oninput="document.getElementById('wv_${k}').textContent=this.value"/><span class="weight-val" id="wv_${k}">${v}</span></div>`).join('');}
 function resetWeights(){weights={age:6,trafficHealth:25,fallenOffMap:16,positionOpportunity:20,brokenLinks:8,venueIssues:16,ctrGap:9,clarityGap:8};renderWeights();}
 function applyWeights(){Object.keys(weights).forEach(k=>{const el=document.getElementById('w_'+k);if(el)weights[k]=parseInt(el.value);});posts.forEach(p=>{const r=calcScore(p);p.score=r.score;p.urgency=r.urgency;p.hardFloor=r.hardFloor;p.flags=r.flags;});updateMetrics();renderTable();}
+function dismissFinish(){window._finishDismissed=true;document.body.classList.remove('finish-hint');const st=document.querySelectorAll('.tabs .tab')[2];if(st)st.classList.remove('tab-nudge');const el=document.getElementById('setupChecklist');if(el)el.style.display='none';}
 function updateSetup(){
   const el=document.getElementById('setupChecklist');if(!el)return;
   const dim=on=>{const m=document.querySelector('.metrics'),s=document.getElementById('searchInput'),t=s&&s.closest('.panel');[m,t].forEach(x=>{if(x){x.style.opacity=on?'0.35':'';x.style.pointerEvents=on?'none':'';}});};
@@ -1224,7 +1229,15 @@ function updateSetup(){
     {label:'Run the keyword volume scan (needs Search Console connected first)',done:!!window._kwDone,act:'startKWScan(false)',btn:'Run'}
   ];
   const n=steps.filter(s=>s.done).length;
-  if(n===steps.length){el.style.display='none';dim(false);if(_t)_t.classList.remove('tab-nudge');return;}
+  if(n===steps.length){
+    dim(false);if(_t)_t.classList.remove('tab-nudge');
+    if(window._finishDismissed){el.style.display='none';document.body.classList.remove('finish-hint');const st=document.querySelectorAll('.tabs .tab')[2];if(st)st.classList.remove('tab-nudge');return;}
+    el.style.display='block';
+    el.innerHTML=`<div class="finish-card"><button type="button" onclick="dismissFinish()" aria-label="Dismiss" style="position:absolute;top:8px;right:10px;background:none;border:none;font-size:16px;cursor:pointer;color:var(--text2)">×</button><div style="font-size:14px;font-weight:700;margin-bottom:4px">🎉 All five scans are done. Your results are ready!</div><div style="font-size:12.5px;line-height:1.6;color:var(--text)">Two good next steps: <strong>pick a post and click its ✨ Report button</strong> (you'll get a customizable report with checkboxes, so include only what you want), or open the <strong>Settings</strong> tab to <strong>customize your scoring</strong> and see a glossary of every flag.</div></div>`;
+    document.body.classList.add('finish-hint');
+    const st=document.querySelectorAll('.tabs .tab')[2];if(st&&!window._visitedSettings)st.classList.add('tab-nudge');
+    return;
+  }
   const rows=steps.map(s=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;color:${s.done?'var(--text2)':'var(--text)'}"><span style="width:16px">${s.done?'✓':'○'}</span><span style="flex:1">${s.label}</span>${s.done?'':`<button class="btn btn-sm" onclick="${s.act}">${s.btn}</button>`}</div>`).join('');
   const skip=window._setupSkip;
   const nudge=(sel,on)=>{const b=document.querySelector(sel);if(b)b.classList.toggle('btn-nudge',!!on&&!!window._visitedConnect);};
