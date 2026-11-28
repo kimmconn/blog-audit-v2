@@ -523,7 +523,7 @@ sb.auth.onAuthStateChange((event,session)=>{setTimeout(()=>checkAuth(),0);});
 </script>
 <div class="app">
   <h1>Bloupi</h1>
-  <p class="subtitle">Catalog, score, and prioritize your posts for updates <button type="button" class="tour-replay" onclick="window.startBloupiTour&&window.startBloupiTour()">Take the tour</button></p>
+  <p class="subtitle">Catalog, score, and prioritize your posts for updates <button type="button" class="tour-replay" onclick="window.startBloupiTour&&window.startBloupiTour()">Take the tour</button> <button type="button" class="tour-replay" onclick="switchTab('settings',document.querySelectorAll('.tabs .tab')[2])">Manage / cancel subscription</button></p>
   <div id="trialBanner" style="display:none;margin-bottom:1rem"></div>
   <div class="desktop-note" id="desktopNote">📱 <strong>Bloupi works best on a laptop or desktop.</strong> The post table is wide. <button type="button" onclick="document.getElementById('desktopNote').style.display='none'" style="background:none;border:none;padding:0;margin-left:6px;text-decoration:underline;cursor:pointer;font-size:12px;color:var(--text2)">Dismiss</button></div>
   <div id="setupChecklist" style="display:none"></div>
@@ -1883,7 +1883,9 @@ function downloadBriefPDF(){
     {tab:'settings',target:()=>{const e=$('#weightsUI');return e?e.closest('.panel'):null;},title:'Make the scoring yours',
      body:'In <strong>Settings</strong> you can customize your scoring weights. Every signal (traffic decline, page 2 opportunities, broken links and more) has a slider. Turn up what matters most for your blog and your urgency list reorders to match.'},
     {tab:'settings',target:()=>{const e=$('#glossaryContent');const pn=e&&e.closest('.panel');return pn?pn.querySelector('.panel-title'):null;},title:'The glossary explains everything',
-     body:'Not sure what a flag, score or term means? The <strong>Glossary</strong> in Settings explains all of it. You can replay this tour any time with <strong>Take the tour</strong> under the page title.'}
+     body:'Not sure what a flag, score or term means? The <strong>Glossary</strong> in Settings explains all of it. You can replay this tour any time with <strong>Take the tour</strong> under the page title.'},
+    {tab:'settings',target:()=>{const e=$('#subscriptionPanelBody');return e?e.closest('.panel'):null;},title:'Manage or cancel your subscription',
+     body:'One last thing: this <strong>Your subscription</strong> box at the top of Settings is where you update your card, see invoices, or <strong>cancel any time</strong>. Click <strong>Manage subscription</strong>. There is also a quick link under the page title.'}
   ];
   let idx=0,active=false,shade,spot,cardEl;
   function done(){try{localStorage.setItem(KEY,'1');}catch(e){}}
